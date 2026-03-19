@@ -1,10 +1,10 @@
 var namespaceapp =
 [
+    [ "RetrieveTransaction", "d0/d05/classapp_1_1RetrieveTransaction.html", null ],
     [ "CommitTransaction", "d2/d78/classapp_1_1CommitTransaction.html", null ],
-    [ "Mutation", "d5/d13/classapp_1_1Mutation.html", "d5/d13/classapp_1_1Mutation" ],
     [ "PrepareAsset", "d1/dbc/classapp_1_1PrepareAsset.html", null ],
     [ "Query", "d7/dbc/classapp_1_1Query.html", "d7/dbc/classapp_1_1Query" ],
-    [ "RetrieveTransaction", "d0/d05/classapp_1_1RetrieveTransaction.html", null ],
+    [ "Mutation", "d5/d13/classapp_1_1Mutation.html", "d5/d13/classapp_1_1Mutation" ],
     [ "app", "d8/d01/namespaceapp.html#a675b4ea702c13dc4b8c05f985a25b496", null ],
     [ "db", "d8/d01/namespaceapp.html#a75341a4bc0e8e239f299316136af3466", null ],
     [ "db_root_url", "d8/d01/namespaceapp.html#a33818fbce2ef480386672c21779fc4c8", null ],

@@ -10,7 +10,7 @@ var searchData=
   ['chain_5fstate_2ecpp_7',['chain_state.cpp',['../d4/d85/chain__state_8cpp.html',1,'']]],
   ['chain_5fstate_2eh_8',['chain_state.h',['../d0/dee/chain__state_8h.html',1,'']]],
   ['chain_5fstate_5ftest_2ecpp_9',['chain_state_test.cpp',['../d4/d63/chain__state__test_8cpp.html',1,'']]],
-  ['changelog_2emd_10',['CHANGELOG.md',['../d3/d02/CHANGELOG_8md.html',1,'(Global Namespace)'],['../d2/dff/ecosystem_2monitoring_2reslens_2src_2lib_2webapp_2CHANGELOG_8md.html',1,'(Global Namespace)'],['../dd/d2d/ecosystem_2monitoring_2reslens_2src_2lib_2webapp_2sass_2sanitize_8css_2CHANGELOG_8md.html',1,'(Global Namespace)']]],
+  ['changelog_2emd_10',['CHANGELOG.md',['../d3/d02/CHANGELOG_8md.html',1,'']]],
   ['changes_2emd_11',['CHANGES.md',['../d1/d2a/CHANGES_8md.html',1,'']]],
   ['checkpoint_2eh_12',['checkpoint.h',['../de/d28/checkpoint_8h.html',1,'']]],
   ['checkpoint_5fmanager_2ecpp_13',['checkpoint_manager.cpp',['../df/d98/checkpoint__manager_8cpp.html',1,'']]],

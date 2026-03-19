@@ -1,9 +1,9 @@
 var namespaceserver =
 [
     [ "FileSummary", "da/da0/classserver_1_1FileSummary.html", null ],
-    [ "RepoInsights", "da/dc6/classserver_1_1RepoInsights.html", null ],
     [ "RepoSummary", "d8/de2/classserver_1_1RepoSummary.html", null ],
     [ "SearchResult", "dc/db9/classserver_1_1SearchResult.html", null ],
+    [ "RepoInsights", "da/dc6/classserver_1_1RepoInsights.html", null ],
     [ "_fetch_files_recursive", "d9/db1/namespaceserver.html#aa96549ae36122062d1deca583962cca5", null ],
     [ "_setup_resilientdb_path", "d9/db1/namespaceserver.html#a5d25d98142800f2fd8dd996d5954cf99", null ],
     [ "_setup_sha3_shim", "d9/db1/namespaceserver.html#a5089a2bf6e39b1623a57f88d616ca694", null ],

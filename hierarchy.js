@@ -14,7 +14,7 @@ var hierarchy =
     [ "resdb::AsyncReplicaClient", "d8/d9d/classresdb_1_1AsyncReplicaClient.html", [
       [ "resdb::MockAsyncReplicaClient", "d8/d4f/classresdb_1_1MockAsyncReplicaClient.html", null ]
     ] ],
-    [ "resdb::AtomicUniquePtr< T >", "db/d71/classresdb_1_1AtomicUniquePtr.html", null ],
+    [ "resdb::AtomicUniquePtr&lt; T &gt;", "db/d71/classresdb_1_1AtomicUniquePtr.html", null ],
     [ "BaseModel", null, [
       [ "server.FileSummary", "da/da0/classserver_1_1FileSummary.html", null ],
       [ "server.RepoInsights", "da/dc6/classserver_1_1RepoInsights.html", null ],
@@ -24,8 +24,8 @@ var hierarchy =
     [ "BatchNode", null, [
       [ "nodes.WriteChapters", "d0/d01/classnodes_1_1WriteChapters.html", null ]
     ] ],
-    [ "resdb::BatchQueue< T >", "d5/db6/classresdb_1_1BatchQueue.html", null ],
-    [ "resdb::BlockingQueue< T >", "dd/d88/classresdb_1_1BlockingQueue.html", null ],
+    [ "resdb::BatchQueue&lt; T &gt;", "d5/db6/classresdb_1_1BatchQueue.html", null ],
+    [ "resdb::BlockingQueue&lt; T &gt;", "dd/d88/classresdb_1_1BlockingQueue.html", null ],
     [ "resdb::BlockManager", "de/d46/classresdb_1_1BlockManager.html", null ],
     [ "resdb::ChainState", "d8/d22/classresdb_1_1ChainState.html", null ],
     [ "sdk::ChainState", "da/d9c/classsdk_1_1ChainState.html", null ],
@@ -140,8 +140,8 @@ var hierarchy =
     [ "resdb::KeyGenerator", "d5/d5c/classresdb_1_1KeyGenerator.html", null ],
     [ "knowledge_graph_builder.KnowledgeGraphBuilder", "db/d84/classknowledge__graph__builder_1_1KnowledgeGraphBuilder.html", null ],
     [ "resdb::LockFreeCollectorPool", "d7/d31/classresdb_1_1LockFreeCollectorPool.html", null ],
-    [ "resdb::LockFreeQueue< T >", "da/dd3/classresdb_1_1LockFreeQueue.html", null ],
-    [ "resdb::LRUCache< KeyType, ValueType >", "d5/d3e/classresdb_1_1LRUCache.html", null ],
+    [ "resdb::LockFreeQueue&lt; T &gt;", "da/dd3/classresdb_1_1LockFreeQueue.html", null ],
+    [ "resdb::LRUCache&lt; KeyType, ValueType &gt;", "d5/d3e/classresdb_1_1LRUCache.html", null ],
     [ "resdb::Merkle", "df/d02/classresdb_1_1Merkle.html", null ],
     [ "resdb::MessageManager", "d7/d18/classresdb_1_1MessageManager.html", null ],
     [ "metaclass", null, [
@@ -263,7 +263,7 @@ var hierarchy =
       [ "resdb::MockSocket", "dd/dd7/classresdb_1_1MockSocket.html", null ],
       [ "resdb::TcpSocket", "d4/de5/classresdb_1_1TcpSocket.html", null ]
     ] ],
-    [ "resdb::SpinLockSet< _type >", "d4/d35/classresdb_1_1SpinLockSet.html", null ],
+    [ "resdb::SpinLockSet&lt; _type &gt;", "d4/d35/classresdb_1_1SpinLockSet.html", null ],
     [ "resdb::Stats", "de/d0d/classresdb_1_1Stats.html", null ],
     [ "Stats", "db/df7/classStats.html", null ],
     [ "eevm::Storage", null, [

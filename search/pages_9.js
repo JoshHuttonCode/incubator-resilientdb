@@ -1,13 +1,8 @@
 var searchData=
 [
-  ['cache_20configuration_0',['cache-configuration',['../d0/dd0/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2docs_2community-guides_2apollo_2cache-configuration.html',1,'']]],
-  ['caching_1',['caching',['../dc/d70/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2docs_2graphql-official_2learn_2caching.html',1,'']]],
-  ['cc0_201_200_20universal_2',['CC0 1.0 Universal',['../d4/dfe/md__2github_2workspace_2ecosystem_2monitoring_2reslens_2src_2lib_2webapp_2sass_2sanitize_8css_2LICENSE.html',1,'']]],
-  ['change_20log_3',['Change Log',['../db/d6f/md__2github_2workspace_2ecosystem_2monitoring_2reslens_2src_2lib_2webapp_2CHANGELOG.html',1,'']]],
-  ['changelog_4',['CHANGELOG',['../d9/d7c/md__2github_2workspace_2CHANGELOG.html',1,'']]],
-  ['changes_5',['CHANGES',['../d4/de8/md__2github_2workspace_2ecosystem_2deployment_2orbit_2CHANGES.html',1,'']]],
-  ['changes_20to_20sanitize_20css_6',['Changes to sanitize.css',['../d1/d08/md__2github_2workspace_2ecosystem_2monitoring_2reslens_2src_2lib_2webapp_2sass_2sanitize_8css_2CHANGELOG.html',1,'']]],
-  ['code_5fof_5fconduct_7',['CODE_OF_CONDUCT',['../d7/d1c/md__2github_2workspace_2CODE__OF__CONDUCT.html',1,'']]],
-  ['configuration_8',['cache-configuration',['../d0/dd0/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2docs_2community-guides_2apollo_2cache-configuration.html',1,'']]],
-  ['css_9',['Changes to sanitize.css',['../d1/d08/md__2github_2workspace_2ecosystem_2monitoring_2reslens_2src_2lib_2webapp_2sass_2sanitize_8css_2CHANGELOG.html',1,'']]]
+  ['9_200_202023_2011_2029_0',['NexRes v1.9.0 (&lt;a href=&quot;https://github.com/resilientdb/resilientdb/releases/tag/nexres-v1.9.0&quot;&gt;2023-11-29&lt;/a&gt;)',['../d9/d7c/md__2github_2workspace_2CHANGELOG.html#autotoc_md45',1,'']]],
+  ['9_20_3a_1',['&lt;b&gt;Complete Queries (2, 9):&lt;/b&gt;',['../d5/d62/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2NEXUS__TEST__INPUTS.html#autotoc_md1427',1,'']]],
+  ['9_20complete_20transaction_20query_2',['&lt;b&gt;9. Complete Transaction Query&lt;/b&gt;',['../d5/d62/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2NEXUS__TEST__INPUTS.html#autotoc_md1405',1,'']]],
+  ['9_20complete_20transaction_20with_20all_20metadata_20comprehensive_3',['9. &lt;b&gt;Complete Transaction with All Metadata (Comprehensive)&lt;/b&gt;',['../d9/d3c/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2TEST__QUERIES.html#autotoc_md1715',1,'']]],
+  ['9_20required_20dependencies_4',['9. Required Dependencies',['../d9/d37/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2NEXUS__UI__EXTENSION__GUIDE.html#autotoc_md1452',1,'']]]
 ];

@@ -1,7 +1,7 @@
 var transaction__collector_8h =
 [
     [ "resdb::RequestInfo", "d8/d15/structresdb_1_1RequestInfo.html", "d8/d15/structresdb_1_1RequestInfo" ],
-    [ "resdb::AtomicUniquePtr< T >", "db/d71/classresdb_1_1AtomicUniquePtr.html", "db/d71/classresdb_1_1AtomicUniquePtr" ],
+    [ "resdb::AtomicUniquePtr&lt; T &gt;", "db/d71/classresdb_1_1AtomicUniquePtr.html", "db/d71/classresdb_1_1AtomicUniquePtr" ],
     [ "resdb::TransactionCollector", "d7/d95/classresdb_1_1TransactionCollector.html", "d7/d95/classresdb_1_1TransactionCollector" ],
     [ "resdb::TransactionStatue", "d5/d10/namespaceresdb.html#a9365b7af8267b084d545559cc0f87cb0", [
       [ "resdb::None", "d5/d10/namespaceresdb.html#a9365b7af8267b084d545559cc0f87cb0a8f60578a1667fd6eb91ee90a6e368fab", null ],
