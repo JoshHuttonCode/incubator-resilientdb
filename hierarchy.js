@@ -15,6 +15,9 @@ var hierarchy =
       [ "resdb::MockAsyncReplicaClient", "d8/d4f/classresdb_1_1MockAsyncReplicaClient.html", null ]
     ] ],
     [ "resdb::AtomicUniquePtr&lt; T &gt;", "db/d71/classresdb_1_1AtomicUniquePtr.html", null ],
+    [ "BaseHTTPMiddleware", null, [
+      [ "server.ResInsightAuthMiddleware", "dc/d76/classserver_1_1ResInsightAuthMiddleware.html", null ]
+    ] ],
     [ "BaseModel", null, [
       [ "server.FileSummary", "da/da0/classserver_1_1FileSummary.html", null ],
       [ "server.RepoInsights", "da/dc6/classserver_1_1RepoInsights.html", null ],
@@ -271,6 +274,7 @@ var hierarchy =
     ] ],
     [ "resdb::Storage", "d2/d14/classresdb_1_1Storage.html", [
       [ "resdb::MockStorage", "de/d28/classresdb_1_1MockStorage.html", null ],
+      [ "resdb::storage::DuckDB", "d2/d2d/classresdb_1_1storage_1_1DuckDB.html", null ],
       [ "resdb::storage::MemoryDB", "da/d75/classresdb_1_1storage_1_1MemoryDB.html", null ],
       [ "resdb::storage::ResLevelDB", "d3/d39/classresdb_1_1storage_1_1ResLevelDB.html", null ]
     ] ],

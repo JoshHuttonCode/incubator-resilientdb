@@ -4,6 +4,7 @@ var classresdb_1_1KVExecutor =
     [ "~KVExecutor", "d3/d37/classresdb_1_1KVExecutor.html#a28d823715dfc52b70fc2639a6333c911", null ],
     [ "ExecuteData", "d3/d37/classresdb_1_1KVExecutor.html#a27c4c499cbed3ef12c867321a7a3e7f7", null ],
     [ "ExecuteRequest", "d3/d37/classresdb_1_1KVExecutor.html#ac004df9f27b369ec86a286b0e0e02e28", null ],
+    [ "ExecuteSQL", "d3/d37/classresdb_1_1KVExecutor.html#ae067e713ad22da51a8132968b546fe25", null ],
     [ "Get", "d3/d37/classresdb_1_1KVExecutor.html#a693520b730d1f5b7999fe9090120904d", null ],
     [ "GetAllItems", "d3/d37/classresdb_1_1KVExecutor.html#a5927c7bf0a96bab0fc732e5d1c5326b5", null ],
     [ "GetAllValues", "d3/d37/classresdb_1_1KVExecutor.html#ab958cd67bf8e1314b74c51cbde85cc6d", null ],

@@ -124,59 +124,59 @@ Files</h2></td></tr>
 <tr class="memitem:setup_2Epy" id="r_setup_2Epy"><td class="memItemLeft"><a href="da/dab/setup_8py_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="da/dab/setup_8py.html">setup.py</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md2363"></a>
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md2369"></a>
 ResDB-ORM</h1>
 <p>ResDB-ORM is a Python module designed to simplify interactions with ResilientDB's key-value store database by providing an Object-Relational Mapping (ORM) interface. This library allows developers to use basic CRUD functionalities with ease.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2364"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2370"></a>
 Prerequisites</h2>
 <p>Before using this repository, ensure that the following services are running:</p>
 <ol type="1">
 <li><b>kv_server</b>: This is the key-value store server that forms the backend for ResilientDB. Follow the instructions in the <a href="https://github.com/apache/incubator-resilientdb">ResilientDB repository</a> to set it up and start it.</li>
 <li><b>ResilientDB-GraphQL</b>: This provides a GraphQL interface to interact with ResilientDB. Follow the instructions in the <a href="https://github.com/apache/incubator-resilientdb-graphql">ResilientDB-GraphQL repository</a> to set it up and start it.</li>
 </ol>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2365"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2371"></a>
 Setting up Prerequisites</h2>
 <p>You can use the provided INSTALL.sh script to automatically install and set up both the kv_server and ResilientDB-GraphQL services. The script will clone the necessary repositories, build the services, and start them.</p>
 <p>To use the INSTALL.sh script:</p>
 <div class="fragment"><div class="line">git clone https://github.com/ResilientEcosystem/ResDB-ORM.git</div>
 <div class="line">cd ResDB-ORM</div>
 <div class="line">./INSTALL.sh</div>
-</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md2366"></a>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md2372"></a>
 Installation</h2>
 <p>ResDB-ORM is also available on PyPI and can be installed using pip:</p>
 <div class="fragment"><div class="line">pip install resdb-orm</div>
 </div><!-- fragment --><p>Once the above services are running, follow the steps below to set up and use ResDB-ORM.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2367"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2373"></a>
 1. Clone this Repository</h3>
 <div class="fragment"><div class="line">git clone https://github.com/ResilientEcosystem/ResDB-ORM.git</div>
 <div class="line">cd ResDB-ORM</div>
 </div><!-- fragment --><p><b>Note:</b> The script may require sudo privileges to install dependencies and set up services.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2368"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2374"></a>
 2. Create and Activate a Virtual Environment</h3>
 <p>Set up a virtual environment to manage dependencies:</p>
 <div class="fragment"><div class="line">python3 -m venv venv</div>
 <div class="line">source venv/bin/activate</div>
-</div><!-- fragment --><h3 class="doxsection"><a class="anchor" id="autotoc_md2369"></a>
+</div><!-- fragment --><h3 class="doxsection"><a class="anchor" id="autotoc_md2375"></a>
 3. Install Dependencies</h3>
 <p>Ensure that you have all necessary dependencies installed:</p>
 <div class="fragment"><div class="line">pip install -r requirements.txt</div>
-</div><!-- fragment --><h3 class="doxsection"><a class="anchor" id="autotoc_md2370"></a>
+</div><!-- fragment --><h3 class="doxsection"><a class="anchor" id="autotoc_md2376"></a>
 4. Configure <span class="tt">config.yaml</span></h3>
 <p>Update the <span class="tt">config.yaml</span> file to point to the correct Crow endpoint. After running ResilientDB-GraphQL, you should see output similar to the following:</p>
 <div class="fragment"><div class="line">(2024-08-17 00:03:53) [INFO    ] Crow/1.0 server is running at &lt;CROW_ENDPOINT&gt; using 16 threads</div>
 <div class="line">(2024-08-17 00:03:53) [INFO    ] Call `app.loglevel(crow::LogLevel::Warning)` to hide Info level logs. </div>
 </div><!-- fragment --><p> Replace <span class="tt">&lt;CROW_ENDPOINT&gt;</span> in the <span class="tt">config.yaml</span> file with the actual endpoint URL from the above output.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2371"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2377"></a>
 5. Verify Installation</h3>
 <p>Run the provided <span class="tt"><a class="el" href="df/dba/test_8py.html">test.py</a></span> script to verify that everything is set up correctly:</p>
 <div class="fragment"><div class="line">python test.py</div>
 </div><!-- fragment --><p> This script will perform basic operations to ensure that the connection to the ResilientDB instance is functional.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2372"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2378"></a>
 6. Import the Module in Your Own Code</h3>
 <p>You can now import and use the <span class="tt">ResDBORM</span> module in your own projects:</p>
 <div class="fragment"><div class="line"><span class="keyword">from</span> <a class="code hl_namespace" href="db/dc4/namespaceresdb__orm_1_1orm.html">resdb_orm.orm</a> <span class="keyword">import</span> ResDBORM</div>
 <div class="ttc" id="anamespaceresdb__orm_1_1orm_html"><div class="ttname"><a href="db/dc4/namespaceresdb__orm_1_1orm.html">resdb_orm.orm</a></div><div class="ttdef"><b>Definition</b> <a href="da/df0/orm_8py_source.html#l00001">orm.py:1</a></div></div>
-</div><!-- fragment --><h1 class="doxsection"><a class="anchor" id="autotoc_md2373"></a>
+</div><!-- fragment --><h1 class="doxsection"><a class="anchor" id="autotoc_md2379"></a>
 Initialize the ORM</h1>
 <div class="fragment"><div class="line">orm = ResDBORM()</div>
 <div class="line"> </div>
@@ -184,10 +184,10 @@ Initialize the ORM</h1>
 <div class="line">data = {<span class="stringliteral">&quot;key&quot;</span>: <span class="stringliteral">&quot;value&quot;</span>}</div>
 <div class="line">record_id = orm.create(data)</div>
 <div class="line">print(f<span class="stringliteral">&quot;Record created with ID: {record_id}&quot;</span>)` </div>
-</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md2374"></a>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md2380"></a>
 Contributing</h2>
 <p>We welcome contributions to this project! Please feel free to submit pull requests, report issues, or suggest new features.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2375"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2381"></a>
 License</h2>
 <p>This project is licensed under the Apache License 2.0. </p>
 </div></div><!-- contents -->

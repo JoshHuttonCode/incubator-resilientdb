@@ -13,7 +13,7 @@ var searchData=
   ['architecture_5fknowledge_10',['architecture_knowledge',['../db/d25/classResilientDBKnowledgeBase_1_1ResilientDBKnowledgeBase.html#a14c35aa69f2c411e6b434ddcc662c364',1,'ResilientDBKnowledgeBase::ResilientDBKnowledgeBase']]],
   ['asset_11',['ASSET',['../d7/d61/classresdb__driver_1_1validate_1_1Transaction.html#af3e8c41dcc803b29bb9a44ee5b187d63',1,'resdb_driver.validate.Transaction.ASSET'],['../d9/d68/classresdb__validator_1_1models_1_1Transaction.html#a81f2b8d783ba2efd2b473061adfc0a8d',1,'resdb_validator.models.Transaction.ASSET']]],
   ['asset_12',['asset',['../d5/d37/classresdb__driver_1_1transaction_1_1Transaction.html#a8a60681e2f716098b4a7e6b335a9d603',1,'resdb_driver.transaction.Transaction.asset'],['../d5/d13/classresdb__validator_1_1transaction_1_1Transaction.html#af09a68a62945cc0a14dc7f13bb6bb521',1,'resdb_validator.transaction.Transaction.asset'],['../d2/dc4/namespaceresdb__driver_1_1driver__experiment.html#a6e5e7c43095630a120b3cc7bd49cdef5',1,'resdb_driver.driver_experiment.asset']]],
-  ['auth_5fenabled_13',['auth_enabled',['../d9/db1/namespaceserver.html#af2f70755a53af7a277549b23c36ce7f4',1,'server']]],
+  ['auth_5fmiddleware_13',['auth_middleware',['../d9/db1/namespaceserver.html#ae6e24fbe2a34a7c2e2ea7567a58ad57d',1,'server']]],
   ['auth_5ftoken_14',['AUTH_TOKEN',['../d2/d5e/classconfig_1_1Config.html#a43ea53c777e5c05e820356593b42c853',1,'config::Config']]],
   ['author_15',['author',['../dd/dc4/namespacesetup.html#a3a57a4772d418a06835249cbade0d86a',1,'setup']]],
   ['author_5femail_16',['author_email',['../dd/dc4/namespacesetup.html#a5b08034343aa2be607722a8b315f3625',1,'setup']]]

@@ -123,45 +123,45 @@ Files</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p># </p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2184"></a>
-Licensed to the Apache Software Foundation (ASF) under one</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2185"></a>
-or more contributor license agreements. See the NOTICE file</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2186"></a>
-distributed with this work for additional information</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2187"></a>
-regarding copyright ownership. The ASF licenses this file</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2188"></a>
-to you under the Apache License, Version 2.0 (the</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2189"></a>
-"License"); you may not use this file except in compliance</h1>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md2190"></a>
+Licensed to the Apache Software Foundation (ASF) under one</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2191"></a>
+or more contributor license agreements. See the NOTICE file</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2192"></a>
+distributed with this work for additional information</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2193"></a>
+regarding copyright ownership. The ASF licenses this file</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2194"></a>
+to you under the Apache License, Version 2.0 (the</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2195"></a>
+"License"); you may not use this file except in compliance</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2196"></a>
 with the License. You may obtain a copy of the License at</h1>
 <p># </p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2191"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2197"></a>
 <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></h1>
 <p># </p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2192"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2198"></a>
 Unless required by applicable law or agreed to in writing,</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2193"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2199"></a>
 software distributed under the License is distributed on an</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2194"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2200"></a>
 "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2195"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2201"></a>
 KIND, either express or implied. See the License for the</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2196"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2202"></a>
 specific language governing permissions and limitations</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2197"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2203"></a>
 under the License.</h1>
 <p>#</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2198"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2204"></a>
 Pybind11 information</h1>
 <p>Pybind11 allows for Python embedding within C++ code (and creating C++ bindings for Python). NexRes relies on Pybind11 to call Python code from C++.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2199"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2205"></a>
 Requirements</h2>
 <p>This code was tested on Ubuntu 20.04.4 LTS. Python 3.10.8 was installed using brew in the location /home/ubuntu/.linuxbrew/bin/python3. Using brew helps simplify the linking process during compilation. This location is referenced in <a href="https://github.com/msadoghi/nexres/tree/master/.bazelrc">nexres/.bazelrc</a> </p><pre class="fragment">build --action_env=PYTHON_BIN_PATH="/home/ubuntu/.linuxbrew/bin/python3"
 </pre><p>Make sure you have the python libraries installed. These are used when the binary is run. </p><pre class="fragment">sudo apt-get install python3.10-dev
-</pre><h2 class="doxsection"><a class="anchor" id="autotoc_md2200"></a>
+</pre><h2 class="doxsection"><a class="anchor" id="autotoc_md2206"></a>
 client.cpp</h2>
 <p>Calls example Python code. Provides an example of reading in the file <a class="el" href="d8/df0/print__sample_8py.html">print_sample.py</a> into a string and executing the string as Python code. Also provides an example of importing a Python module into C++ and calling one of its functions.</p>
 <p>Make sure to execute the code from within this directory as when importing the "validator_example" module the code searches the same directory. </p>

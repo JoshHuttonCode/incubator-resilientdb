@@ -119,7 +119,7 @@ $(function(){initNavTree('d1/dda/detect__changed__tools_8py_source.html','../../
 <div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="stringliteral">by checking git diff against the tool-doc-map.json.</span></div>
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="stringliteral"></span> </div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="stringliteral">Usage:</span></div>
-<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="stringliteral">    python ecosystem/pocketflow/scripts/detect_changed_tools.py [--base-ref &lt;ref&gt;]</span></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="stringliteral">    python ecosystem/third_party/pocketflow/scripts/detect_changed_tools.py [--base-ref &lt;ref&gt;]</span></div>
 <div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="stringliteral"></span> </div>
 <div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="stringliteral">Returns a list of tool names (one per line) that have changed.</span></div>
 <div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="stringliteral">&quot;&quot;&quot;</span></div>
@@ -132,15 +132,15 @@ $(function(){initNavTree('d1/dda/detect__changed__tools_8py_source.html','../../
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="keyword">import</span> sys</div>
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="keyword">from</span> pathlib <span class="keyword">import</span> Path</div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="comment"># Repo root is three levels up from this script</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno"><a class="line" href="../../d1/d39/namespacedetect__changed__tools.html#a24af1241eadbf1d07e59bf2498435f89">   21</a></span>REPO_ROOT = Path(__file__).resolve().parents[3]</div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno"><a class="line" href="../../d1/d39/namespacedetect__changed__tools.html#ac6705a08c6493c0db92837031aa5306f">   22</a></span>POCKETFLOW_DIR = REPO_ROOT / <span class="stringliteral">&quot;ecosystem&quot;</span> / <span class="stringliteral">&quot;pocketflow&quot;</span></div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="comment"># .../ecosystem/third_party/pocketflow/scripts/this_file.py</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno"><a class="line" href="../../d1/d39/namespacedetect__changed__tools.html#a114fe0e12eb78e8e3f2dc76cfca4ff4c">   21</a></span>POCKETFLOW_DIR = Path(__file__).resolve().parents[1]</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno"><a class="line" href="../../d1/d39/namespacedetect__changed__tools.html#a24af1241eadbf1d07e59bf2498435f89">   22</a></span>REPO_ROOT = POCKETFLOW_DIR.parents[2]</div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno"><a class="line" href="../../d1/d39/namespacedetect__changed__tools.html#a24924046ee3586d295b0b4bd50d6d514">   23</a></span>TOOL_MAP_PATH = POCKETFLOW_DIR / <span class="stringliteral">&quot;tool-doc-map.json&quot;</span></div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="comment"># Exclude these paths from triggering updates</span></div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno"><a class="line" href="../../d1/d39/namespacedetect__changed__tools.html#a0c93354af1d411952c632c5623fe9172">   26</a></span>EXCLUDE_PATTERNS = [</div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>    <span class="stringliteral">&quot;ecosystem/AI-Tooling/beacon/**&quot;</span>,  <span class="comment"># Don&#39;t trigger on doc changes</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="stringliteral">&quot;ecosystem/pocketflow/**&quot;</span>,  <span class="comment"># Don&#39;t trigger on pocketflow changes</span></div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="stringliteral">&quot;ecosystem/third_party/pocketflow/**&quot;</span>,  <span class="comment"># Don&#39;t trigger on pocketflow changes</span></div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>]</div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span> </div>

@@ -24,9 +24,10 @@ var searchData=
   ['resilientdbknowledgebase_21',['ResilientDBKnowledgeBase',['../db/d25/classResilientDBKnowledgeBase_1_1ResilientDBKnowledgeBase.html',1,'ResilientDBKnowledgeBase']]],
   ['resilientpythoncache_22',['ResilientPythonCache',['../d3/d97/classresilient__python__cache_1_1cache_1_1ResilientPythonCache.html',1,'resilient_python_cache::cache']]],
   ['resilientpythoncacheerror_23',['ResilientPythonCacheError',['../dc/d2c/classresilient__python__cache_1_1exceptions_1_1ResilientPythonCacheError.html',1,'resilient_python_cache::exceptions']]],
-  ['resleveldb_24',['ResLevelDB',['../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html',1,'resdb::storage']]],
-  ['responseclienttimeout_25',['ResponseClientTimeout',['../da/d3e/classresdb_1_1ResponseClientTimeout.html',1,'resdb']]],
-  ['responsemanager_26',['ResponseManager',['../dc/d93/classresdb_1_1common_1_1ResponseManager.html',1,'resdb::common::ResponseManager'],['../da/d2f/classresdb_1_1ResponseManager.html',1,'resdb::ResponseManager']]],
-  ['retrievetransaction_27',['RetrieveTransaction',['../d0/d05/classapp_1_1RetrieveTransaction.html',1,'app']]],
-  ['roundrobinpicker_28',['RoundRobinPicker',['../d4/d53/classresdb__driver_1_1pool_1_1RoundRobinPicker.html',1,'resdb_driver::pool']]]
+  ['resinsightauthmiddleware_24',['ResInsightAuthMiddleware',['../dc/d76/classserver_1_1ResInsightAuthMiddleware.html',1,'server']]],
+  ['resleveldb_25',['ResLevelDB',['../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html',1,'resdb::storage']]],
+  ['responseclienttimeout_26',['ResponseClientTimeout',['../da/d3e/classresdb_1_1ResponseClientTimeout.html',1,'resdb']]],
+  ['responsemanager_27',['ResponseManager',['../dc/d93/classresdb_1_1common_1_1ResponseManager.html',1,'resdb::common::ResponseManager'],['../da/d2f/classresdb_1_1ResponseManager.html',1,'resdb::ResponseManager']]],
+  ['retrievetransaction_28',['RetrieveTransaction',['../d0/d05/classapp_1_1RetrieveTransaction.html',1,'app']]],
+  ['roundrobinpicker_29',['RoundRobinPicker',['../d4/d53/classresdb__driver_1_1pool_1_1RoundRobinPicker.html',1,'resdb_driver::pool']]]
 ];

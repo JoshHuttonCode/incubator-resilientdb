@@ -119,12 +119,12 @@ Directories</h2></td></tr>
 <tr class="memitem:docs" id="r_docs"><td class="memItemLeft"><span class="iconfolder"><div class="folder-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="dir_9ee7015ee9ab342c705ae89f40ddb09e.html">docs</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><h2 class="doxsection"><a class="anchor" id="autotoc_md1943"></a>
+<div class="textblock"><h2 class="doxsection"><a class="anchor" id="autotoc_md1949"></a>
 Nexus - Research Agent</h2>
 <p><img src="https://github.com/user-attachments/assets/2be8d59d-f493-4c4f-abef-02eb76ab3af6" alt="Screenshot 2025-08-07 at 12 25 54 PM" width="1728" height="834" class="inline"/></p>
 <p>Nexus is a Next.js application that helps students and researchers work with Apache ResilientDB and related distributed systems literature. It provides grounded, citation-backed answers over selected documents and introduces agentic capabilities for research workflows.</p>
 <p>The project is built on LlamaIndex for retrieval and workflow orchestration, DeepSeek for reasoning, Gemini embeddings for vectorization, and Postgres with pgvector for storage.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1944"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1950"></a>
 What you can do today</h3>
 <ul>
 <li>Chat over one or more documents with inline citations</li>
@@ -133,16 +133,16 @@ What you can do today</h3>
 <li>Use a ResilientDB-focused agent with retrieval and web search tools</li>
 <li>Persist short/long‑term memory per session in Postgres</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1945"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1951"></a>
 Status</h3>
 <ul>
 <li>Core RAG: implemented</li>
 <li>Multi-document ingestion + retrieval: implemented</li>
 <li>Agentic chat + memory: in progress</li>
 </ul>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1946"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1952"></a>
 Quickstart</h2>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1947"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1953"></a>
 Prerequisites</h3>
 <ul>
 <li>Node.js 18.18+ (Node 20+ recommended)</li>
@@ -155,12 +155,12 @@ Prerequisites</h3>
 </ul>
 </li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1948"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1954"></a>
 1) Create and configure your database</h3>
 <p>Ensure pgvector is available in your Postgres instance, then create a database (e.g., <span class="tt">nexus</span>) and enable the extension:</p>
 <div class="fragment"><div class="line"><span class="keyword">CREATE</span> EXTENSION <span class="keywordflow">IF</span> <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> vector;</div>
 </div><!-- fragment --><p>Tables for memory and document embeddings are created automatically on first run.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1949"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1955"></a>
 2) Add environment variables</h3>
 <p>Create a <span class="tt">.env</span> file in the project root:</p>
 <div class="fragment"><div class="line">DATABASE_URL=postgres://USER:PASSWORD@localhost:5432/nexus</div>
@@ -184,17 +184,17 @@ Prerequisites</h3>
 <div class="line"># Embeddings</div>
 <div class="line">GEMINI_API_KEY=your_gemini_key</div>
 </div><!-- fragment --><p>Note: <span class="tt">EMBEDDING_DIM</span> must match your embedding model. With <span class="tt">Gemini Embedding 001</span> it is typically 768. If you switch models, update this value accordingly.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1950"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1956"></a>
 3) Install and run</h3>
 <div class="fragment"><div class="line">npm install</div>
 <div class="line">npm run dev</div>
 </div><!-- fragment --><p>Visit <span class="tt"><a href="http://localhost:3000/research">http://localhost:3000/research</a></span>.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1951"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1957"></a>
 4) Add documents</h3>
 <p>Place your PDFs (and optionally DOC/DOCX/PPT/PPTX) in the <span class="tt">documents/</span> folder at the repo root. The app will list them in the sidebar. Select one or more, then Nexus will parse and index them on demand.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1952"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1958"></a>
 How it works</h2>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1953"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1959"></a>
 Architecture (high level)</h3>
 <ul>
 <li>UI: Next.js App Router (<span class="tt">/research</span>) with a chat panel and a preview panel</li>
@@ -207,7 +207,7 @@ Architecture (high level)</h3>
 <li>Memory: session‑scoped short/long‑term memory persisted to pgvector</li>
 <li>Streaming: server streams model deltas; client renders responses and citations in real time</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1954"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1960"></a>
 Endpoints</h3>
 <ul>
 <li><span class="tt">GET /api/research/documents</span> — lists available files in <span class="tt">documents/</span></li>
@@ -215,13 +215,13 @@ Endpoints</h3>
 <li><span class="tt">POST /api/research/prepare-index</span> — parses and ingests selected files to the vector index (LlamaParse JSON mode)</li>
 <li><span class="tt">POST /api/research/chat</span> — runs the ResilientDB agent with retrieval/memory and streams the response</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1955"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1961"></a>
 Session memory</h3>
 <p>Each chat session is identified by a <span class="tt">?session=&lt;uuid&gt;</span> query param. The agent attaches a memory that persists across turns for that session and stores long‑term facts in pgvector.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1956"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1962"></a>
 Citations</h3>
 <p>Model responses use <span class="tt">[^id]</span> inline markers. The UI renders them as badges with source titles and page numbers when available.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1957"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1963"></a>
 Using the app</h2>
 <ol type="1">
 <li>Add PDFs to <span class="tt">documents/</span>.</li>
@@ -230,7 +230,7 @@ Using the app</h2>
 <li>Ask questions. The agent retrieves from the selected documents first, and may use web search if needed.</li>
 <li>Toggle Code Composer to draft code grounded in the selected papers (experimental).</li>
 </ol>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1958"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1964"></a>
 Configuration reference</h2>
 <p>Environment variables from <span class="tt">src/config/environment.ts</span>:</p>
 <ul>
@@ -244,7 +244,7 @@ Configuration reference</h2>
 <li><span class="tt">GEMINI_API_KEY</span>: required for Gemini embeddings</li>
 </ul>
 <p>If you change the embedding model, ensure <span class="tt">EMBEDDING_DIM</span> matches it and re‑create the vector tables if needed.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1959"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1965"></a>
 Scripts</h2>
 <ul>
 <li><span class="tt">npm run dev</span> — start the Next.js dev server</li>
@@ -252,7 +252,7 @@ Scripts</h2>
 <li><span class="tt">npm run start</span> — start the production server</li>
 <li><span class="tt">npm run lint</span> — lint the codebase</li>
 </ul>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1960"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1966"></a>
 Tech stack</h2>
 <ul>
 <li>Next.js 15, React 19, TypeScript</li>
@@ -262,7 +262,7 @@ Tech stack</h2>
 <li>Postgres + pgvector</li>
 <li>Tavily (optional web search)</li>
 </ul>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1961"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1967"></a>
 Notes</h2>
 <ul>
 <li>This project is intended for educational and research use around Apache ResilientDB and related systems. Use appropriate discretion when interpreting generated code. </li>

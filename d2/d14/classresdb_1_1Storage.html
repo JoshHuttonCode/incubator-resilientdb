@@ -122,8 +122,9 @@ Inheritance diagram for resdb::Storage:</div>
   <img src="../../d2/d14/classresdb_1_1Storage.png" usemap="#resdb_3A_3AStorage_map" alt=""/>
   <map id="resdb_3A_3AStorage_map" name="resdb_3A_3AStorage_map">
 <area href="../../de/d28/classresdb_1_1MockStorage.html" alt="resdb::MockStorage" shape="rect" coords="0,56,167,80"/>
-<area href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html" alt="resdb::storage::MemoryDB" shape="rect" coords="177,56,344,80"/>
-<area href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html" alt="resdb::storage::ResLevelDB" shape="rect" coords="354,56,521,80"/>
+<area href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html" alt="resdb::storage::DuckDB" shape="rect" coords="177,56,344,80"/>
+<area href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html" alt="resdb::storage::MemoryDB" shape="rect" coords="354,56,521,80"/>
+<area href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html" alt="resdb::storage::ResLevelDB" shape="rect" coords="531,56,698,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -143,6 +144,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac12cbf01977b673a990b54951e36d685" id="r_ac12cbf01977b673a990b54951e36d685"><td class="memItemLeft">virtual std::map&lt; std::string, std::pair&lt; std::string, int &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#ac12cbf01977b673a990b54951e36d685">GetKeyRange</a> (const std::string &amp;min_key, const std::string &amp;max_key)=0</td></tr>
 <tr class="memitem:a0fae8ec0b5a9b8fb95f5c8b7492e7fad" id="r_a0fae8ec0b5a9b8fb95f5c8b7492e7fad"><td class="memItemLeft">virtual std::vector&lt; std::pair&lt; std::string, int &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a0fae8ec0b5a9b8fb95f5c8b7492e7fad">GetHistory</a> (const std::string &amp;key, int min_version, int max_version)=0</td></tr>
 <tr class="memitem:a0a71db9aedf6e52e752e46d29f219d45" id="r_a0a71db9aedf6e52e752e46d29f219d45"><td class="memItemLeft">virtual std::vector&lt; std::pair&lt; std::string, int &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a0a71db9aedf6e52e752e46d29f219d45">GetTopHistory</a> (const std::string &amp;key, int number)=0</td></tr>
+<tr class="memitem:a9ff13edc34fcbceed6c284e133b230ef" id="r_a9ff13edc34fcbceed6c284e133b230ef"><td class="memItemLeft">virtual std::string&#160;</td><td class="memItemRight"><a class="el" href="#a9ff13edc34fcbceed6c284e133b230ef">ExecuteSQL</a> (const std::string &amp;sql_string)</td></tr>
 <tr class="memitem:a2b7bfb9558caf0cd20bc4bdc35b1afe6" id="r_a2b7bfb9558caf0cd20bc4bdc35b1afe6"><td class="memItemLeft">virtual bool&#160;</td><td class="memItemRight"><a class="el" href="#a2b7bfb9558caf0cd20bc4bdc35b1afe6">Flush</a> ()</td></tr>
 <tr class="memitem:a79d8893e0ad7d3160e4807428981bdaa" id="r_a79d8893e0ad7d3160e4807428981bdaa"><td class="memItemLeft">virtual uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a79d8893e0ad7d3160e4807428981bdaa">GetLastCheckpoint</a> ()</td></tr>
 <tr class="memitem:a13d2ba17caecac1d258835cdaa4f633a" id="r_a13d2ba17caecac1d258835cdaa4f633a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a13d2ba17caecac1d258835cdaa4f633a">SetMaxHistoryNum</a> (int num)</td></tr>
@@ -206,6 +208,35 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a id="a9ff13edc34fcbceed6c284e133b230ef" name="a9ff13edc34fcbceed6c284e133b230ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ff13edc34fcbceed6c284e133b230ef">&#9670;&#160;</a></span>ExecuteSQL()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::string resdb::Storage::ExecuteSQL </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;</td>          <td class="paramname"><span class="paramname"><em>sql_string</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#a51f502b16749823d6c11f5be4559deb5">resdb::storage::DuckDB</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="../../d8/d6b/storage_8h_source.html#l00063">63</a> of file <a class="el" href="../../d8/d6b/storage_8h_source.html">storage.h</a>.</p>
+
+</div>
+</div>
 <a id="a2b7bfb9558caf0cd20bc4bdc35b1afe6" name="a2b7bfb9558caf0cd20bc4bdc35b1afe6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2b7bfb9558caf0cd20bc4bdc35b1afe6">&#9670;&#160;</a></span>Flush()</h2>
 
@@ -229,9 +260,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#ae7e6c4c91c291b9b1463330137aeb245">resdb::storage::ResLevelDB</a>.</p>
+<p>Reimplemented in <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#a373b316729bbe312da1ad26f16df320b">resdb::storage::DuckDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#ae7e6c4c91c291b9b1463330137aeb245">resdb::storage::ResLevelDB</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="../../d8/d6b/storage_8h_source.html#l00062">62</a> of file <a class="el" href="../../d8/d6b/storage_8h_source.html">storage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d8/d6b/storage_8h_source.html#l00065">65</a> of file <a class="el" href="../../d8/d6b/storage_8h_source.html">storage.h</a>.</p>
 
 </div>
 </div>
@@ -258,7 +289,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a857c8a316b485f42bc22e96566c00cc4">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a857c8a316b485f42bc22e96566c00cc4">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a857c8a316b485f42bc22e96566c00cc4">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a5792ed38aa30ae0820c6177150a598fa">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a857c8a316b485f42bc22e96566c00cc4">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a857c8a316b485f42bc22e96566c00cc4">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#ab55643d99255494192cb5f59f26b0404">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a857c8a316b485f42bc22e96566c00cc4">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a5792ed38aa30ae0820c6177150a598fa">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -285,7 +316,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a951b4341adc7da44ef3dd228626fc53d">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a951b4341adc7da44ef3dd228626fc53d">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a951b4341adc7da44ef3dd228626fc53d">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a729bb7c76926e06fe30a11c3f51baa73">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a951b4341adc7da44ef3dd228626fc53d">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a951b4341adc7da44ef3dd228626fc53d">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#abf0f5357f4b107185c6008796c5022c1">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a951b4341adc7da44ef3dd228626fc53d">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a729bb7c76926e06fe30a11c3f51baa73">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -321,7 +352,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a5cf374e364ea0ed65c12721b11654430">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a5cf374e364ea0ed65c12721b11654430">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a5cf374e364ea0ed65c12721b11654430">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a73153dfddba6e3f04f5e626f798d0610">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a5cf374e364ea0ed65c12721b11654430">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a5cf374e364ea0ed65c12721b11654430">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#a746abb392255f4a75cc9fea60babc289">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a5cf374e364ea0ed65c12721b11654430">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a73153dfddba6e3f04f5e626f798d0610">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -352,7 +383,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#af1fb8cea5ed91abf154ce4fdb40f2a74">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#af1fb8cea5ed91abf154ce4fdb40f2a74">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#af1fb8cea5ed91abf154ce4fdb40f2a74">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a19e2d7bf9dd1a5bf030253baa4e6c8cb">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#af1fb8cea5ed91abf154ce4fdb40f2a74">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#af1fb8cea5ed91abf154ce4fdb40f2a74">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#a9a52e2dd94074178c664969e78d88db0">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#af1fb8cea5ed91abf154ce4fdb40f2a74">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a19e2d7bf9dd1a5bf030253baa4e6c8cb">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -381,7 +412,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#afa6bce37312669be5f333398e2e4799b">resdb::storage::ResLevelDB</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="../../d8/d6b/storage_8h_source.html#l00064">64</a> of file <a class="el" href="../../d8/d6b/storage_8h_source.html">storage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d8/d6b/storage_8h_source.html#l00067">67</a> of file <a class="el" href="../../d8/d6b/storage_8h_source.html">storage.h</a>.</p>
 
 </div>
 </div>
@@ -412,7 +443,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a68ff0bb9ae084d1b8be024def1b7a398">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a68ff0bb9ae084d1b8be024def1b7a398">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a68ff0bb9ae084d1b8be024def1b7a398">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a9a9ab59df1857e4918c36fe6566cea2b">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a68ff0bb9ae084d1b8be024def1b7a398">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a68ff0bb9ae084d1b8be024def1b7a398">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#a2d7af6a7c52d65fb9a7982074d4a4166">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a68ff0bb9ae084d1b8be024def1b7a398">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a9a9ab59df1857e4918c36fe6566cea2b">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -443,7 +474,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a307fa3ab7aa36a5e634d58902f56acdc">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a307fa3ab7aa36a5e634d58902f56acdc">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a307fa3ab7aa36a5e634d58902f56acdc">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a6a3064c09f54d3e24886a6455d176ee3">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a307fa3ab7aa36a5e634d58902f56acdc">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a307fa3ab7aa36a5e634d58902f56acdc">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#a62bde713ba22676f872a557e5d9e2ec8">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a307fa3ab7aa36a5e634d58902f56acdc">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a6a3064c09f54d3e24886a6455d176ee3">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -470,7 +501,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a1b491fc064a42b63a48c2792286f8b3e">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a1b491fc064a42b63a48c2792286f8b3e">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a1b491fc064a42b63a48c2792286f8b3e">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#ab727b1a4df6ea5487f68f05f10ab8916">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a1b491fc064a42b63a48c2792286f8b3e">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a1b491fc064a42b63a48c2792286f8b3e">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#a1735081c615e40991e33b240ba1d3d99">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a1b491fc064a42b63a48c2792286f8b3e">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#ab727b1a4df6ea5487f68f05f10ab8916">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -501,7 +532,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#afe32dd32a35027fc80a91e4c7728952a">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#afe32dd32a35027fc80a91e4c7728952a">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#afe32dd32a35027fc80a91e4c7728952a">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a3840edd2b735d245d5ffe169bc81941d">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#afe32dd32a35027fc80a91e4c7728952a">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#afe32dd32a35027fc80a91e4c7728952a">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#af51e3e4462d0a3cc131c4ea10537dabe">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#afe32dd32a35027fc80a91e4c7728952a">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a3840edd2b735d245d5ffe169bc81941d">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -532,7 +563,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#af0eb0bfb5573018d511fe66994244bfa">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#af0eb0bfb5573018d511fe66994244bfa">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#af0eb0bfb5573018d511fe66994244bfa">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a827afdc30e1fd351d7c47917292e01bc">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#af0eb0bfb5573018d511fe66994244bfa">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#af0eb0bfb5573018d511fe66994244bfa">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#a7e5f3b3f15f5efc151500ca7c99d70f5">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#af0eb0bfb5573018d511fe66994244bfa">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a827afdc30e1fd351d7c47917292e01bc">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -559,7 +590,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d8/d6b/storage_8h_source.html#l00066">66</a> of file <a class="el" href="../../d8/d6b/storage_8h_source.html">storage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d8/d6b/storage_8h_source.html#l00069">69</a> of file <a class="el" href="../../d8/d6b/storage_8h_source.html">storage.h</a>.</p>
 
 </div>
 </div>
@@ -590,7 +621,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#abef9cd0ffd55a2ef9edf54b4e543cf73">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#abef9cd0ffd55a2ef9edf54b4e543cf73">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#abef9cd0ffd55a2ef9edf54b4e543cf73">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a8292adeea1801c40b56dd31e0f057718">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#abef9cd0ffd55a2ef9edf54b4e543cf73">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#abef9cd0ffd55a2ef9edf54b4e543cf73">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#a023bb1daf3b3f5114fe3e1150d38ce8f">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#abef9cd0ffd55a2ef9edf54b4e543cf73">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a8292adeea1801c40b56dd31e0f057718">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -626,7 +657,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a584371a67527f17d56305d90354d37eb">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a584371a67527f17d56305d90354d37eb">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a584371a67527f17d56305d90354d37eb">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#ab7b4229e23222c46c19df99466407727">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#a584371a67527f17d56305d90354d37eb">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#a584371a67527f17d56305d90354d37eb">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#ae317fc0ee3762619c94226e59b0068ab">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#a584371a67527f17d56305d90354d37eb">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#ab7b4229e23222c46c19df99466407727">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -662,7 +693,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#abcc808471821089bd071f53764abbcde">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#abcc808471821089bd071f53764abbcde">resdb::MemoryDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#abcc808471821089bd071f53764abbcde">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a9dc1d4e300308de7a0399ed44be2c8d6">resdb::storage::ResLevelDB</a>.</p>
+<p>Implemented in <a class="el" href="../../d5/d57/classresdb_1_1contract_1_1MemoryDB.html#abcc808471821089bd071f53764abbcde">resdb::contract::MemoryDB</a>, <a class="el" href="../../da/d83/classresdb_1_1MemoryDB.html#abcc808471821089bd071f53764abbcde">resdb::MemoryDB</a>, <a class="el" href="../../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#ae698877be2149909f36571ceba65c674">resdb::storage::DuckDB</a>, <a class="el" href="../../da/d75/classresdb_1_1storage_1_1MemoryDB.html#abcc808471821089bd071f53764abbcde">resdb::storage::MemoryDB</a>, and <a class="el" href="../../d3/d39/classresdb_1_1storage_1_1ResLevelDB.html#a9dc1d4e300308de7a0399ed44be2c8d6">resdb::storage::ResLevelDB</a>.</p>
 
 </div>
 </div>
@@ -687,7 +718,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d8/d6b/storage_8h_source.html#l00069">69</a> of file <a class="el" href="../../d8/d6b/storage_8h_source.html">storage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d8/d6b/storage_8h_source.html#l00072">72</a> of file <a class="el" href="../../d8/d6b/storage_8h_source.html">storage.h</a>.</p>
 
 </div>
 </div>

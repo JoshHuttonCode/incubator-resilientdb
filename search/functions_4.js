@@ -13,5 +13,7 @@ var searchData=
   ['detect_5fchanged_5ftools_10',['detect_changed_tools',['../d1/d39/namespacedetect__changed__tools.html#a3cb86eeb82f9302643ae0668427a0ad2',1,'detect_changed_tools']]],
   ['digesttohash_11',['DigestToHash',['../d5/d10/namespaceresdb.html#a98589cabc43ec603afb71138b3bcd8b6',1,'resdb']]],
   ['dispatch_12',['Dispatch',['../da/d19/classresdb_1_1ConsensusManager.html#aded3d44b3131103f6c8849491fa4e346',1,'resdb::ConsensusManager']]],
-  ['duplicatemanager_13',['DuplicateManager',['../d6/da0/classresdb_1_1DuplicateManager.html#a437d8fdb66cd62ea669522338b139f33',1,'resdb::DuplicateManager']]]
+  ['dispatch_13',['dispatch',['../dc/d76/classserver_1_1ResInsightAuthMiddleware.html#affc4b694398e7462d41179ca28745e5d',1,'server::ResInsightAuthMiddleware']]],
+  ['duckdb_14',['DuckDB',['../d2/d2d/classresdb_1_1storage_1_1DuckDB.html#a9862acecd4aec4c1fa809d51b647ca66',1,'resdb::storage::DuckDB']]],
+  ['duplicatemanager_15',['DuplicateManager',['../d6/da0/classresdb_1_1DuplicateManager.html#a437d8fdb66cd62ea669522338b139f33',1,'resdb::DuplicateManager']]]
 ];

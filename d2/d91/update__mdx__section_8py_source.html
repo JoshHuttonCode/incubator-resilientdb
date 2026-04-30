@@ -119,7 +119,7 @@ $(function(){initNavTree('d2/d91/update__mdx__section_8py_source.html','../../',
 <div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="stringliteral">with fresh content produced by Pocketflow.</span></div>
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="stringliteral"></span> </div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="stringliteral">Usage:</span></div>
-<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="stringliteral">    python ecosystem/pocketflow/scripts/update_mdx_section.py \</span></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="stringliteral">    python ecosystem/third_party/pocketflow/scripts/update_mdx_section.py \</span></div>
 <div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="stringliteral">        --tool rescontract \</span></div>
 <div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="stringliteral">        --body-file /tmp/rescontract_body.md</span></div>
 <div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="stringliteral">&quot;&quot;&quot;</span></div>
@@ -133,9 +133,9 @@ $(function(){initNavTree('d2/d91/update__mdx__section_8py_source.html','../../',
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="keyword">import</span> sys</div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="keyword">from</span> pathlib <span class="keyword">import</span> Path</div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span> </div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="comment"># Repo root is three levels up from this script:</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="comment"># ecosystem/pocketflow/scripts/update_mdx_section.py</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno"><a class="line" href="../../d8/dc3/namespaceupdate__mdx__section.html#a5d2123a5591e9f32291116522822ba81">   23</a></span>REPO_ROOT = Path(__file__).resolve().parents[3]</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="comment"># .../ecosystem/third_party/pocketflow/scripts/update_mdx_section.py</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno"><a class="line" href="../../d8/dc3/namespaceupdate__mdx__section.html#ab09638c490d9612c48ddcaa75e036553">   22</a></span>POCKETFLOW_DIR = Path(__file__).resolve().parents[1]</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno"><a class="line" href="../../d8/dc3/namespaceupdate__mdx__section.html#a5d2123a5591e9f32291116522822ba81">   23</a></span>REPO_ROOT = POCKETFLOW_DIR.parents[2]</div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno"><a class="line" href="../../d8/dc3/namespaceupdate__mdx__section.html#afaaddb9c6b8f0d2882bba47d9951a82d">   24</a></span>DEFAULT_TEMPLATE = <span class="stringliteral">&quot;&quot;&quot;# {title}</span></div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="stringliteral"></span> </div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="stringliteral">{{/* BEGIN AUTO_DOC: {name} */}}</span></div>
@@ -148,7 +148,7 @@ $(function(){initNavTree('d2/d91/update__mdx__section_8py_source.html','../../',
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
 <div class="foldopen" id="foldopen00034" data-start="" data-end="">
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="../../d8/dc3/namespaceupdate__mdx__section.html#aeedcc3d3a2a0b8eab6a167efc0618118">   34</a></span><span class="keyword">def </span><a class="code hl_function" href="../../d8/dc3/namespaceupdate__mdx__section.html#aeedcc3d3a2a0b8eab6a167efc0618118">load_tool_map</a>() -&gt; list[dict]:</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    tool_map_path = REPO_ROOT / <span class="stringliteral">&quot;ecosystem&quot;</span> / <span class="stringliteral">&quot;pocketflow&quot;</span> / <span class="stringliteral">&quot;tool-doc-map.json&quot;</span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    tool_map_path = POCKETFLOW_DIR / <span class="stringliteral">&quot;tool-doc-map.json&quot;</span></div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <span class="keywordflow">try</span>:</div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        <span class="keyword">with</span> tool_map_path.open(<span class="stringliteral">&quot;r&quot;</span>, encoding=<span class="stringliteral">&quot;utf-8&quot;</span>) <span class="keyword">as</span> fh:</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>            <span class="keywordflow">return</span> json.load(fh)</div>

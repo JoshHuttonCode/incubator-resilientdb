@@ -1,5 +1,8 @@
 var NAVTREEINDEX1 =
 {
+"d0/ded/classresdb_1_1ConsensusManagerPBFT.html#abc117418c5375d245e128db2b8dab58a":[1,0,6,49,1],
+"d0/ded/classresdb_1_1ConsensusManagerPBFT.html#ac83af970fc0df80b514a27078ba93e9f":[0,0,22,53,30],
+"d0/ded/classresdb_1_1ConsensusManagerPBFT.html#ac83af970fc0df80b514a27078ba93e9f":[1,0,6,49,30],
 "d0/ded/classresdb_1_1ConsensusManagerPBFT.html#accbe75d7be210c0357cde550d4947198":[0,0,22,53,21],
 "d0/ded/classresdb_1_1ConsensusManagerPBFT.html#accbe75d7be210c0357cde550d4947198":[1,0,6,49,21],
 "d0/ded/classresdb_1_1ConsensusManagerPBFT.html#ad9932af00b5c059f10e7f0a74dda19c2":[0,0,22,53,25],
@@ -40,6 +43,7 @@ var NAVTREEINDEX1 =
 "d1/d31/acceptor_8h_source.html":[2,0,9,4,1],
 "d1/d39/namespacedetect__changed__tools.html":[0,0,5],
 "d1/d39/namespacedetect__changed__tools.html#a0c93354af1d411952c632c5623fe9172":[0,0,5,5],
+"d1/d39/namespacedetect__changed__tools.html#a114fe0e12eb78e8e3f2dc76cfca4ff4c":[0,0,5,6],
 "d1/d39/namespacedetect__changed__tools.html#a24924046ee3586d295b0b4bd50d6d514":[0,0,5,8],
 "d1/d39/namespacedetect__changed__tools.html#a24af1241eadbf1d07e59bf2498435f89":[0,0,5,7],
 "d1/d39/namespacedetect__changed__tools.html#a3cb86eeb82f9302643ae0668427a0ad2":[0,0,5,0],
@@ -47,7 +51,6 @@ var NAVTREEINDEX1 =
 "d1/d39/namespacedetect__changed__tools.html#a6999e9e771c36d7d36179f5f33351219":[0,0,5,2],
 "d1/d39/namespacedetect__changed__tools.html#ac06e022e92d738469636e03e812a3742":[0,0,5,1],
 "d1/d39/namespacedetect__changed__tools.html#ac39654e48b7f80503ccd6dba615e5051":[0,0,5,4],
-"d1/d39/namespacedetect__changed__tools.html#ac6705a08c6493c0db92837031aa5306f":[0,0,5,6],
 "d1/d43/validator__example_8py.html":[2,0,4,3,2,2,3],
 "d1/d43/validator__example_8py_source.html":[2,0,4,3,2,2,3],
 "d1/d44/classresdb_1_1Recovery.html":[0,0,22,78],
@@ -246,8 +249,5 @@ var NAVTREEINDEX1 =
 "d1/db2/classresdb_1_1ViewChangeManager.html#a42a9ee0a180aaa1be08fca109fa8d3d0":[0,0,22,68,17],
 "d1/db2/classresdb_1_1ViewChangeManager.html#a42a9ee0a180aaa1be08fca109fa8d3d0":[1,0,6,64,17],
 "d1/db2/classresdb_1_1ViewChangeManager.html#a455214e9177a8c6d9cf035452afb7822":[0,0,22,68,27],
-"d1/db2/classresdb_1_1ViewChangeManager.html#a455214e9177a8c6d9cf035452afb7822":[1,0,6,64,27],
-"d1/db2/classresdb_1_1ViewChangeManager.html#a4573a1cac52997a528c00ce4fbf3c8d6":[0,0,22,68,30],
-"d1/db2/classresdb_1_1ViewChangeManager.html#a4573a1cac52997a528c00ce4fbf3c8d6":[1,0,6,64,30],
-"d1/db2/classresdb_1_1ViewChangeManager.html#a458c26e26eb29aefd222f9d414799a48":[0,0,22,68,22]
+"d1/db2/classresdb_1_1ViewChangeManager.html#a455214e9177a8c6d9cf035452afb7822":[1,0,6,64,27]
 };

@@ -113,29 +113,29 @@ $(function(){initNavTree('dd/d55/md__2github_2workspace_2ecosystem_2ai-tools_2ne
   <div class="headertitle"><div class="title">RESEARCH_SETUP </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md1962"></a>
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md1968"></a>
 Simple PDF Chat Setup Guide</h1>
 <p>This guide will help you set up the simplified PDF chat functionality that allows you to select PDFs, preview them, and chat with their content using LlamaParse.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1963"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1969"></a>
 Prerequisites</h2>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1964"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1970"></a>
 1. API Keys Required</h3>
 <p>You need the following API keys:</p>
-<h4 class="doxsection"><a class="anchor" id="autotoc_md1965"></a>
+<h4 class="doxsection"><a class="anchor" id="autotoc_md1971"></a>
 DeepSeek API Key</h4>
 <ul>
 <li>Go to <a href="https://platform.deepseek.com/">DeepSeek Platform</a></li>
 <li>Sign up and create an API key</li>
 <li>This is used for the AI chat responses</li>
 </ul>
-<h4 class="doxsection"><a class="anchor" id="autotoc_md1966"></a>
+<h4 class="doxsection"><a class="anchor" id="autotoc_md1972"></a>
 LlamaCloud API Key</h4>
 <ul>
 <li>Go to <a href="https://cloud.llamaindex.ai">LlamaCloud</a></li>
 <li>Sign up and get your API key</li>
 <li>This is used for document parsing with LlamaParse</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1967"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1973"></a>
 2. Environment Setup</h3>
 <p>Create a <span class="tt">.env.local</span> file in your project root:</p>
 <div class="fragment"><div class="line"># Required: DeepSeek API Key for the LLM</div>
@@ -146,9 +146,9 @@ LlamaCloud API Key</h4>
 <div class="line"> </div>
 <div class="line"># Optional: DeepSeek model (defaults to &quot;deepseek-chat&quot;)</div>
 <div class="line">DEEPSEEK_MODEL=deepseek-chat</div>
-</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md1968"></a>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md1974"></a>
 Features</h2>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1969"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1975"></a>
 Current Implementation</h3>
 <ol type="1">
 <li><b>Document Selection</b>: Choose from PDFs in the <span class="tt">/documents</span> folder using a dropdown</li>
@@ -157,7 +157,7 @@ Current Implementation</h3>
 <li><b>Text Extraction</b>: Uses LlamaParse for reliable text extraction from PDFs</li>
 <li><b>In-Memory Caching</b>: Parsed documents are cached in memory to avoid re-parsing</li>
 </ol>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1970"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1976"></a>
 What's Removed</h3>
 <ul>
 <li>Layout extraction and highlighting</li>
@@ -167,7 +167,7 @@ What's Removed</h3>
 <li>Image serving</li>
 <li>Complex UI components</li>
 </ul>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1971"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1977"></a>
 Usage</h2>
 <ol type="1">
 <li><b>Access the Interface</b>:<ul>
@@ -187,16 +187,16 @@ Usage</h2>
 </ul>
 </li>
 </ol>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1972"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1978"></a>
 API Endpoints</h2>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1973"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1979"></a>
 <span class="tt">/api/research/documents</span></h3>
 <ul>
 <li><b>Method</b>: GET</li>
 <li><b>Description</b>: Lists available PDF documents</li>
 <li><b>Returns</b>: Array of document metadata</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1974"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1980"></a>
 <span class="tt">/api/research/chat</span></h3>
 <ul>
 <li><b>Method</b>: POST</li>
@@ -204,7 +204,7 @@ API Endpoints</h2>
 <li><b>Description</b>: Chat with a specific document using LlamaParse + DeepSeek</li>
 <li><b>Returns</b>: Streaming text response</li>
 </ul>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1975"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1981"></a>
 How It Works</h2>
 <ol type="1">
 <li><b>Document Loading</b>: When you select a PDF, it loads in the browser's native PDF viewer</li>
@@ -213,9 +213,9 @@ How It Works</h2>
 <li><b>Chat Response</b>: DeepSeek generates responses based on relevant document content</li>
 <li><b>Caching</b>: The vector index is cached in memory to avoid re-parsing the same document</li>
 </ol>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1976"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1982"></a>
 Troubleshooting</h2>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1977"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1983"></a>
 "Failed to parse document" Error</h3>
 <p><b>Most Common Causes:</b></p>
 <ol type="1">
@@ -223,37 +223,37 @@ Troubleshooting</h2>
 <li><b>Insufficient Credits</b>: Check your LlamaCloud account balance</li>
 <li><b>Unsupported PDF</b>: Some PDFs may not be parseable</li>
 </ol>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1978"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1984"></a>
 Documents Not Appearing</h3>
 <ul>
 <li>Check that PDF files are in the <span class="tt">/documents</span> folder</li>
 <li>Ensure files have <span class="tt">.pdf</span> extension</li>
 <li>Check browser console for errors</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1979"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1985"></a>
 Chat Not Working</h3>
 <ul>
 <li>Verify <span class="tt">DEEPSEEK_API_KEY</span> is set correctly</li>
 <li>Ensure the document was successfully parsed</li>
 <li>Check browser network tab for API errors</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1980"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1986"></a>
 PDF Not Loading</h3>
 <ul>
 <li>Ensure the PDF file is accessible</li>
 <li>Check browser console for loading errors</li>
 <li>Try a different PDF to isolate the issue</li>
 </ul>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1981"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1987"></a>
 Development Notes</h2>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1982"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1988"></a>
 Performance</h3>
 <ul>
 <li>Documents are parsed on first use (lazy loading)</li>
 <li>Vector indices are cached in memory during the session</li>
 <li>Large PDFs may take longer to parse initially</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1983"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1989"></a>
 Limitations</h3>
 <ul>
 <li>No persistent caching (re-parses on server restart)</li>
@@ -261,7 +261,7 @@ Limitations</h3>
 <li>No visual highlighting or source citations</li>
 <li>Relies on browser's built-in PDF viewer</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1984"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1990"></a>
 Future Enhancements</h3>
 <p>If needed, you could add back:</p>
 <ul>
@@ -270,7 +270,7 @@ Future Enhancements</h3>
 <li>Source citations (without visual highlighting)</li>
 <li>Document upload functionality</li>
 </ul>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md1985"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md1991"></a>
 File Structure</h2>
 <div class="fragment"><div class="line">src/app/</div>
 <div class="line">├── placeholder/</div>

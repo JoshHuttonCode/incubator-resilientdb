@@ -125,40 +125,40 @@ Files</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p># </p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2246"></a>
-Licensed to the Apache Software Foundation (ASF) under one</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2247"></a>
-or more contributor license agreements. See the NOTICE file</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2248"></a>
-distributed with this work for additional information</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2249"></a>
-regarding copyright ownership. The ASF licenses this file</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2250"></a>
-to you under the Apache License, Version 2.0 (the</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2251"></a>
-"License"); you may not use this file except in compliance</h1>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md2252"></a>
+Licensed to the Apache Software Foundation (ASF) under one</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2253"></a>
+or more contributor license agreements. See the NOTICE file</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2254"></a>
+distributed with this work for additional information</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2255"></a>
+regarding copyright ownership. The ASF licenses this file</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2256"></a>
+to you under the Apache License, Version 2.0 (the</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2257"></a>
+"License"); you may not use this file except in compliance</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2258"></a>
 with the License. You may obtain a copy of the License at</h1>
 <p># </p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2253"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2259"></a>
 <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></h1>
 <p># </p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2254"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2260"></a>
 Unless required by applicable law or agreed to in writing,</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2255"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2261"></a>
 software distributed under the License is distributed on an</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2256"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2262"></a>
 "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2257"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2263"></a>
 KIND, either express or implied. See the License for the</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2258"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2264"></a>
 specific language governing permissions and limitations</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2259"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2265"></a>
 under the License.</h1>
 <p>#</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2260"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2266"></a>
 resdb validator code in python</h1>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2261"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2267"></a>
 Requirements</h2>
 <ul>
 <li>python3.9+</li>
@@ -167,23 +167,23 @@ Requirements</h2>
 <li><span class="tt">$ source venv/bin/activate</span></li>
 <li><span class="tt">$ pip install -r requirements.txt</span> </li>
 </ul>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2262"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2268"></a>
 entrypoint</h2>
 <p><span class="tt"><a class="el" href="d3/d40/validator_8py.html">validator.py</a></span> call the <span class="tt">is_valid_tx(tx_dict)</span> function with the transaction json (tx_dict) as the argument.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2263"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2269"></a>
 Transaction Validation</h2>
 <p>A transaction is said to be valid if it satisfies certain condtions or rules.</p>
 <p>We employ a simpler version of the transaction spec and validation rules specified by <a href="https://github.com/bigchaindb/BEPs/tree/master/13#transaction-validation">BigchainDB</a></p>
-<h4 class="doxsection"><a class="anchor" id="autotoc_md2264"></a>
+<h4 class="doxsection"><a class="anchor" id="autotoc_md2270"></a>
 JSON Schema Validation</h4>
 <p>The json structure of a transaction should be the transaction spec v2 of BigchainDB </p>
-<h4 class="doxsection"><a class="anchor" id="autotoc_md2265"></a>
+<h4 class="doxsection"><a class="anchor" id="autotoc_md2271"></a>
 The output.amount Rule</h4>
 <p>For all output.amount must be an integer between 1 and 9×10^18, inclusive. The reason for the upper bound is to keep amount within what a server can comfortably represent using a 64-bit signed integer, i.e. 9×10^18 is less than 2^63. </p>
-<h4 class="doxsection"><a class="anchor" id="autotoc_md2266"></a>
+<h4 class="doxsection"><a class="anchor" id="autotoc_md2272"></a>
 The Duplicate Transaction Rule</h4>
 <p>If a transaction is a duplicate of a previous transaction, then it’s invalid. A quick way to check that is by checking to see if a transaction with the same transaction ID is already stored. A transaction ID is the hash of the transaction.</p>
-<h4 class="doxsection"><a class="anchor" id="autotoc_md2267"></a>
+<h4 class="doxsection"><a class="anchor" id="autotoc_md2273"></a>
 The TRANSFER Transaction Rules</h4>
 <p>if a transaction is a <span class="tt">TRANSFER</span> transaction:</p>
 <ul>
@@ -197,7 +197,7 @@ The TRANSFER Transaction Rules</h4>
 <li>a transaction output that doesn’t exist, then it’s invalid.</li>
 <li>a transaction with an asset ID that’s different from this transaction’s asset ID, then this transaction is invalid. (The asset ID of a CREATE transaction is the same as the transaction ID. The asset ID of a TRANSFER transaction is asset.id.) Note: The first two rules prevent double spending.</li>
 </ul>
-<h4 class="doxsection"><a class="anchor" id="autotoc_md2268"></a>
+<h4 class="doxsection"><a class="anchor" id="autotoc_md2274"></a>
 The input.fulfillment Rule</h4>
 <p>Regardless of whether the transaction is a CREATE or TRANSFER transaction: For all inputs, input.fulfillment must be valid. </p>
 </div></div><!-- contents -->

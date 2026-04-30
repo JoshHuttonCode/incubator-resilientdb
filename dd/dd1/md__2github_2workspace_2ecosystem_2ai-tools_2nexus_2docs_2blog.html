@@ -113,19 +113,19 @@ $(function(){initNavTree('dd/dd1/md__2github_2workspace_2ecosystem_2ai-tools_2ne
   <div class="headertitle"><div class="title">blog </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h2 class="doxsection"><a class="anchor" id="autotoc_md1918"></a>
+<div class="textblock"><h2 class="doxsection"><a class="anchor" id="autotoc_md1924"></a>
 Nexus: An Agentic RAG Assistant for ResilientDB and Distributed Systems</h2>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1919"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1925"></a>
 Overview</h3>
 <p>Nexus is a Next.js-based agentic Retrieval-Augmented Generation (RAG) assistant tailored for Apache ResilientDB, blockchain, and distributed systems. It combines LlamaIndex (TypeScript) orchestration, DeepSeek for reasoning, Gemini Embedding 001 for retrieval, and Supabase (Postgres + pgvector) for persistent storage and memory, delivering grounded answers with clear citations.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1920"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1926"></a>
 Motivation</h3>
 <ul>
 <li>The research landscape is dense; answers must be verifiable and source-linked.</li>
 <li>Traditional keyword tools don’t synthesize across documents.</li>
 <li>Researchers need multi-document reasoning, persistent context, and the ability to pull in external updates when needed.</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1921"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1927"></a>
 Key Features</h3>
 <ul>
 <li>Research and Code modes:<ul>
@@ -164,7 +164,7 @@ Key Features</h3>
 </ul>
 </li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1922"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1928"></a>
 System Architecture</h3>
 <div class="fragment"><div class="line">graph TD</div>
 <div class="line">  A[&quot;User (Browser)&quot;] --&gt;|Chat| B[&quot;Next.js UI (/research)&quot;]</div>
@@ -177,7 +177,7 @@ System Architecture</h3>
 <div class="line">  G --&gt;|tool: search_documents| E</div>
 <div class="line">  G --&gt;|tool: search_web| H[&quot;Tavily API&quot;]</div>
 <div class="line">  G --&gt;|stream| B</div>
-</div><!-- fragment --><h3 class="doxsection"><a class="anchor" id="autotoc_md1923"></a>
+</div><!-- fragment --><h3 class="doxsection"><a class="anchor" id="autotoc_md1929"></a>
 Ingestion Pipeline</h3>
 <p>Nexus implements a sophisticated document ingestion pipeline using LlamaIndex's <span class="tt">IngestionPipeline</span> with multiple transformation stages to prepare raw PDFs for efficient retrieval:</p>
 <div class="fragment"><div class="line">flowchart LR</div>
@@ -198,7 +198,7 @@ Ingestion Pipeline</h3>
 </ol>
 <p><b>Caching Strategy</b>: The system maintains a <span class="tt">parsed_documents</span> table in Supabase to track parsing status, avoiding re-processing of already ingested files and enabling incremental updates.</p>
 <p>This pipeline ensures that each PDF is transformed into semantically meaningful, searchable chunks with rich metadata and high-quality embeddings for precise retrieval.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1924"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1930"></a>
 Streaming and Tooling</h3>
 <div class="fragment"><div class="line">sequenceDiagram</div>
 <div class="line">  participant User</div>
@@ -218,7 +218,7 @@ Streaming and Tooling</h3>
 <div class="line">  Agent--&gt;&gt;ChatRoute: delta tokens</div>
 <div class="line">  ChatRoute--&gt;&gt;UI: Interleaved content + tool updates</div>
 <div class="line">  UI--&gt;&gt;User: Answer + source badges in the preview panel</div>
-</div><!-- fragment --><h3 class="doxsection"><a class="anchor" id="autotoc_md1925"></a>
+</div><!-- fragment --><h3 class="doxsection"><a class="anchor" id="autotoc_md1931"></a>
 Stack</h3>
 <ul>
 <li>Frontend: Next.js (React) chat UI + PDF/source preview panel</li>
@@ -229,20 +229,20 @@ Stack</h3>
 <li>Embeddings: Gemini Embedding 001 via @llamaindex/google</li>
 <li>Web Search: Tavily</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1926"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1932"></a>
 How it Works (at a glance)</h3>
 <ul>
 <li>Select documents (single or multiple).</li>
 <li>The UI calls /api/research/prepare-index → PDFs parsed with LlamaParse → transformed and embedded → stored in pgvector.</li>
 <li>Ask a question; the UI calls /api/research/chat → the agent chooses tools → streams tokens and events → UI displays content and source attributions.</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1927"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1933"></a>
 Research Agent</h3>
 <p><img src="../.././images/research.png" alt="Research Agent" class="inline"/></p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1928"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1934"></a>
 Code Composer Agent</h3>
 <p><img src="../.././images/agent.png" alt="Code Composer Agent" class="inline"/></p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1929"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1935"></a>
 Run Locally</h3>
 <ul>
 <li>Prerequisites:<ul>
@@ -299,7 +299,7 @@ Run Locally</h3>
 </ul>
 </li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1930"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1936"></a>
 Memory Design (Session-Scoped)</h3>
 <p>Nexus implements the LlamaIndex Memory framework with both short-term and long-term memory capabilities:</p>
 <p><b>Short-term Memory:</b></p><ul>
@@ -316,14 +316,14 @@ Memory Design (Session-Scoped)</h3>
 <li>Scalable across instances via persistent vector storage</li>
 <li>Automatic memory management with priority-based truncation when token limits are exceeded</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1931"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1937"></a>
 Current Limitations</h3>
 <ul>
 <li>Code Mode is experimental and best for structured, implementation-focused prompts.</li>
 <li>Corpus is intentionally scoped to ResilientDB and related systems to ensure high-quality retrieval.</li>
 <li>Requires cloud APIs (DeepSeek, LlamaParse, Gemini, Tavily); offline mode is not supported out-of-the-box.</li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1932"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1938"></a>
 Future Work</h3>
 <ul>
 <li>Inline citation markers and highlighting in the PDF preview panel<ul>
@@ -347,7 +347,7 @@ Future Work</h3>
 </ul>
 </li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md1933"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md1939"></a>
 Closing</h3>
 <p>Nexus brings together a modern TS-first stack, robust retrieval, transparent tool use, and session memory to create a reliable research copilot for distributed systems. </p>
 </div></div><!-- contents -->

@@ -129,72 +129,72 @@ Files</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p># </p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2143"></a>
-Licensed to the Apache Software Foundation (ASF) under one</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2144"></a>
-or more contributor license agreements. See the NOTICE file</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2145"></a>
-distributed with this work for additional information</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2146"></a>
-regarding copyright ownership. The ASF licenses this file</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2147"></a>
-to you under the Apache License, Version 2.0 (the</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2148"></a>
-"License"); you may not use this file except in compliance</h1>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md2149"></a>
+Licensed to the Apache Software Foundation (ASF) under one</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2150"></a>
+or more contributor license agreements. See the NOTICE file</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2151"></a>
+distributed with this work for additional information</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2152"></a>
+regarding copyright ownership. The ASF licenses this file</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2153"></a>
+to you under the Apache License, Version 2.0 (the</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2154"></a>
+"License"); you may not use this file except in compliance</h1>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2155"></a>
 with the License. You may obtain a copy of the License at</h1>
 <p># </p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2150"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2156"></a>
 <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></h1>
 <p># </p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2151"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2157"></a>
 Unless required by applicable law or agreed to in writing,</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2152"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2158"></a>
 software distributed under the License is distributed on an</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2153"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2159"></a>
 "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2154"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2160"></a>
 KIND, either express or implied. See the License for the</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2155"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2161"></a>
 specific language governing permissions and limitations</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2156"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2162"></a>
 under the License.</h1>
 <p>#</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2157"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2163"></a>
 HTTP Server Endpoints</h1>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2158"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2164"></a>
 Transactions</h2>
 <p>Note that key-value pairs committed to ResilientDB through the API store the JSON object as the value. To get the intended value of the pair, simply access the value of the JSON object.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2159"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2165"></a>
 GET /v1/transactions</h3>
 <p>Get all values</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2160"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2166"></a>
 GET /v1/transactions/&lt;string&gt;</h3>
 <p>Get value of specific id</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2161"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2167"></a>
 GET /v1/transactions/&lt;string&gt;/&lt;string&gt;</h3>
 <p>Get values based on key range</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2162"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2168"></a>
 POST /v1/transactions/commit</h3>
 <p>Sets a new value for a key. Note that key-value pairs committed to ResilientDB through the API store the JSON object as the value. To get the intended value of the pair, simply access the value of the JSON object.</p>
 <p>Ex: <span class="tt">curl -X POST  -d '{"id":"samplekey","value":"samplevalue"}' localhost:18000/v1/transactions/commit</span></p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2163"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2169"></a>
 Blocks</h2>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2164"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2170"></a>
 GET /v1/blocks</h3>
 <p>Retrieve all blocks</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2165"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2171"></a>
 GET /v1/blocks/&lt;int&gt;</h3>
 <p>Retrieve all blocks, grouped in batch sizes of the int parameter</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2166"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2172"></a>
 GET /v1/blocks/&lt;int&gt;/&lt;int&gt;</h3>
 <p>Retrieve list of blocks within a range</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2167"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2173"></a>
 Miscellaneous</h2>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2168"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2174"></a>
 GET /populatetable</h3>
 <p>Used for the Explorer webpage</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2169"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2175"></a>
 Todo</h2>
 <p>Update endpoints to use URL query parameters </p>
 </div></div><!-- contents -->

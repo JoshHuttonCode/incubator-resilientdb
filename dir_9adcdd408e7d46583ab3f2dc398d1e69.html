@@ -127,10 +127,10 @@ Directories</h2></td></tr>
 <tr class="memitem:tools" id="r_tools"><td class="memItemLeft"><span class="iconfolder"><div class="folder-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="dir_e7c03277d167d94cb0c52f961c576989.html">tools</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md2345"></a>
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md2351"></a>
 ResilientDB Ecosystem</h1>
 <p>This directory contains the ResilientDB ecosystem components organized as git subtrees.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2346"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2352"></a>
 Structure</h2>
 <div class="fragment"><div class="line">ecosystem/</div>
 <div class="line">├── ai-tools/</div>
@@ -163,8 +163,9 @@ Structure</h2>
 <div class="line">└── tools/</div>
 <div class="line">    ├── create-resilient-app/</div>
 <div class="line">    ├── drawing-lib/</div>
+<div class="line">    ├── reshare-lib/                # ResShare SDK</div>
 <div class="line">    └── resvault/</div>
-</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md2347"></a>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md2353"></a>
 Clone Without Ecosystem</h2>
 <p>To clone ResilientDB without the ecosystem directory (faster, smaller):</p>
 <div class="fragment"><div class="line">git clone --filter=tree:0 --sparse https://github.com/apache/incubator-resilientdb.git</div>
@@ -173,7 +174,7 @@ Clone Without Ecosystem</h2>
 <div class="line">echo &quot;/*&quot; &gt; .git/info/sparse-checkout</div>
 <div class="line">echo &quot;\!ecosystem/&quot; &gt;&gt; .git/info/sparse-checkout</div>
 <div class="line">git read-tree -m -u HEAD</div>
-</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md2348"></a>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md2354"></a>
 Clone Specific Ecosystem Components</h2>
 <div class="fragment"><div class="line"># Only SDK components. Nothing else</div>
 <div class="line">git sparse-checkout set ecosystem/sdk</div>

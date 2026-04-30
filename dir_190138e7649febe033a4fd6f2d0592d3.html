@@ -131,10 +131,10 @@ Files</h2></td></tr>
 <tr class="memitem:wsgi_2Epy" id="r_wsgi_2Epy"><td class="memItemLeft"><a href="d1/dfa/wsgi_8py_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="d1/dfa/wsgi_8py.html">wsgi.py</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md2138"></a>
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md2144"></a>
 ResilientDB GraphQL</h1>
 <p>ResilientDB GraphQL Server</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2139"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2145"></a>
 Get Prepared</h1>
 <p>(If you're using this for the first time, the steps below would be useful)</p>
 <p>Install <b>Ubuntu 20.04</b> on your local machine.</p>
@@ -145,7 +145,7 @@ Get Prepared</h1>
 </pre><p>Create a virtual environment: </p><pre class="fragment">python3 -m venv venv
 </pre><p>Start a virtual environment: </p><pre class="fragment">source venv/bin/activate
 </pre><p>Go back from the virtual environment when you no longer need it: </p><pre class="fragment">deactivate
-</pre><h1 class="doxsection"><a class="anchor" id="autotoc_md2140"></a>
+</pre><h1 class="doxsection"><a class="anchor" id="autotoc_md2146"></a>
 Using the SDK</h1>
 <p>To use the SDK, you need to start a KV service first, which you can refer to the <a href="https://github.com/resilientdb/resilientdb">resilientdb</a> repository and the <a href="https://blog.resilientdb.com/2022/09/28/GettingStartedNexRes.html">blog</a>.</p>
 <p>Then you should start the crow http service, which may take a few minutes at the first time. </p><pre class="fragment">bazel build service/http_server:crow_service_main
@@ -159,7 +159,7 @@ curl 127.0.0.1:18000/v1/transactions/key1
 </pre><p>Run the requirements.txt command to install the SDK related dependencies. </p><pre class="fragment">pip3 install -r requirements.txt
 </pre><p>Try the test script. </p><pre class="fragment">python3 test_sdk.py
 </pre><p>You have successfully run the script if you see the output: <span class="tt">The retrieved txn is successfully validated</span></p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2141"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2147"></a>
 GraphQL</h1>
 <p>(Optional) If there is an error while running any command relating to NexRes, this command below may help: </p><pre class="fragment">sudo apt-get install python3.10-distutils
 </pre><p>Note: If there is an error with the pip version, use the command: </p><pre class="fragment">curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
@@ -250,7 +250,7 @@ python3 -m pip install flask_cors
 <p>Start the app using: </p><pre class="fragment">python3 app.py
 </pre><p>This would be hosted on your local server to test the React App/Frontend. Also, this would give info on the console about the POST command, which are used to create an account. This consists of 3 stages: publicKey. AES encrypted private key and decrypted privateKey</p>
 <p>Note: To run Ubuntu virtual instance, open Command Prompt, then type <span class="tt">ubuntu2004</span> to open an instance</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2142"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md2148"></a>
 Serve GraphQL Using Nginx</h1>
 <p>Install the Nginx web server package: </p><pre class="fragment">sudo apt-get install nginx -y
 </pre><p>Once the Nginx is installed, start and enable the Nginx service using the following command: </p><pre class="fragment">systemctl start nginx

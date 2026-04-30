@@ -4,7 +4,7 @@ var searchData=
   ['6_200_202023_2005_2030_1',['NexRes v1.6.0 (&lt;a href=&quot;https://github.com/resilientdb/resilientdb/releases/tag/nexres-v1.6.0&quot;&gt;2023-05-30&lt;/a&gt;)',['../d9/d7c/md__2github_2workspace_2CHANGELOG.html#autotoc_md48',1,'']]],
   ['6_20_3a_2',['&lt;b&gt;Simple Queries (1, 3, 6):&lt;/b&gt;',['../d5/d62/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2NEXUS__TEST__INPUTS.html#autotoc_md1426',1,'']]],
   ['6_20efficiency_20display_3a_20src_20app_20graphql_20tutor_20components_20efficiency_20display_20tsx_3',['6. Efficiency Display: &lt;span class=&quot;tt&quot;&gt;src/app/graphql-tutor/components/efficiency-display.tsx&lt;/span&gt;',['../d9/d37/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2NEXUS__UI__EXTENSION__GUIDE.html#autotoc_md1446',1,'']]],
-  ['6_20import_20the_20module_20in_20your_20own_20code_4',['6. Import the Module in Your Own Code',['../dir_026c4e3b309cdff0f4ebf2858eca852f.html#autotoc_md2372',1,'']]],
+  ['6_20import_20the_20module_20in_20your_20own_20code_4',['6. Import the Module in Your Own Code',['../dir_026c4e3b309cdff0f4ebf2858eca852f.html#autotoc_md2378',1,'']]],
   ['6_20minimal_20transaction_20query_5',['&lt;b&gt;6. Minimal Transaction Query&lt;/b&gt;',['../d5/d62/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2NEXUS__TEST__INPUTS.html#autotoc_md1402',1,'']]],
   ['6_20ndash_20execution_6',['Section 6 &amp;ndash; Execution',['../d6/de0/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2docs_2graphql-spec_2Section_016_01--_01Execution.html',1,'']]],
   ['6_20query_20with_20aliases_7',['6. Query with Aliases',['../d7/d96/md__2github_2workspace_2ecosystem_2ai-tools_2mcp_2graphq-llm_2QUERY__TUTOR__EXAMPLES.html#autotoc_md1473',1,'']]],

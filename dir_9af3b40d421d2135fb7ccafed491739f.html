@@ -114,11 +114,11 @@ $(function(){initNavTree('dir_9af3b40d421d2135fb7ccafed491739f.html','',''); });
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md2325"></a>
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md2331"></a>
 <a href="https://blog.resilientdb.com/2024/12/07/MemLens.html">ResLens</a></h1>
 <p>ResLens is a comprehensive CPU and memory profiler for ResilientDB which aims to provide granular performance metrics by integrating profiling tools like eBPF, node exporter, process exporter, LevelDB internal statistics and custom prometheus hooks. We aim to provide a platform which provides database specific metrics that provides detailed information on what happens under the hood and help optimize system performance. This is an ambitious idea which we are improving on constantly but are proud to share a packaged version of ResLens currently.</p>
 <hr  />
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2327"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2333"></a>
 Table of Contents</h2>
 <ol type="1">
 <li>Overview</li>
@@ -130,10 +130,10 @@ Table of Contents</h2>
 <li>Acknowledgments</li>
 </ol>
 <hr  />
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2329"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2335"></a>
 Overview</h2>
 <p>ResLens provides CPU, memory and build statistics aiming to provide detailed information on what happens under the hood and help optimize system performance.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2330"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2336"></a>
 Key Highlights:</h3>
 <ul>
 <li>Integrated terminal like playground to Get and Set values to/from <span class="tt">ResilientDB</span>.</li>
@@ -144,7 +144,7 @@ Key Highlights:</h3>
 <li>Lightweight and optimized for Linux-based systems.</li>
 </ul>
 <hr  />
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2332"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2338"></a>
 Features</h2>
 <ul>
 <li><b>Granular Profiling</b>: Analyze memory and CPU usage down to individual function calls.</li>
@@ -155,14 +155,14 @@ Features</h2>
 <li><b>Output Options</b>: Export results in JSON, PNG, and other formats and analyze them using external tools.</li>
 </ul>
 <hr  />
- <h1 class="doxsection"><a class="anchor" id="autotoc_md2334"></a>
+ <h1 class="doxsection"><a class="anchor" id="autotoc_md2340"></a>
 Usage</h1>
 <p><img src="/docs/screenshots/flamegraph_get_method.png" alt="Description" class="inline"/> <b>Description</b>: Flamegraph showing the call stack when a Get method is called on ResilientDB's key value store. This graph shows the function caller which is invoked by the ResilientDB-GraphQL service and is serviced at the end by the storage engine which is LevelDB. The storage engine calls the in memory LRU cache to check for cache hits and when not found calls its internal functions to retrieve the key value pair.</p>
 <p>Todo: Add more examples</p>
 <hr  />
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2336"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2342"></a>
 Installation</h2>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2337"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2343"></a>
 Prerequisites</h3>
 <ul>
 <li><b>Operating System</b>: Linux (e.g., Ubuntu 20.04+).</li>
@@ -184,7 +184,7 @@ Prerequisites</h3>
 </ul>
 </li>
 </ul>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md2338"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2344"></a>
 Steps to Run</h3>
 <ul>
 <li>Offline Mode - Learn, Explore and familiarize with the dashboard without setting up the profiling environment.<ol type="1">
@@ -202,7 +202,7 @@ Steps to Run</h3>
 </ul>
 <p>Follow this step by step installation manual to install, setup, resolve errors, and configure the profiling environment. TODO ADD LINK</p>
 <hr  />
- <h2 class="doxsection"><a class="anchor" id="autotoc_md2340"></a>
+ <h2 class="doxsection"><a class="anchor" id="autotoc_md2346"></a>
 Contribution</h2>
 <ol type="1">
 <li>Harish Gokul (<a href="http://github.com/harish876">http://github.com/harish876</a>): Lead Developer for ResLens responsible for<ul>
@@ -227,11 +227,11 @@ Contribution</h2>
 </li>
 </ol>
 <hr  />
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2342"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2348"></a>
 License</h2>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2343"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2349"></a>
 TODO</h2>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2344"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2350"></a>
 Acknowledgements</h2>
 <ul>
 <li>We would like to acknowledge the good folks of <a href="https://github.com/ResilientApp/ResView">ResView</a> for the inspiration and a reference point to start our project. </li>

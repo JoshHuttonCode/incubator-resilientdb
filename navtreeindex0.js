@@ -14,6 +14,9 @@ var NAVTREEINDEX0 =
 "d0/d01/classnodes_1_1WriteChapters.html#acb9f25138a04c1dc2bdda2b107eb0130":[1,0,4,4,3],
 "d0/d05/classapp_1_1RetrieveTransaction.html":[0,0,2,0],
 "d0/d05/classapp_1_1RetrieveTransaction.html":[1,0,0,0],
+"d0/d06/duckdb__test_8cpp.html":[2,0,2,1,2],
+"d0/d06/duckdb__test_8cpp.html#ae66f6b31b5ad750f1fe042a706a4e3d4":[2,0,2,1,2,0],
+"d0/d06/duckdb__test_8cpp_source.html":[2,0,2,1,2],
 "d0/d12/namespacevalidator__example.html":[0,0,42],
 "d0/d12/namespacevalidator__example.html#a119d84b5112ca88beb51d054bc355653":[0,0,42,0],
 "d0/d12/namespacevalidator__example.html#a4e989c408998c59cff918e8239a06799":[0,0,42,3],
@@ -103,8 +106,8 @@ var NAVTREEINDEX0 =
 "d0/d86/mock__net__channel_8h_source.html":[2,0,7,3,0],
 "d0/d88/merkle_8cpp.html":[2,0,9,2,2,3,0,6],
 "d0/d88/merkle_8cpp_source.html":[2,0,9,2,2,3,0,6],
-"d0/d8c/leveldb_8h.html":[2,0,2,1,2],
-"d0/d8c/leveldb_8h_source.html":[2,0,2,1,2],
+"d0/d8c/leveldb_8h.html":[2,0,2,1,5],
+"d0/d8c/leveldb_8h_source.html":[2,0,2,1,5],
 "d0/d8d/classresdb_1_1MockResDBTxnAccessor.html":[0,0,22,23],
 "d0/d8d/classresdb_1_1MockResDBTxnAccessor.html":[1,0,6,19],
 "d0/d8d/classresdb_1_1MockResDBTxnAccessor.html#aab80dc7aa0ad97605b86bb14ae879f92":[0,0,22,23,0],
@@ -246,8 +249,5 @@ var NAVTREEINDEX0 =
 "d0/ded/classresdb_1_1ConsensusManagerPBFT.html#aaca980098b6bd8044f6a4ab041be0c2e":[1,0,6,49,9],
 "d0/ded/classresdb_1_1ConsensusManagerPBFT.html#ab6ee9ab06a5e7f63b9173fc7edcf6c88":[0,0,22,53,26],
 "d0/ded/classresdb_1_1ConsensusManagerPBFT.html#ab6ee9ab06a5e7f63b9173fc7edcf6c88":[1,0,6,49,26],
-"d0/ded/classresdb_1_1ConsensusManagerPBFT.html#abc117418c5375d245e128db2b8dab58a":[0,0,22,53,1],
-"d0/ded/classresdb_1_1ConsensusManagerPBFT.html#abc117418c5375d245e128db2b8dab58a":[1,0,6,49,1],
-"d0/ded/classresdb_1_1ConsensusManagerPBFT.html#ac83af970fc0df80b514a27078ba93e9f":[0,0,22,53,30],
-"d0/ded/classresdb_1_1ConsensusManagerPBFT.html#ac83af970fc0df80b514a27078ba93e9f":[1,0,6,49,30]
+"d0/ded/classresdb_1_1ConsensusManagerPBFT.html#abc117418c5375d245e128db2b8dab58a":[0,0,22,53,1]
 };

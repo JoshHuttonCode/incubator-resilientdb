@@ -120,6 +120,7 @@ Classes</h2></td></tr>
 <tr class="memitem:RepoSummary" id="r_RepoSummary"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="../../d8/de2/classserver_1_1RepoSummary.html">RepoSummary</a></td></tr>
 <tr class="memitem:SearchResult" id="r_SearchResult"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="../../dc/db9/classserver_1_1SearchResult.html">SearchResult</a></td></tr>
 <tr class="memitem:RepoInsights" id="r_RepoInsights"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="../../da/dc6/classserver_1_1RepoInsights.html">RepoInsights</a></td></tr>
+<tr class="memitem:ResInsightAuthMiddleware" id="r_ResInsightAuthMiddleware"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="../../dc/d76/classserver_1_1ResInsightAuthMiddleware.html">ResInsightAuthMiddleware</a></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -133,7 +134,7 @@ Functions</h2></td></tr>
 <tr class="memitem:aa29596aedd8d3d43ac3689e0905aaa29" id="r_aa29596aedd8d3d43ac3689e0905aaa29"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aa29596aedd8d3d43ac3689e0905aaa29">main</a> ()</td></tr>
 <tr class="memitem:ad0fe1f449570312cc8b1afe6f44d8e29" id="r_ad0fe1f449570312cc8b1afe6f44d8e29"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ad0fe1f449570312cc8b1afe6f44d8e29">get_auth_headers</a> ()</td></tr>
 <tr class="memitem:a86221c1702546a7bf98774ab19c1ac40" id="r_a86221c1702546a7bf98774ab19c1ac40"><td class="memItemLeft">np.ndarray&#160;</td><td class="memItemRight"><a class="el" href="#a86221c1702546a7bf98774ab19c1ac40">embed_text</a> (str text)</td></tr>
-<tr class="memitem:a6380d8cbecc4b4f49ed3aaf26fc58945" id="r_a6380d8cbecc4b4f49ed3aaf26fc58945"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a6380d8cbecc4b4f49ed3aaf26fc58945">setup_authentication</a> ()</td></tr>
+<tr class="memitem:a4a5e3d12f438124c0b6cf73c0d66db1b" id="r_a4a5e3d12f438124c0b6cf73c0d66db1b"><td class="memItemLeft">list&#160;</td><td class="memItemRight"><a class="el" href="#a4a5e3d12f438124c0b6cf73c0d66db1b">get_http_auth_middleware</a> ()</td></tr>
 <tr class="memitem:a3e9a14b776124ef756c6641b90bac0b7" id="r_a3e9a14b776124ef756c6641b90bac0b7"><td class="memItemLeft">List[str]&#160;</td><td class="memItemRight"><a class="el" href="#a3e9a14b776124ef756c6641b90bac0b7">split_code_into_chunks</a> (str code, int max_lines=200)</td></tr>
 <tr class="memitem:ad592c1356dddc1b949ac2f0b56a98fbb" id="r_ad592c1356dddc1b949ac2f0b56a98fbb"><td class="memItemLeft">List[dict]&#160;</td><td class="memItemRight"><a class="el" href="#ad592c1356dddc1b949ac2f0b56a98fbb">fetch_repo_tree</a> (str owner, str repo, str branch=&quot;main&quot;)</td></tr>
 <tr class="memitem:a3e5115478b0103d646b914461b5e2548" id="r_a3e5115478b0103d646b914461b5e2548"><td class="memItemLeft">Optional[str]&#160;</td><td class="memItemRight"><a class="el" href="#a3e5115478b0103d646b914461b5e2548">fetch_raw_file</a> (str owner, str repo, str filepath, str branch=&quot;main&quot;)</td></tr>
@@ -150,6 +151,10 @@ Functions</h2></td></tr>
 <tr class="memitem:a4e8906625ce35c76095c8b09a26f3b08" id="r_a4e8906625ce35c76095c8b09a26f3b08"><td class="memItemLeft">dict&#160;</td><td class="memItemRight"><a class="el" href="#a4e8906625ce35c76095c8b09a26f3b08">setup_guide</a> (str owner, str repo, str question, str branch=&quot;main&quot;)</td></tr>
 <tr class="memitem:aee2925522585c1b51b2d146a98f4e40a" id="r_aee2925522585c1b51b2d146a98f4e40a"><td class="memItemLeft">str&#160;</td><td class="memItemRight"><a class="el" href="#aee2925522585c1b51b2d146a98f4e40a">analyze_imports</a> (str owner, str repo, str branch=&quot;main&quot;)</td></tr>
 <tr class="memitem:a6d0320249b5cbe58d0270258b8b5e54c" id="r_a6d0320249b5cbe58d0270258b8b5e54c"><td class="memItemLeft">dict&#160;</td><td class="memItemRight"><a class="el" href="#a6d0320249b5cbe58d0270258b8b5e54c">show_dependency_graph</a> (str owner, str repo, str branch=&quot;main&quot;)</td></tr>
+<tr class="memitem:ab9d5cb8e63d39ac3be040c5d359adc01" id="r_ab9d5cb8e63d39ac3be040c5d359adc01"><td class="memItemLeft">List[str]&#160;</td><td class="memItemRight"><a class="el" href="#ab9d5cb8e63d39ac3be040c5d359adc01">parse_python_imports_v2</a> (str file_content)</td></tr>
+<tr class="memitem:a23ede601f8aeb2e1b9b1d96fac35504c" id="r_a23ede601f8aeb2e1b9b1d96fac35504c"><td class="memItemLeft">Dict[str, Any]&#160;</td><td class="memItemRight"><a class="el" href="#a23ede601f8aeb2e1b9b1d96fac35504c">analyze_imports_v2</a> (str owner, str repo, str branch=&quot;main&quot;, int max_python_files=50)</td></tr>
+<tr class="memitem:a248ee13824baaeb6ced536b14805f454" id="r_a248ee13824baaeb6ced536b14805f454"><td class="memItemLeft">dict&#160;</td><td class="memItemRight"><a class="el" href="#a248ee13824baaeb6ced536b14805f454">show_dependency_graph_v2</a> (str owner, str repo, str branch=&quot;main&quot;, int max_python_files=50)</td></tr>
+<tr class="memitem:a01e53d9c94e320c72b7257573567a905" id="r_a01e53d9c94e320c72b7257573567a905"><td class="memItemLeft">dict&#160;</td><td class="memItemRight"><a class="el" href="#a01e53d9c94e320c72b7257573567a905">kgraph_query_v2</a> (str owner, str repo, str node_name, str branch=&quot;main&quot;, int max_python_files=50)</td></tr>
 <tr class="memitem:a384f93a4b7a5ecc165bf827e2d0e19b9" id="r_a384f93a4b7a5ecc165bf827e2d0e19b9"><td class="memItemLeft">str&#160;</td><td class="memItemRight"><a class="el" href="#a384f93a4b7a5ecc165bf827e2d0e19b9">get_file_type</a> (str filepath)</td></tr>
 <tr class="memitem:abd8d2b4786643e779290d7679c67d972" id="r_abd8d2b4786643e779290d7679c67d972"><td class="memItemLeft">str&#160;</td><td class="memItemRight"><a class="el" href="#abd8d2b4786643e779290d7679c67d972">summarize_functions</a> (str owner, str repo, str filepath, str branch=&quot;main&quot;)</td></tr>
 <tr class="memitem:a6849e3feaec001ef3c5fe4261b26d4aa" id="r_a6849e3feaec001ef3c5fe4261b26d4aa"><td class="memItemLeft">List[str]&#160;</td><td class="memItemRight"><a class="el" href="#a6849e3feaec001ef3c5fe4261b26d4aa">split_python_functions</a> (str file_content)</td></tr>
@@ -177,10 +182,11 @@ Variables</h2></td></tr>
 <tr class="memitem:a297542a11417dca3a9ef74189171f02c" id="r_a297542a11417dca3a9ef74189171f02c"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a297542a11417dca3a9ef74189171f02c">mcp</a> = FastMCP(name=&quot;ResInsight: AI-driven developer onboarding ecosystem&quot;)</td></tr>
 <tr class="memitem:aa22d432798f42fab7b062fe6f3f0c5e4" id="r_aa22d432798f42fab7b062fe6f3f0c5e4"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aa22d432798f42fab7b062fe6f3f0c5e4">resilientdb_knowledge</a> = None</td></tr>
 <tr class="memitem:a8f91c2dac625f54c7df9fa6087140cbc" id="r_a8f91c2dac625f54c7df9fa6087140cbc"><td class="memItemLeft">dict&#160;</td><td class="memItemRight"><a class="el" href="#a8f91c2dac625f54c7df9fa6087140cbc">knowledge_graph</a></td></tr>
-<tr class="memitem:af2f70755a53af7a277549b23c36ce7f4" id="r_af2f70755a53af7a277549b23c36ce7f4"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#af2f70755a53af7a277549b23c36ce7f4">auth_enabled</a> = <a class="el" href="#a6380d8cbecc4b4f49ed3aaf26fc58945">setup_authentication</a>()</td></tr>
+<tr class="memitem:ae6e24fbe2a34a7c2e2ea7567a58ad57d" id="r_ae6e24fbe2a34a7c2e2ea7567a58ad57d"><td class="memItemLeft">list&#160;</td><td class="memItemRight"><a class="el" href="#ae6e24fbe2a34a7c2e2ea7567a58ad57d">auth_middleware</a> = <a class="el" href="#a4a5e3d12f438124c0b6cf73c0d66db1b">get_http_auth_middleware</a>()</td></tr>
 <tr class="memitem:a7c1ce3ea13a5d7bab9e4f6be2b35dbc9" id="r_a7c1ce3ea13a5d7bab9e4f6be2b35dbc9"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a7c1ce3ea13a5d7bab9e4f6be2b35dbc9">transport</a></td></tr>
 <tr class="memitem:ab38bc159b41eec0a3d3e6cefeb0c0029" id="r_ab38bc159b41eec0a3d3e6cefeb0c0029"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ab38bc159b41eec0a3d3e6cefeb0c0029">path</a></td></tr>
 <tr class="memitem:ae0362f7d7e03199b2fb92f705b5efd32" id="r_ae0362f7d7e03199b2fb92f705b5efd32"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ae0362f7d7e03199b2fb92f705b5efd32">port</a></td></tr>
+<tr class="memitem:a7e1fbaf9f24a6b48446bce1515261fb2" id="r_a7e1fbaf9f24a6b48446bce1515261fb2"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a7e1fbaf9f24a6b48446bce1515261fb2">middleware</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">MCP Server for ResilientDB - Complete integration with GraphQL, REST API, and Smart Contracts.</pre> </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
@@ -222,7 +228,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <pre class="fragment">Internal helper to recursively fetch files using Contents API.
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00287">287</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00279">279</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -304,7 +310,40 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00776">776</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00768">768</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+
+</div>
+</div>
+<a id="a23ede601f8aeb2e1b9b1d96fac35504c" name="a23ede601f8aeb2e1b9b1d96fac35504c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23ede601f8aeb2e1b9b1d96fac35504c">&#9670;&#160;</a></span>analyze_imports_v2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> Dict[str, Any] server.analyze_imports_v2 </td>
+          <td>(</td>
+          <td class="paramtype">str</td>          <td class="paramname"><span class="paramname"><em>owner</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str</td>          <td class="paramname"><span class="paramname"><em>repo</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str </td>          <td class="paramname"><span class="paramname"><em>branch</em></span><span class="paramdefsep"> = </span><span class="paramdefval">&quot;main&quot;</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int </td>          <td class="paramname"><span class="paramname"><em>max_python_files</em></span><span class="paramdefsep"> = </span><span class="paramdefval">50</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Build a repo-backed dependency graph plus provenance metadata.</pre> 
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00871">871</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -358,7 +397,7 @@ Returns:
       </table>
 </div><div class="memdoc">
 <pre class="fragment">CodeReviewAssistant</pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00958">958</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01121">1121</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -377,7 +416,7 @@ Returns:
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00088">88</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00092">92</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -396,7 +435,7 @@ Returns:
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Simple regex-based extraction for JavaScript/TypeScript.</pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00939">939</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01102">1102</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -429,7 +468,7 @@ Returns:
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Fetch raw file with better branch handling</pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00248">248</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00240">240</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -457,7 +496,7 @@ Returns:
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Fetch repository tree with better branch handling</pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00219">219</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00211">211</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -499,7 +538,7 @@ Returns:
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Get GitHub API authentication headers</pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00065">65</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00069">69</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -518,7 +557,26 @@ Returns:
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Helper to identify file type by extension.</pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00841">841</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01004">1004</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+
+</div>
+</div>
+<a id="a4a5e3d12f438124c0b6cf73c0d66db1b" name="a4a5e3d12f438124c0b6cf73c0d66db1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a5e3d12f438124c0b6cf73c0d66db1b">&#9670;&#160;</a></span>get_http_auth_middleware()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> list server.get_http_auth_middleware </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Starlette middleware list for mcp.run(..., middleware=...).</pre> 
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00186">186</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -568,7 +626,7 @@ The tool returns a list of these function signature strings
 Purpose:
 This tool helps junior developers (or any users) quickly understand the structure of Python files by listing the function definitions and their arguments without needing to manually inspect the file line-by-line. It supports the larger goal of the MCP-powered Repo Analyzer to provide guided navigation and understanding of a codebase
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00563">563</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00555">555</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -602,7 +660,7 @@ This tool helps junior developers (or any users) quickly understand the structur
 </div><div class="memdoc">
 <pre class="fragment">Generate the summary of a particular file in a branch. Do not provide extra unnecessary information. To the point and specific information and what the file does..
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00419">419</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00411">411</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -631,7 +689,7 @@ This tool helps junior developers (or any users) quickly understand the structur
 </div><div class="memdoc">
 <pre class="fragment">Get the summary of a particular repository. Ask the user about the branch they want the information about.This MCP tool will give the summary of the repo as to what type of files, how many files, what it does, what is it about, what is it implementing..
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00393">393</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00385">385</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -702,7 +760,7 @@ This tool helps junior developers (or any users) quickly understand the structur
 </div><div class="memdoc">
 <pre class="fragment">Fetch repo files, chunk code, generate embeddings and index them
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00440">440</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00432">432</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -721,7 +779,46 @@ This tool helps junior developers (or any users) quickly understand the structur
       </table>
 </div><div class="memdoc">
 <pre class="fragment">KGraphQuery</pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00982">982</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01145">1145</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+
+</div>
+</div>
+<a id="a01e53d9c94e320c72b7257573567a905" name="a01e53d9c94e320c72b7257573567a905"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a01e53d9c94e320c72b7257573567a905">&#9670;&#160;</a></span>kgraph_query_v2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> dict server.kgraph_query_v2 </td>
+          <td>(</td>
+          <td class="paramtype">str</td>          <td class="paramname"><span class="paramname"><em>owner</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str</td>          <td class="paramname"><span class="paramname"><em>repo</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str</td>          <td class="paramname"><span class="paramname"><em>node_name</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str </td>          <td class="paramname"><span class="paramname"><em>branch</em></span><span class="paramdefsep"> = </span><span class="paramdefval">&quot;main&quot;</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int </td>          <td class="paramname"><span class="paramname"><em>max_python_files</em></span><span class="paramdefsep"> = </span><span class="paramdefval">50</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Query neighbors for a node from a graph built from current repository content.
+</pre> 
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00978">978</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -755,7 +852,7 @@ This tool helps junior developers (or any users) quickly understand the structur
 </div><div class="memdoc">
 <pre class="fragment">This tool fetches the list of files in a particular repository using the github api mentioned in the MCP tool and not from any online source. 
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00341">341</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00333">333</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -802,7 +899,7 @@ This tool helps junior developers (or any users) quickly understand the structur
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00742">742</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00734">734</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -821,7 +918,26 @@ This tool helps junior developers (or any users) quickly understand the structur
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00268">268</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00260">260</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+
+</div>
+</div>
+<a id="ab9d5cb8e63d39ac3be040c5d359adc01" name="ab9d5cb8e63d39ac3be040c5d359adc01"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9d5cb8e63d39ac3be040c5d359adc01">&#9670;&#160;</a></span>parse_python_imports_v2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> List[str] server.parse_python_imports_v2 </td>
+          <td>(</td>
+          <td class="paramtype">str</td>          <td class="paramname"><span class="paramname"><em>file_content</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Parse Python imports using AST with a fallback line parser.</pre> 
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00834">834</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -877,7 +993,7 @@ Args:
 Returns:
     Comprehensive answer from the ResilientDB knowledge base with examples and guidance
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00594">594</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00586">586</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -901,7 +1017,7 @@ Returns:
 </div><div class="memdoc">
 <pre class="fragment">Perform semantic search on the data after vectorization and indexing.
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00517">517</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00509">509</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -935,25 +1051,6 @@ Returns:
 </div><div class="memdoc">
 <pre class="fragment">Send monitoring data to ResLens middleware.</pre> 
 <p class="definition">Definition at line <a class="el" href="../../d8/dd1/resilientdb-mcp_2server_8py_source.html#l00045">45</a> of file <a class="el" href="../../d8/dd1/resilientdb-mcp_2server_8py_source.html">server.py</a>.</p>
-
-</div>
-</div>
-<a id="a6380d8cbecc4b4f49ed3aaf26fc58945" name="a6380d8cbecc4b4f49ed3aaf26fc58945"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6380d8cbecc4b4f49ed3aaf26fc58945">&#9670;&#160;</a></span>setup_authentication()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">server.setup_authentication </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Setup authentication middleware after FastMCP initialization</pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00130">130</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -993,7 +1090,7 @@ If no Dockerfile is found or it's empty, it returns an error message.
 
 Otherwise, it returns the raw Dockerfile steps (list of commands) along with the user's question as separate fields
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00754">754</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00746">746</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1026,7 +1123,42 @@ Visualize how major modules connect with clickable UI linked to AI chat explanat
 
 Helps developers quickly understand large complex repos visually in simple easy to understand diagrams rather than big diagrams which are not user friendly and have a lot of things going on in the diagram..
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00827">827</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00819">819</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+
+</div>
+</div>
+<a id="a248ee13824baaeb6ced536b14805f454" name="a248ee13824baaeb6ced536b14805f454"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a248ee13824baaeb6ced536b14805f454">&#9670;&#160;</a></span>show_dependency_graph_v2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> dict server.show_dependency_graph_v2 </td>
+          <td>(</td>
+          <td class="paramtype">str</td>          <td class="paramname"><span class="paramname"><em>owner</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str</td>          <td class="paramname"><span class="paramname"><em>repo</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str </td>          <td class="paramname"><span class="paramname"><em>branch</em></span><span class="paramdefsep"> = </span><span class="paramdefval">&quot;main&quot;</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int </td>          <td class="paramname"><span class="paramname"><em>max_python_files</em></span><span class="paramdefsep"> = </span><span class="paramdefval">50</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Trusted graph generation that is strictly built from repository file content
+fetched through this MCP server. Includes provenance metadata for auditability.
+</pre> 
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00961">961</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1049,7 +1181,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00215">215</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00207">207</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1068,7 +1200,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Parse Python code using AST.</pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00923">923</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01086">1086</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1102,7 +1234,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
 </div><div class="memdoc">
 <pre class="fragment">Extract and summarize code blocks from various file types.
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00875">875</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01038">1038</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1147,19 +1279,19 @@ Helps developers quickly understand large complex repos visually in simple easy 
 
 </div>
 </div>
-<a id="af2f70755a53af7a277549b23c36ce7f4" name="af2f70755a53af7a277549b23c36ce7f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af2f70755a53af7a277549b23c36ce7f4">&#9670;&#160;</a></span>auth_enabled</h2>
+<a id="ae6e24fbe2a34a7c2e2ea7567a58ad57d" name="ae6e24fbe2a34a7c2e2ea7567a58ad57d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6e24fbe2a34a7c2e2ea7567a58ad57d">&#9670;&#160;</a></span>auth_middleware</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">server.auth_enabled = <a class="el" href="#a6380d8cbecc4b4f49ed3aaf26fc58945">setup_authentication</a>()</td>
+          <td class="memname">list server.auth_middleware = <a class="el" href="#a4a5e3d12f438124c0b6cf73c0d66db1b">get_http_auth_middleware</a>()</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01009">1009</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01170">1170</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1191,7 +1323,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00060">60</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00064">64</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1207,7 +1339,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00063">63</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00067">67</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1239,7 +1371,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00075">75</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00079">79</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1255,7 +1387,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00076">76</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00080">80</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1271,7 +1403,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00050">50</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00054">54</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1292,7 +1424,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
 <div class="line"><span class="lineno">    4</span>    <span class="stringliteral">&quot;ClassX&quot;</span>: [<span class="stringliteral">&quot;Module1&quot;</span>, <span class="stringliteral">&quot;ConceptY&quot;</span>],</div>
 <div class="line"><span class="lineno">    5</span>}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00975">975</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01138">1138</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1308,7 +1440,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00125">125</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00129">129</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1324,7 +1456,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00059">59</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00063">63</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1340,7 +1472,23 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00077">77</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00081">81</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+
+</div>
+</div>
+<a id="a7e1fbaf9f24a6b48446bce1515261fb2" name="a7e1fbaf9f24a6b48446bce1515261fb2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e1fbaf9f24a6b48446bce1515261fb2">&#9670;&#160;</a></span>middleware</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">server.middleware</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01190">1190</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1356,7 +1504,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00078">78</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00082">82</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1372,7 +1520,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01026">1026</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01188">1188</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1388,7 +1536,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01026">1026</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01189">1189</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1420,7 +1568,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00203">203</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00195">195</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1436,7 +1584,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00040">40</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00044">44</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1452,7 +1600,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00044">44</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l00048">48</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>
@@ -1468,7 +1616,7 @@ Helps developers quickly understand large complex repos visually in simple easy 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01026">1026</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html#l01187">1187</a> of file <a class="el" href="../../dc/d0b/ResInsight_2server_8py_source.html">server.py</a>.</p>
 
 </div>
 </div>

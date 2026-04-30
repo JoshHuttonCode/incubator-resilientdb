@@ -7,6 +7,7 @@ var classKVClient =
     [ "GetKeyRange", "d6/da5/classKVClient.html#ac7d26563aa9fc214b8e419ea021db66a", null ],
     [ "GetKeyTopHistory", "d6/da5/classKVClient.html#a60dd93413c7c2a0ce69bea3c79786da1", null ],
     [ "GetRange", "d6/da5/classKVClient.html#a86e4c8f24692c4e81ddef18cfa8686ee", null ],
+    [ "QueryResQL", "d6/da5/classKVClient.html#a94d29493ea63e0633f33662b96282a60", null ],
     [ "Set", "d6/da5/classKVClient.html#a7921a07f8bf2c2192a5b03601af22dfd", null ],
     [ "Set", "d6/da5/classKVClient.html#a51f8f8bb730c43c71e97c9c7777a11fd", null ]
 ];

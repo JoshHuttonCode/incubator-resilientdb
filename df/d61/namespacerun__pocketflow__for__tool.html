@@ -123,9 +123,9 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a166d84594ed41917dfc94a5051f4f7e0" id="r_a166d84594ed41917dfc94a5051f4f7e0"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a166d84594ed41917dfc94a5051f4f7e0">REPO_ROOT</a> = Path(__file__).resolve().parents[3]</td></tr>
-<tr class="memitem:a811a105f112dde7d0ac50cacb4506d56" id="r_a811a105f112dde7d0ac50cacb4506d56"><td class="memItemLeft">str&#160;</td><td class="memItemRight"><a class="el" href="#a811a105f112dde7d0ac50cacb4506d56">POCKETFLOW_DIR</a> = <a class="el" href="#a166d84594ed41917dfc94a5051f4f7e0">REPO_ROOT</a> / &quot;ecosystem&quot; / &quot;pocketflow&quot;</td></tr>
-<tr class="memitem:a6b7f2035b5e1916527af3ea52ddf52bb" id="r_a6b7f2035b5e1916527af3ea52ddf52bb"><td class="memItemLeft">str&#160;</td><td class="memItemRight"><a class="el" href="#a6b7f2035b5e1916527af3ea52ddf52bb">OUTPUT_BASE</a> = <a class="el" href="#a811a105f112dde7d0ac50cacb4506d56">POCKETFLOW_DIR</a> / &quot;.pf-output&quot;</td></tr>
+<tr class="memitem:a18cfae36d2d2090208c129528184e67d" id="r_a18cfae36d2d2090208c129528184e67d"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a18cfae36d2d2090208c129528184e67d">POCKETFLOW_DIR</a> = Path(__file__).resolve().parents[1]</td></tr>
+<tr class="memitem:a166d84594ed41917dfc94a5051f4f7e0" id="r_a166d84594ed41917dfc94a5051f4f7e0"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a166d84594ed41917dfc94a5051f4f7e0">REPO_ROOT</a> = POCKETFLOW_DIR.parents[2]</td></tr>
+<tr class="memitem:a6b7f2035b5e1916527af3ea52ddf52bb" id="r_a6b7f2035b5e1916527af3ea52ddf52bb"><td class="memItemLeft">str&#160;</td><td class="memItemRight"><a class="el" href="#a6b7f2035b5e1916527af3ea52ddf52bb">OUTPUT_BASE</a> = <a class="el" href="#a18cfae36d2d2090208c129528184e67d">POCKETFLOW_DIR</a> / &quot;.pf-output&quot;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Run Pocketflow for a single tool and update its Beacon MDX page
@@ -133,7 +133,7 @@ using only the generated index.md content.
 
 Usage (from repo root):
 
-    python ecosystem/pocketflow/scripts/run_pocketflow_for_tool.py --tool rescontract
+    python ecosystem/third_party/pocketflow/scripts/run_pocketflow_for_tool.py --tool rescontract
 
 This will:
   - Look up `rescontract` in tool-doc-map.json
@@ -160,7 +160,7 @@ This will:
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html#l00042">42</a> of file <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html">run_pocketflow_for_tool.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html#l00041">41</a> of file <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html">run_pocketflow_for_tool.py</a>.</p>
 
 </div>
 </div>
@@ -179,7 +179,7 @@ This will:
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html#l00033">33</a> of file <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html">run_pocketflow_for_tool.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html#l00032">32</a> of file <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html">run_pocketflow_for_tool.py</a>.</p>
 
 </div>
 </div>
@@ -198,7 +198,7 @@ This will:
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html#l00103">103</a> of file <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html">run_pocketflow_for_tool.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html#l00102">102</a> of file <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html">run_pocketflow_for_tool.py</a>.</p>
 
 </div>
 </div>
@@ -240,10 +240,10 @@ This will:
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Invoke ecosystem/pocketflow/main.py pointing at code_root and
+<pre class="fragment">Invoke ecosystem/third_party/pocketflow/main.py pointing at code_root and
 returning the expected path to index.md for the generated project.
 </pre> 
-<p class="definition">Definition at line <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html#l00049">49</a> of file <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html">run_pocketflow_for_tool.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html#l00048">48</a> of file <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html">run_pocketflow_for_tool.py</a>.</p>
 
 </div>
 </div>
@@ -255,28 +255,28 @@ returning the expected path to index.md for the generated project.
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">str run_pocketflow_for_tool.OUTPUT_BASE = <a class="el" href="#a811a105f112dde7d0ac50cacb4506d56">POCKETFLOW_DIR</a> / &quot;.pf-output&quot;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html#l00030">30</a> of file <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html">run_pocketflow_for_tool.py</a>.</p>
-
-</div>
-</div>
-<a id="a811a105f112dde7d0ac50cacb4506d56" name="a811a105f112dde7d0ac50cacb4506d56"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a811a105f112dde7d0ac50cacb4506d56">&#9670;&#160;</a></span>POCKETFLOW_DIR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">str run_pocketflow_for_tool.POCKETFLOW_DIR = <a class="el" href="#a166d84594ed41917dfc94a5051f4f7e0">REPO_ROOT</a> / &quot;ecosystem&quot; / &quot;pocketflow&quot;</td>
+          <td class="memname">str run_pocketflow_for_tool.OUTPUT_BASE = <a class="el" href="#a18cfae36d2d2090208c129528184e67d">POCKETFLOW_DIR</a> / &quot;.pf-output&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html#l00029">29</a> of file <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html">run_pocketflow_for_tool.py</a>.</p>
+
+</div>
+</div>
+<a id="a18cfae36d2d2090208c129528184e67d" name="a18cfae36d2d2090208c129528184e67d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18cfae36d2d2090208c129528184e67d">&#9670;&#160;</a></span>POCKETFLOW_DIR</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">run_pocketflow_for_tool.POCKETFLOW_DIR = Path(__file__).resolve().parents[1]</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html#l00027">27</a> of file <a class="el" href="../../d0/de6/run__pocketflow__for__tool_8py_source.html">run_pocketflow_for_tool.py</a>.</p>
 
 </div>
 </div>
@@ -287,7 +287,7 @@ returning the expected path to index.md for the generated project.
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">run_pocketflow_for_tool.REPO_ROOT = Path(__file__).resolve().parents[3]</td>
+          <td class="memname">run_pocketflow_for_tool.REPO_ROOT = POCKETFLOW_DIR.parents[2]</td>
         </tr>
       </table>
 </div><div class="memdoc">

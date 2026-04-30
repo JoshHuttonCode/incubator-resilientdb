@@ -124,9 +124,9 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a24af1241eadbf1d07e59bf2498435f89" id="r_a24af1241eadbf1d07e59bf2498435f89"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a24af1241eadbf1d07e59bf2498435f89">REPO_ROOT</a> = Path(__file__).resolve().parents[3]</td></tr>
-<tr class="memitem:ac6705a08c6493c0db92837031aa5306f" id="r_ac6705a08c6493c0db92837031aa5306f"><td class="memItemLeft">str&#160;</td><td class="memItemRight"><a class="el" href="#ac6705a08c6493c0db92837031aa5306f">POCKETFLOW_DIR</a> = <a class="el" href="#a24af1241eadbf1d07e59bf2498435f89">REPO_ROOT</a> / &quot;ecosystem&quot; / &quot;pocketflow&quot;</td></tr>
-<tr class="memitem:a24924046ee3586d295b0b4bd50d6d514" id="r_a24924046ee3586d295b0b4bd50d6d514"><td class="memItemLeft">str&#160;</td><td class="memItemRight"><a class="el" href="#a24924046ee3586d295b0b4bd50d6d514">TOOL_MAP_PATH</a> = <a class="el" href="#ac6705a08c6493c0db92837031aa5306f">POCKETFLOW_DIR</a> / &quot;tool-doc-map.json&quot;</td></tr>
+<tr class="memitem:a114fe0e12eb78e8e3f2dc76cfca4ff4c" id="r_a114fe0e12eb78e8e3f2dc76cfca4ff4c"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a114fe0e12eb78e8e3f2dc76cfca4ff4c">POCKETFLOW_DIR</a> = Path(__file__).resolve().parents[1]</td></tr>
+<tr class="memitem:a24af1241eadbf1d07e59bf2498435f89" id="r_a24af1241eadbf1d07e59bf2498435f89"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a24af1241eadbf1d07e59bf2498435f89">REPO_ROOT</a> = POCKETFLOW_DIR.parents[2]</td></tr>
+<tr class="memitem:a24924046ee3586d295b0b4bd50d6d514" id="r_a24924046ee3586d295b0b4bd50d6d514"><td class="memItemLeft">str&#160;</td><td class="memItemRight"><a class="el" href="#a24924046ee3586d295b0b4bd50d6d514">TOOL_MAP_PATH</a> = <a class="el" href="#a114fe0e12eb78e8e3f2dc76cfca4ff4c">POCKETFLOW_DIR</a> / &quot;tool-doc-map.json&quot;</td></tr>
 <tr class="memitem:a0c93354af1d411952c632c5623fe9172" id="r_a0c93354af1d411952c632c5623fe9172"><td class="memItemLeft">list&#160;</td><td class="memItemRight"><a class="el" href="#a0c93354af1d411952c632c5623fe9172">EXCLUDE_PATTERNS</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
@@ -134,7 +134,7 @@ Variables</h2></td></tr>
 by checking git diff against the tool-doc-map.json.
 
 Usage:
-    python ecosystem/pocketflow/scripts/detect_changed_tools.py [--base-ref &lt;ref&gt;]
+    python ecosystem/third_party/pocketflow/scripts/detect_changed_tools.py [--base-ref &lt;ref&gt;]
 
 Returns a list of tool names (one per line) that have changed.
 </pre> </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
@@ -248,26 +248,26 @@ have any changed files.
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  [</div>
-<div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&quot;ecosystem/AI-Tooling/beacon/**&quot;</span>,  <span class="comment"># Don&#39;t trigger on doc changes    &quot;ecosystem/pocketflow/**&quot;,  # Don&#39;t trigger on pocketflow changes</span></div>
+<div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&quot;ecosystem/AI-Tooling/beacon/**&quot;</span>,  <span class="comment"># Don&#39;t trigger on doc changes    &quot;ecosystem/third_party/pocketflow/**&quot;,  # Don&#39;t trigger on pocketflow changes</span></div>
 <div class="line"><span class="lineno">    3</span>]</div>
 </div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="../../d1/dda/detect__changed__tools_8py_source.html#l00026">26</a> of file <a class="el" href="../../d1/dda/detect__changed__tools_8py_source.html">detect_changed_tools.py</a>.</p>
 
 </div>
 </div>
-<a id="ac6705a08c6493c0db92837031aa5306f" name="ac6705a08c6493c0db92837031aa5306f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac6705a08c6493c0db92837031aa5306f">&#9670;&#160;</a></span>POCKETFLOW_DIR</h2>
+<a id="a114fe0e12eb78e8e3f2dc76cfca4ff4c" name="a114fe0e12eb78e8e3f2dc76cfca4ff4c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a114fe0e12eb78e8e3f2dc76cfca4ff4c">&#9670;&#160;</a></span>POCKETFLOW_DIR</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">str detect_changed_tools.POCKETFLOW_DIR = <a class="el" href="#a24af1241eadbf1d07e59bf2498435f89">REPO_ROOT</a> / &quot;ecosystem&quot; / &quot;pocketflow&quot;</td>
+          <td class="memname">detect_changed_tools.POCKETFLOW_DIR = Path(__file__).resolve().parents[1]</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d1/dda/detect__changed__tools_8py_source.html#l00022">22</a> of file <a class="el" href="../../d1/dda/detect__changed__tools_8py_source.html">detect_changed_tools.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d1/dda/detect__changed__tools_8py_source.html#l00021">21</a> of file <a class="el" href="../../d1/dda/detect__changed__tools_8py_source.html">detect_changed_tools.py</a>.</p>
 
 </div>
 </div>
@@ -278,12 +278,12 @@ have any changed files.
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">detect_changed_tools.REPO_ROOT = Path(__file__).resolve().parents[3]</td>
+          <td class="memname">detect_changed_tools.REPO_ROOT = POCKETFLOW_DIR.parents[2]</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d1/dda/detect__changed__tools_8py_source.html#l00021">21</a> of file <a class="el" href="../../d1/dda/detect__changed__tools_8py_source.html">detect_changed_tools.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d1/dda/detect__changed__tools_8py_source.html#l00022">22</a> of file <a class="el" href="../../d1/dda/detect__changed__tools_8py_source.html">detect_changed_tools.py</a>.</p>
 
 </div>
 </div>
@@ -294,7 +294,7 @@ have any changed files.
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">str detect_changed_tools.TOOL_MAP_PATH = <a class="el" href="#ac6705a08c6493c0db92837031aa5306f">POCKETFLOW_DIR</a> / &quot;tool-doc-map.json&quot;</td>
+          <td class="memname">str detect_changed_tools.TOOL_MAP_PATH = <a class="el" href="#a114fe0e12eb78e8e3f2dc76cfca4ff4c">POCKETFLOW_DIR</a> / &quot;tool-doc-map.json&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">

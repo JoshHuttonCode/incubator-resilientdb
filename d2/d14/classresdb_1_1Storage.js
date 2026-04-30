@@ -2,6 +2,7 @@ var classresdb_1_1Storage =
 [
     [ "Storage", "d2/d14/classresdb_1_1Storage.html#a043b87c929e00dd9cce9366f1d3c38c9", null ],
     [ "~Storage", "d2/d14/classresdb_1_1Storage.html#a6890672501d28f0ede54be1236f10a28", null ],
+    [ "ExecuteSQL", "d2/d14/classresdb_1_1Storage.html#a9ff13edc34fcbceed6c284e133b230ef", null ],
     [ "Flush", "d2/d14/classresdb_1_1Storage.html#a2b7bfb9558caf0cd20bc4bdc35b1afe6", null ],
     [ "GetAllItems", "d2/d14/classresdb_1_1Storage.html#aa34343e63f038d4c7f08d993453d1b5f", null ],
     [ "GetAllItemsWithSeq", "d2/d14/classresdb_1_1Storage.html#ae458e8556b3d11a9423096b98fa48a88", null ],

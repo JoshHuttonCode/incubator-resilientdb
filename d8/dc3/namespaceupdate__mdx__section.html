@@ -125,7 +125,8 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a5d2123a5591e9f32291116522822ba81" id="r_a5d2123a5591e9f32291116522822ba81"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a5d2123a5591e9f32291116522822ba81">REPO_ROOT</a> = Path(__file__).resolve().parents[3]</td></tr>
+<tr class="memitem:ab09638c490d9612c48ddcaa75e036553" id="r_ab09638c490d9612c48ddcaa75e036553"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ab09638c490d9612c48ddcaa75e036553">POCKETFLOW_DIR</a> = Path(__file__).resolve().parents[1]</td></tr>
+<tr class="memitem:a5d2123a5591e9f32291116522822ba81" id="r_a5d2123a5591e9f32291116522822ba81"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a5d2123a5591e9f32291116522822ba81">REPO_ROOT</a> = POCKETFLOW_DIR.parents[2]</td></tr>
 <tr class="memitem:afaaddb9c6b8f0d2882bba47d9951a82d" id="r_afaaddb9c6b8f0d2882bba47d9951a82d"><td class="memItemLeft">str&#160;</td><td class="memItemRight"><a class="el" href="#afaaddb9c6b8f0d2882bba47d9951a82d">DEFAULT_TEMPLATE</a></td></tr>
 <tr class="memitem:acacbe730501e71a494aeaaec3b01d5f0" id="r_acacbe730501e71a494aeaaec3b01d5f0"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#acacbe730501e71a494aeaaec3b01d5f0">exc</a></td></tr>
 <tr class="memitem:a2b592aa898cb6a422bc0b4e038f9cebd" id="r_a2b592aa898cb6a422bc0b4e038f9cebd"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a2b592aa898cb6a422bc0b4e038f9cebd">file</a></td></tr>
@@ -135,7 +136,7 @@ Variables</h2></td></tr>
 with fresh content produced by Pocketflow.
 
 Usage:
-    python ecosystem/pocketflow/scripts/update_mdx_section.py \
+    python ecosystem/third_party/pocketflow/scripts/update_mdx_section.py \
         --tool rescontract \
         --body-file /tmp/rescontract_body.md
 </pre> </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
@@ -327,6 +328,22 @@ Usage:
 
 </div>
 </div>
+<a id="ab09638c490d9612c48ddcaa75e036553" name="ab09638c490d9612c48ddcaa75e036553"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab09638c490d9612c48ddcaa75e036553">&#9670;&#160;</a></span>POCKETFLOW_DIR</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">update_mdx_section.POCKETFLOW_DIR = Path(__file__).resolve().parents[1]</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="../../d2/d91/update__mdx__section_8py_source.html#l00022">22</a> of file <a class="el" href="../../d2/d91/update__mdx__section_8py_source.html">update_mdx_section.py</a>.</p>
+
+</div>
+</div>
 <a id="a5d2123a5591e9f32291116522822ba81" name="a5d2123a5591e9f32291116522822ba81"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5d2123a5591e9f32291116522822ba81">&#9670;&#160;</a></span>REPO_ROOT</h2>
 
@@ -334,7 +351,7 @@ Usage:
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">update_mdx_section.REPO_ROOT = Path(__file__).resolve().parents[3]</td>
+          <td class="memname">update_mdx_section.REPO_ROOT = POCKETFLOW_DIR.parents[2]</td>
         </tr>
       </table>
 </div><div class="memdoc">

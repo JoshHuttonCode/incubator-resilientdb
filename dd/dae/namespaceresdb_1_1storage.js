@@ -1,7 +1,9 @@
 var namespaceresdb_1_1storage =
 [
+    [ "DuckDB", "d2/d2d/classresdb_1_1storage_1_1DuckDB.html", "d2/d2d/classresdb_1_1storage_1_1DuckDB" ],
     [ "ResLevelDB", "d3/d39/classresdb_1_1storage_1_1ResLevelDB.html", "d3/d39/classresdb_1_1storage_1_1ResLevelDB" ],
     [ "MemoryDB", "da/d75/classresdb_1_1storage_1_1MemoryDB.html", "da/d75/classresdb_1_1storage_1_1MemoryDB" ],
+    [ "NewDuckDB", "dd/dae/namespaceresdb_1_1storage.html#a60af6aaab05d52feb0ffc8c8b5e9bfc0", null ],
     [ "NewMemoryDB", "dd/dae/namespaceresdb_1_1storage.html#af746efcdd125b19e8c880e4712fc6a51", null ],
     [ "NewResLevelDB", "dd/dae/namespaceresdb_1_1storage.html#a52f999f3e613d6732418a58dfd4a0a7e", null ],
     [ "NewResLevelDB", "dd/dae/namespaceresdb_1_1storage.html#a5526b38f313c92d6f77a5b538b4b757e", null ],

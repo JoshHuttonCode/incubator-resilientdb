@@ -24,7 +24,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ResilientDB: ResVault Integration and Troubleshooting</title>
+<title>ResilientDB: INTEGRATION_AND_TROUBLESHOOTING</title>
 <link href="../../tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../../jquery.js"></script>
 <script type="text/javascript" src="../../dynsections.js"></script>
@@ -110,13 +110,14 @@ $(function(){initNavTree('d4/d65/md__2github_2workspace_2ecosystem_2tools_2resva
 </div>
 
 <div><div class="header">
-  <div class="headertitle"><div class="title">ResVault Integration and Troubleshooting </div></div>
+  <div class="headertitle"><div class="title">INTEGRATION_AND_TROUBLESHOOTING </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="autotoc_md2682"></a></p>
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md2703"></a>
+ResVault Integration and Troubleshooting</h1>
 <p>This document explains how ResVault connects to third-party web apps (e.g. Knobe) and how to fix the issue where the extension is detected but transaction approvals or login fail ("can't connect").</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2683"></a>
-Target workflow: Knobe + ResVault + ResDB-ORM + ResilientDB</h1>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2704"></a>
+Target workflow: Knobe + ResVault + ResDB-ORM + ResilientDB</h2>
 <p>Desired flow:</p>
 <div class="fragment"><div class="line">Knobe Web Form → ResVault (sign/approve) → ResDB ORM → ResDB GraphQL → ResilientDB</div>
 </div><!-- fragment --><ul>
@@ -124,11 +125,11 @@ Target workflow: Knobe + ResVault + ResDB-ORM + ResilientDB</h1>
 <li><b>ResVault</b> should be the layer where the user authenticates and approves transactions so that writes are tied to a wallet address.</li>
 <li><b>ResDB-ORM</b> structures the payload into a ResDB asset; <b>ResDB GraphQL</b> commits and queries the ledger.</li>
 </ul>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2684"></a>
-How ResVault connection actually works</h1>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2705"></a>
+How ResVault connection actually works</h2>
 <p>ResVault uses two mechanisms that must both succeed for your app to "connect":</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2685"></a>
-1. Content script ↔ page (postMessage)</h2>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2706"></a>
+1. Content script ↔ page (postMessage)</h3>
 <ul>
 <li>ResVault injects a <b>content script</b> (<a href="../../public/content.js"><span class="tt">public/content.js</span></a>) on all URLs (<span class="tt">&lt;all_urls&gt;</span> in <a href="../../public/manifest.json">manifest</a>).</li>
 <li>Your app uses <b>ResVault SDK</b> (<span class="tt">resvault-sdk</span>) to send messages:<ul>
@@ -139,8 +140,8 @@ How ResVault connection actually works</h1>
 <li>The content script listens on <span class="tt">window.addEventListener('message')</span> and only reacts when <span class="tt">event.source === window</span> and <span class="tt">event.data.direction</span> is <span class="tt">'login'</span>, <span class="tt">'commit'</span>, or <span class="tt">'custom'</span>.</li>
 <li>So: the extension is "detected" when the content script is present and the modal appears. Connection can still <b>fail</b> at the next step.</li>
 </ul>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md2686"></a>
-2. "Connected" state per domain + network</h2>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md2707"></a>
+2. "Connected" state per domain + network</h3>
 <p>Before ResVault can sign or submit anything, it checks whether the <b>current page’s hostname</b> is <b>connected</b> to a <b>network</b> in the extension.</p>
 <ul>
 <li><b>Storage keys</b>: <span class="tt">chrome.storage.local</span> holds:<ul>
@@ -157,8 +158,8 @@ How ResVault connection actually works</h1>
 </li>
 </ul>
 <p>So: <b>the app tab’s hostname must have been “connected” from the ResVault popup while that tab was active.</b> If that step was never done, or the hostname doesn’t match, you get “detects plugin but can’t connect.”</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2687"></a>
-Why “detects plugin but can’t connect” happens</h1>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2708"></a>
+Why “detects plugin but can’t connect” happens</h2>
 <p>Common causes:</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -176,8 +177,8 @@ Why “detects plugin but can’t connect” happens</h1>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><b>Content script not in same context</b>  </td><td class="markdownTableBodyNone">If your “form” runs inside an iframe from another origin, the content script’s <span class="tt">window</span> may not be the iframe’s window, so <span class="tt">event.source === window</span> can fail.  </td><td class="markdownTableBodyNone">Prefer having the ResVault SDK and form on the main page’s origin so the content script and page share the same top-level <span class="tt">window</span>.  </td></tr>
 </table>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2688"></a>
-Step-by-step: Getting Knobe (or any app) to connect</h1>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2709"></a>
+Step-by-step: Getting Knobe (or any app) to connect</h2>
 <ol type="1">
 <li><b>Install ResVault</b> <br  />
  Load unpacked from the extension’s build folder (e.g. <span class="tt">ecosystem/tools/resvault/build</span> or the built output you use).</li>
@@ -199,8 +200,8 @@ Step-by-step: Getting Knobe (or any app) to connect</h1>
 <li><b>Use the app</b> <br  />
  In your app, trigger login or a transaction. The ResVault modal should appear; after you click Authenticate or Submit, the content script will find <span class="tt">connectedNets[hostname]</span> and <span class="tt"><a class="el" href="../../dc/d84/namespacekeys.html">keys</a>[hostname][net]</span> and proceed.</li>
 </ol>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2689"></a>
-SDK usage (reference)</h1>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2710"></a>
+SDK usage (reference)</h2>
 <p>Your app should:</p>
 <ul>
 <li>Use <b>ResVault SDK</b> to send the same message shapes the content script expects:<ul>
@@ -212,8 +213,8 @@ SDK usage (reference)</h1>
 <li>Listen for responses: <span class="tt">sdk.addMessageListener((event) =&gt; { ... })</span> and check <span class="tt">event.data.type === 'FROM_CONTENT_SCRIPT'</span> and <span class="tt">event.data.data</span> (success payload or <span class="tt">'error'</span>).</li>
 </ul>
 <p>See <a class="el" href="../../dir_6c2f25585b3010bb21eec0bca46f1529.html" title="/github/workspace/ecosystem/sdk/resvault-sdk/README.md">ResVault SDK README</a> and the <a href="https://www.npmjs.com/package/create-resilient-app">create-resilient-app</a> templates (e.g. <span class="tt">ecosystem/tools/create-resilient-app/templates/react-ts-resvault-sdk</span>) for full examples.</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2690"></a>
-Where this is implemented in the repo</h1>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2711"></a>
+Where this is implemented in the repo</h2>
 <ul>
 <li><b>Content script (message handling, connection check)</b>: <a href="../../public/content.js"><span class="tt">ecosystem/tools/resvault/public/content.js</span></a> <br  />
 <ul>
@@ -236,8 +237,8 @@ Where this is implemented in the repo</h1>
 </ul>
 </li>
 </ul>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md2691"></a>
-Summary</h1>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2712"></a>
+Summary</h2>
 <ul>
 <li><b>Detection</b> = content script loaded and modal shown when your app sends <span class="tt">direction: 'login'</span> / <span class="tt">'commit'</span> / <span class="tt">'custom'</span>.</li>
 <li><b>Connection</b> = that hostname has been connected from the ResVault popup for the chosen network, and keys exist for that domain+net. <br  />
