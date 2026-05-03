@@ -19,30 +19,29 @@
 
 #pragma once
 
-#include "executor/common/custom_query.h"
-#include "platform/config/resdb_config.h"
-#include "platform/consensus/recovery/pbft_recovery.h"
+#include <gmock/gmock.h>
+
+#include "platform/consensus/ordering/raft/algorithm/raft.h"
 
 namespace resdb {
+namespace raft {
 
-class Query {
+class MockRaft : public Raft {
  public:
-  Query(const ResDBConfig& config, PBFTRecovery* recovery,
-        std::unique_ptr<CustomQuery> executor = nullptr);
-  virtual ~Query();
+  MockRaft(int id, int f, int total_num, SignatureVerifier* verifier,
+           LeaderElectionManager* leaderelection_manager,
+           ReplicaCommunicator* replica_communicator, RaftRecovery* recovery)
+      : Raft(id, f, total_num, verifier, leaderelection_manager,
+             replica_communicator, recovery) {}
 
-  virtual int ProcessGetReplicaState(std::unique_ptr<Context> context,
-                                     std::unique_ptr<Request> request);
-  virtual int ProcessQuery(std::unique_ptr<Context> context,
-                           std::unique_ptr<Request> request);
-
-  virtual int ProcessCustomQuery(std::unique_ptr<Context> context,
-                                 std::unique_ptr<Request> request);
-
- protected:
-  ResDBConfig config_;
-  PBFTRecovery* recovery_;
-  std::unique_ptr<CustomQuery> custom_query_executor_;
+  MOCK_METHOD(void, SendHeartBeat, (), ());
+  MOCK_METHOD(void, StartElection, (), ());
+  MOCK_METHOD(int, Broadcast,
+              (int msg_type, const google::protobuf::Message& msg), (override));
+  MOCK_METHOD(int, SendMessage,
+              (int msg_type, const google::protobuf::Message& msg, int node_id),
+              (override));
 };
 
+}  // namespace raft
 }  // namespace resdb

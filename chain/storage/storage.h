@@ -62,7 +62,7 @@ class Storage {
   // Default no-op SQL execution for non-SQL backends.
   virtual std::string ExecuteSQL(const std::string& sql_string) { return ""; }
 
-  virtual bool Flush() { return true; };
+  virtual bool Flush(bool should_sync = false) { return true; };
 
   virtual uint64_t GetLastCheckpoint() { return 0; }
 

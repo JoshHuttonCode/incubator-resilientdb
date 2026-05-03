@@ -19,30 +19,21 @@
 
 #pragma once
 
-#include "executor/common/custom_query.h"
-#include "platform/config/resdb_config.h"
-#include "platform/consensus/recovery/pbft_recovery.h"
+#include <gmock/gmock.h>
+
+#include "platform/consensus/ordering/raft/algorithm/leaderelection_manager.h"
 
 namespace resdb {
+namespace raft {
 
-class Query {
+class MockLeaderElectionManager : public LeaderElectionManager {
  public:
-  Query(const ResDBConfig& config, PBFTRecovery* recovery,
-        std::unique_ptr<CustomQuery> executor = nullptr);
-  virtual ~Query();
-
-  virtual int ProcessGetReplicaState(std::unique_ptr<Context> context,
-                                     std::unique_ptr<Request> request);
-  virtual int ProcessQuery(std::unique_ptr<Context> context,
-                           std::unique_ptr<Request> request);
-
-  virtual int ProcessCustomQuery(std::unique_ptr<Context> context,
-                                 std::unique_ptr<Request> request);
-
- protected:
-  ResDBConfig config_;
-  PBFTRecovery* recovery_;
-  std::unique_ptr<CustomQuery> custom_query_executor_;
+  MockLeaderElectionManager(const ResDBConfig& config)
+      : LeaderElectionManager(config) {}
+  MOCK_METHOD(void, OnRoleChange, (), (override));
+  MOCK_METHOD(void, OnHeartBeat, (), (override));
+  MOCK_METHOD(void, OnAeBroadcast, (), (override));
 };
 
+}  // namespace raft
 }  // namespace resdb

@@ -1,4 +1,3 @@
-#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,12 +16,32 @@
 # under the License.
 #
 
-protocol=pbft
-export server=//benchmark/protocols/$protocol:kv_server_performance
-export service_tools=//benchmark/protocols/$protocol:kv_service_tools
-export TEMPLATE_PATH=$PWD/config/$protocol.config
-export performance=true
+package(default_visibility = ["//platform/consensus/ordering/raft:__subpackages__"])
 
-#export TEMPLATE_PATH=$PWD/config/pbft.config
 
-./performance_local/run_performance.sh $*
+cc_library(
+    name = "raft_checkpoint_manager",
+    hdrs = ["raft_checkpoint_manager.h"],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        "//platform/consensus/checkpoint:checkpoint"
+    ],
+)
+
+cc_library(
+    name = "consensus",
+    srcs = ["consensus.cpp"],
+    hdrs = ["consensus.h"],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":raft_checkpoint_manager",
+        "//platform/consensus/recovery:raft_recovery",
+        "//common/utils",
+        "//platform/consensus/ordering/common/framework:consensus",
+        "//platform/consensus/ordering/raft/algorithm:raft",
+    ],
+)
