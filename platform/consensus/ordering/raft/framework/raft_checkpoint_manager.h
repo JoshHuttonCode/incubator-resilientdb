@@ -19,30 +19,22 @@
 
 #pragma once
 
-#include "executor/common/custom_query.h"
-#include "platform/config/resdb_config.h"
-#include "platform/consensus/recovery/pbft_recovery.h"
+#include "platform/consensus/checkpoint/checkpoint.h"
 
 namespace resdb {
 
-class Query {
+class RaftCheckPoint : public CheckPoint {
  public:
-  Query(const ResDBConfig& config, PBFTRecovery* recovery,
-        std::unique_ptr<CustomQuery> executor = nullptr);
-  virtual ~Query();
+  RaftCheckPoint() = default;
+  virtual ~RaftCheckPoint() = default;
 
-  virtual int ProcessGetReplicaState(std::unique_ptr<Context> context,
-                                     std::unique_ptr<Request> request);
-  virtual int ProcessQuery(std::unique_ptr<Context> context,
-                           std::unique_ptr<Request> request);
+  virtual uint64_t GetStableCheckpoint() { return current_stable_seq_.load(); }
+  virtual void SetStableCheckpoint(uint64_t current_stable_seq) {
+    current_stable_seq_.store(current_stable_seq);
+  }
 
-  virtual int ProcessCustomQuery(std::unique_ptr<Context> context,
-                                 std::unique_ptr<Request> request);
-
- protected:
-  ResDBConfig config_;
-  PBFTRecovery* recovery_;
-  std::unique_ptr<CustomQuery> custom_query_executor_;
+ private:
+  std::atomic<uint64_t> current_stable_seq_ = 0;
 };
 
 }  // namespace resdb

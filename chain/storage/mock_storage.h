@@ -59,7 +59,7 @@ class MockStorage : public Storage {
   MOCK_METHOD(ItemsType, GetAllItems, (), (override));
   MOCK_METHOD(ValuesSeqType, GetAllItemsWithSeq, (), (override));
 
-  MOCK_METHOD(bool, Flush, (), (override));
+  MOCK_METHOD(bool, Flush, (should_sync), (override));
 
   MOCK_METHOD(int, CreateCompositeKey, (const std::string&), (override));
   MOCK_METHOD(int, DeleteCompositeKey, (const std::string&), (override));
