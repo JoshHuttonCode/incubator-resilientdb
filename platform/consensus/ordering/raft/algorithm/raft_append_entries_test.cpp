@@ -224,7 +224,7 @@ TEST_F(RaftTest, FollowerRejectsMismatchedTermAtPrevLogIndex) {
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
   auto aefields = CreateAeFields(
-      /*term=*/0,
+      /*term=*/2,
       /*leaderId=*/2,
       /*prevLogIndex=*/1,
       /*prevLogTerm=*/2,
@@ -779,6 +779,352 @@ TEST_F(RaftTest, LeaderCorrectlySendsHeartbeat) {
   EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 0, 1, 0));
   EXPECT_THAT(raft_->GetVotes(), ::testing::ElementsAre(1, 3, 2));
 }
+
+// Test 18: A follower receives duplicate AppendEntries
+TEST_F(RaftTest, FollowerReceivesDuplicateAppendEntries) {
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
+            EXPECT_TRUE(aer.success());
+            EXPECT_EQ(aer.lastlogindex(), 2);
+            return 0;
+          }));
+  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
+
+  auto aefields = CreateAeFields(
+      /*term=*/2,
+      /*leaderId=*/2,
+      /*prevLogIndex=*/1,
+      /*prevLogTerm=*/2,
+      /*entries=*/
+      CreateLogEntries({
+          {2, "Term 2 Transaction 1"},
+      }),
+      /*leaderCommit=*/0,
+      /*followerId=*/1);
+
+  raft_->SetStateForTest({
+      .currentTerm = 2,
+      .role = Role::FOLLOWER,
+      .log = CreateLogEntries(
+          {
+              {2, "Term 2 Transaction 1"},
+          },
+          true),
+  });
+
+  auto aemessage = CreateAeMessage(aefields);
+
+  bool success = raft_->ReceiveAppendEntries(
+      std::make_unique<AppendEntries>(std::move(aemessage)));
+  EXPECT_TRUE(success);
+}
+
+// Test 19: A leader ignores its own AppendEntries
+TEST_F(RaftTest, LeaderIgnoresItsOwnAppendEntries) {
+  EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
+
+  auto aefields = CreateAeFields(
+      /*term=*/2,
+      /*leaderId=*/1,
+      /*prevLogIndex=*/1,
+      /*prevLogTerm=*/2,
+      /*entries=*/
+      CreateLogEntries({
+          {2, "Term 2 Transaction 1"},
+      }),
+      /*leaderCommit=*/0,
+      /*followerId=*/1);
+
+  raft_->SetStateForTest({
+      .currentTerm = 2,
+      .role = Role::LEADER,
+      .log = CreateLogEntries(
+          {
+              {2, "Term 2 Transaction 1"},
+          },
+          true),
+  });
+
+  auto aemessage = CreateAeMessage(aefields);
+
+  bool success = raft_->ReceiveAppendEntries(
+      std::make_unique<AppendEntries>(std::move(aemessage)));
+  EXPECT_FALSE(success);
+}
+
+// Test 20: A follower receiving an AppendEntries that covers an entry already
+// committed does not remove committed entries, but still adds new entries
+TEST_F(RaftTest, FollowerReceivingAppendEntriesCoveringCommittedTransactions) {
+  EXPECT_CALL(mock_call, Call(_, _, _)).Times(1);
+  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
+  EXPECT_CALL(mock_commit, Commit(_)).Times(0);
+
+  auto aefields = CreateAeFields(
+      /*term=*/3,
+      /*leaderId=*/2,
+      /*prevLogIndex=*/1,
+      /*prevLogTerm=*/2,
+      /*entries=*/
+      CreateLogEntries({
+          {2, "DO NOT ADD Term 2 Transaction 2"},
+          {2, "DO NOT ADD Term 2 Transaction 3"},
+          {3, "Term 3 Transaction 1"},
+          {3, "Term 3 Transaction 2"},
+      }),
+      /*leaderCommit=*/3,
+      /*followerId=*/1);
+
+  raft_->SetStateForTest({
+      .currentTerm = 2,
+      .commitIndex = 3,
+      .lastCommitted = 3,
+      .role = Role::FOLLOWER,
+      .log = CreateLogEntries(
+          {
+              {2, "Term 2 Transaction 1"},
+              {2, "Term 2 Transaction 2"},
+              {2, "Term 2 Transaction 3"},
+              {2, "Term 2 Transaction 4"},
+          },
+          true),
+  });
+
+  auto aemessage = CreateAeMessage(aefields);
+
+  bool success = raft_->ReceiveAppendEntries(
+      std::make_unique<AppendEntries>(std::move(aemessage)));
+  EXPECT_TRUE(success);
+
+  const auto& le = raft_->GetLog()[0];
+  EXPECT_EQ(le.entry.term(), 0);
+  EXPECT_EQ(raft_->GetLog().size(), 6);
+  for (int i = 1; i < raft_->GetLog().size(); ++i) {
+    const auto& le = raft_->GetLog()[i];
+    ClientTestRequest req;
+    req.ParseFromString(le.entry.command());
+    if (i <= 3) {
+      EXPECT_EQ(req.value(), "Term 2 Transaction " + std::to_string(i));
+      EXPECT_EQ(le.entry.term(), 2);
+    } else {
+      EXPECT_EQ(req.value(), "Term 3 Transaction " + std::to_string(i - 3));
+      EXPECT_EQ(le.entry.term(), 3);
+    }
+  }
+
+  EXPECT_EQ(raft_->GetCommitIndex(), 3);
+}
+
+// Test 21: A follower performs 2 checkpoints/truncations and still does
+// accurate log arithmetric after adding and truncating entries.
+TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
+  EXPECT_CALL(mock_call, Call(_, _, _)).Times(3);
+  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(3);
+  EXPECT_CALL(mock_commit, Commit(_)).Times(1);
+
+  auto aefields = CreateAeFields(
+      /*term=*/3,
+      /*leaderId=*/2,
+      /*prevLogIndex=*/1,
+      /*prevLogTerm=*/2,
+      /*entries=*/
+      CreateLogEntries({
+          {2, "DO NOT ADD Term 2 Transaction 2"},
+          {2, "DO NOT ADD Term 2 Transaction 3"},
+          {3, "Term 3 Transaction 1"},
+          {3, "Term 3 Transaction 2"},
+      }),
+      /*leaderCommit=*/3,
+      /*followerId=*/1);
+
+  raft_->SetStateForTest({
+      .currentTerm = 2,
+      .commitIndex = 3,
+      .lastCommitted = 3,
+      .role = Role::FOLLOWER,
+      .log = CreateLogEntries(
+          {
+              {2, "Term 2 Transaction 1"},
+              {2, "Term 2 Transaction 2"},
+              {2, "Term 2 Transaction 3"},
+              {2, "Term 2 Transaction 4"},
+          },
+          true),
+  });
+
+  auto aemessage = CreateAeMessage(aefields);
+  bool success = raft_->ReceiveAppendEntries(
+      std::make_unique<AppendEntries>(std::move(aemessage)));
+  EXPECT_TRUE(success);
+
+  /**
+   * Log is now:
+   * Sentinel
+   * "Term 2 Transaction 1"
+   * "Term 2 Transaction 2"
+   * "Term 2 Transaction 3"
+   * "Term 3 Transaction 1"
+   * "Term 3 Transaction 2"
+   **/
+
+  raft_->TruncatePrefix(3);
+
+  /**
+   * Log is now:
+   * Sentinel
+   * "Term 3 Transaction 1"
+   * "Term 3 Transaction 2"
+   **/
+
+  auto aefields2 = CreateAeFields(
+      /*term=*/3,
+      /*leaderId=*/2,
+      /*prevLogIndex=*/4,
+      /*prevLogTerm=*/3,
+      /*entries=*/
+      CreateLogEntries({
+          {3, "Term 3 Transaction 2"},
+          {3, "Term 3 Transaction 3"},
+          {3, "Term 3 Transaction 4"},
+      }),
+      /*leaderCommit=*/4,
+      /*followerId=*/1);
+  auto aemessage2 = CreateAeMessage(aefields2);
+  /**
+   * Log is now:
+   * Sentinel
+   * "Term 3 Transaction 1"
+   * "Term 3 Transaction 2"
+   * "Term 3 Transaction 3"
+   * "Term 3 Transaction 4"
+   **/
+
+  bool success2 = raft_->ReceiveAppendEntries(
+      std::make_unique<AppendEntries>(std::move(aemessage2)));
+  EXPECT_TRUE(success2);
+
+  const auto& le_sentinel = raft_->GetLog()[0];
+  // term of the sentinel should be the last snapshotted entry
+  EXPECT_EQ(le_sentinel.entry.term(), 2);
+  EXPECT_EQ(raft_->GetLog().size(), 5);
+  EXPECT_EQ(raft_->GetLogicalLogSize(), 8);
+
+  for (int i = 1; i < raft_->GetLog().size(); ++i) {
+    const auto& le = raft_->GetLog()[i];
+    ClientTestRequest req;
+    req.ParseFromString(le.entry.command());
+    EXPECT_EQ(req.value(), "Term 3 Transaction " + std::to_string(i));
+    EXPECT_EQ(le.entry.term(), 3);
+  }
+
+  EXPECT_EQ(raft_->GetCommitIndex(), 4);
+  raft_->TruncatePrefix(4);
+  /**
+   * Log is now:
+   * Sentinel
+   * "Term 3 Transaction 2"
+   * "Term 3 Transaction 3"
+   * "Term 3 Transaction 4"
+   **/
+
+  auto aefields3 = CreateAeFields(
+      /*term=*/4,
+      /*leaderId=*/2,
+      /*prevLogIndex=*/7,
+      /*prevLogTerm=*/3,
+      /*entries=*/
+      CreateLogEntries({
+          {4, "Term 4 Transaction 1"},
+      }),
+      /*leaderCommit=*/4,
+      /*followerId=*/1);
+  auto aemessage3 = CreateAeMessage(aefields3);
+  /**
+   * Log is now:
+   * Sentinel
+   * "Term 3 Transaction 2"
+   * "Term 3 Transaction 3"
+   * "Term 3 Transaction 4"
+   * "Term 4 Transaction 1"
+   **/
+
+  bool success3 = raft_->ReceiveAppendEntries(
+      std::make_unique<AppendEntries>(std::move(aemessage3)));
+  EXPECT_TRUE(success3);
+
+  EXPECT_EQ(le_sentinel.entry.term(), 3);
+  EXPECT_EQ(raft_->GetLog().size(), 5);
+  EXPECT_EQ(raft_->GetLogicalLogSize(), 9);
+
+  for (int i = 1; i < raft_->GetLog().size() - 1; ++i) {
+    const auto& le = raft_->GetLog()[i];
+    ClientTestRequest req;
+    req.ParseFromString(raft_->GetLogEntryAtIndex(i + 4).entry.command());
+    ClientTestRequest req2;
+    req2.ParseFromString(le.entry.command());
+    EXPECT_EQ(req.value(), "Term 3 Transaction " + std::to_string(i + 1));
+    EXPECT_EQ(req.value(), req2.value());
+    EXPECT_EQ(le.entry.term(), 3);
+    EXPECT_EQ(raft_->GetLogTermAtIndex(i + 4), 3);
+  }
+  const auto& le = raft_->GetLog()[4];
+  ClientTestRequest req;
+  req.ParseFromString(raft_->GetLogEntryAtIndex(8).entry.command());
+  ClientTestRequest req2;
+  req2.ParseFromString(le.entry.command());
+  EXPECT_EQ(req.value(), "Term 4 Transaction 1");
+  EXPECT_EQ(req.value(), req2.value());
+  EXPECT_EQ(le.entry.term(), 4);
+  EXPECT_EQ(raft_->GetLogTermAtIndex(8), 4);
+
+  EXPECT_DEATH(raft_->GetLogEntryAtIndex(4),
+               "Tried to access entry that has been snapshotted");
+  EXPECT_DEATH(raft_->GetLogEntryAtIndex(9),
+               "Tried to access element that has not been added yet");
+  EXPECT_DEATH(raft_->TruncatePrefix(4),
+               "Tried to truncate an entry that has been snapshotted");
+  EXPECT_DEATH(
+      raft_->TruncatePrefix(5),
+      "Tried to prefix truncate an element that has not been committed");
+}
+
+// Test 20: A leader sends a heartbeat to a follower even if that follower is
+// over the in flight message size limit TEST_F(RaftTest,
+// LeaderSendsHeartbeatToFollowerOverInFlightLimit) {
+//   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
+//   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
+
+//   auto aefields = CreateAeFields(
+//       /*term=*/0,
+//       /*leaderId=*/1,
+//       /*prevLogIndex=*/1,
+//       /*prevLogTerm=*/2,
+//       /*entries=*/
+//       CreateLogEntries({
+//           {2, "Term 2 Transaction 1"},
+//       }),
+//       /*leaderCommit=*/0,
+//       /*followerId=*/1);
+
+//   raft_->SetStateForTest({
+//       .currentTerm = 0,
+//       .role = Role::LEADER,
+//       .log = CreateLogEntries(
+//           {
+//               {2, "Term 2 Transaction 1"},
+//           },
+//           true),
+//   });
+
+//     auto req = std::make_unique<Request>();
+//     req->set_seq(1);
+
+//   bool success = raft_->ReceiveTransaction(std::move(req));
+
+//   EXPECT_FALSE(success);
+// }
 
 }  // namespace raft
 }  // namespace resdb

@@ -46,17 +46,7 @@ ResDBConfig MakeConfig() {
 // Mirrors what Consensus::RecoverFromLogs() does.
 void RecoverFromLogs(RaftRecovery& recovery, Raft& raft) {
   recovery.ReadLogs(
-      [&](const RaftMetadata& metadata) {
-        LOG(INFO) << "loading metadata file: term: " << metadata.current_term
-                  << " votedFor: " << metadata.voted_for
-                  << " snapshot_last_index: " << metadata.snapshot_last_index
-                  << " snapshot_last_term: " << metadata.snapshot_last_term;
-        raft.SetCurrentTerm(metadata.current_term, /*writeMetadata=*/false);
-        raft.SetVotedFor(metadata.voted_for, /*writeMetadata=*/false);
-        raft.SetSnapshotLastIndexAndTerm(metadata.snapshot_last_index,
-                                         metadata.snapshot_last_term,
-                                         /*writeMetadata=*/false);
-      },
+      [](const RaftMetadata& metadata) {},
       [&](std::unique_ptr<WALRecord> record) {
         LOG(INFO) << "Replaying record with seq: " << record->seq();
         switch (record->payload_case()) {
@@ -76,7 +66,17 @@ void RecoverFromLogs(RaftRecovery& recovery, Raft& raft) {
             break;
         }
       },
-      /*set_start_point=*/[](int) {});
+      [&](const RaftMetadata& metadata) {
+        LOG(INFO) << "loading metadata file: term: " << metadata.current_term
+                  << " votedFor: " << metadata.voted_for
+                  << " snapshot_last_index: " << metadata.snapshot_last_index
+                  << " snapshot_last_term: " << metadata.snapshot_last_term;
+        raft.SetCurrentTerm(metadata.current_term, /*writeMetadata=*/false);
+        raft.SetVotedFor(metadata.voted_for, /*writeMetadata=*/false);
+        raft.SetSnapshotLastIndexAndTerm(metadata.snapshot_last_index,
+                                         metadata.snapshot_last_term,
+                                         /*writeMetadata=*/false);
+      });
 }
 
 }  // namespace

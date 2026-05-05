@@ -73,6 +73,7 @@ class RaftRecoveryTest : public Test {
   MockCheckPoint checkpoint_;
 };
 
+// Test 1: Individually add entries to the log and read from it.
 TEST_F(RaftRecoveryTest, WriteAndReadLog) {
   int entries_to_add = 3;
   {
@@ -88,7 +89,7 @@ TEST_F(RaftRecoveryTest, WriteAndReadLog) {
     recovery.ReadLogs(
         [&](const RaftMetadata &data) {},
         [&](std::unique_ptr<WALRecord> record) { list.push_back(*record); },
-        nullptr);
+        [&](const RaftMetadata &data) {});
 
     EXPECT_EQ(list.size(), entries_to_add);
 
@@ -103,6 +104,7 @@ TEST_F(RaftRecoveryTest, WriteAndReadLog) {
   }
 }
 
+// Test 2: Add multiple entries to the log at once and read from it.
 TEST_F(RaftRecoveryTest, WriteMultipleEntriesAndReadLog) {
   int entries_to_add = 3;
   {
@@ -118,7 +120,8 @@ TEST_F(RaftRecoveryTest, WriteMultipleEntriesAndReadLog) {
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
     recovery.ReadLogs(
         [&](const RaftMetadata &data) {},
-        [&](std::unique_ptr<WALRecord> record) { list.push_back(*record); }, nullptr);
+        [&](std::unique_ptr<WALRecord> record) { list.push_back(*record); },
+        [&](const RaftMetadata &data) {});
 
     EXPECT_EQ(list.size(), entries_to_add);
 
@@ -133,6 +136,26 @@ TEST_F(RaftRecoveryTest, WriteMultipleEntriesAndReadLog) {
   }
 }
 
+// Test 3: Add no entries to the log and verify handling is gracful
+TEST_F(RaftRecoveryTest, WriteNoEntriesAndReadLog) {
+  {
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    std::vector<Entry> log_entries;
+    recovery.AddLogEntry(log_entries, 1);
+  }
+  {
+    std::vector<WALRecord> list;
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    recovery.ReadLogs(
+        [&](const RaftMetadata &data) {},
+        [&](std::unique_ptr<WALRecord> record) { list.push_back(*record); },
+        [&](const RaftMetadata &data) {});
+
+    EXPECT_EQ(list.size(), 0);
+  }
+}
+
+// Test 4: Write and Read from the metadata file.
 TEST_F(RaftRecoveryTest, WriteAndReadMetadata) {
   {
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
@@ -146,14 +169,14 @@ TEST_F(RaftRecoveryTest, WriteAndReadMetadata) {
     uint64_t snapshot_last_term;
 
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
-    recovery.ReadLogs(
-        [&](const RaftMetadata &data) {
-          current_term = data.current_term;
-          voted_for = data.voted_for;
-          snapshot_last_index = data.snapshot_last_index;
-          snapshot_last_term = data.snapshot_last_term;
-        },
-        [&](std::unique_ptr<WALRecord> record) {}, nullptr);
+    recovery.ReadLogs([&](const RaftMetadata &data) {},
+                      [&](std::unique_ptr<WALRecord> record) {},
+                      [&](const RaftMetadata &data) {
+                        current_term = data.current_term;
+                        voted_for = data.voted_for;
+                        snapshot_last_index = data.snapshot_last_index;
+                        snapshot_last_term = data.snapshot_last_term;
+                      });
 
     EXPECT_EQ(current_term, 2);
     EXPECT_EQ(voted_for, 3);
@@ -162,6 +185,7 @@ TEST_F(RaftRecoveryTest, WriteAndReadMetadata) {
   }
 }
 
+// Test 5: Write to the metadata file twice, then read from it.
 TEST_F(RaftRecoveryTest, WriteAndReadMetadataTwice) {
   {
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
@@ -176,14 +200,14 @@ TEST_F(RaftRecoveryTest, WriteAndReadMetadataTwice) {
     uint64_t snapshot_last_term;
 
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
-    recovery.ReadLogs(
-        [&](const RaftMetadata &data) {
-          current_term = data.current_term;
-          voted_for = data.voted_for;
-          snapshot_last_index = data.snapshot_last_index;
-          snapshot_last_term = data.snapshot_last_term;
-        },
-        [&](std::unique_ptr<WALRecord> record) {}, nullptr);
+    recovery.ReadLogs([&](const RaftMetadata &data) {},
+                      [&](std::unique_ptr<WALRecord> record) {},
+                      [&](const RaftMetadata &data) {
+                        current_term = data.current_term;
+                        voted_for = data.voted_for;
+                        snapshot_last_index = data.snapshot_last_index;
+                        snapshot_last_term = data.snapshot_last_term;
+                      });
 
     EXPECT_EQ(current_term, 4);
     EXPECT_EQ(voted_for, 2);
@@ -192,6 +216,7 @@ TEST_F(RaftRecoveryTest, WriteAndReadMetadataTwice) {
   }
 }
 
+// Test 6: Verify the default values of the metadata.
 TEST_F(RaftRecoveryTest, ReadMetadataDefaultValues) {
   {
     int64_t current_term;
@@ -200,14 +225,14 @@ TEST_F(RaftRecoveryTest, ReadMetadataDefaultValues) {
     uint64_t snapshot_last_term;
 
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
-    recovery.ReadLogs(
-        [&](const RaftMetadata &data) {
-          current_term = data.current_term;
-          voted_for = data.voted_for;
-          snapshot_last_index = data.snapshot_last_index;
-          snapshot_last_term = data.snapshot_last_term;
-        },
-        [&](std::unique_ptr<WALRecord> record) {}, nullptr);
+    recovery.ReadLogs([&](const RaftMetadata &data) {},
+                      [&](std::unique_ptr<WALRecord> record) {},
+                      [&](const RaftMetadata &data) {
+                        current_term = data.current_term;
+                        voted_for = data.voted_for;
+                        snapshot_last_index = data.snapshot_last_index;
+                        snapshot_last_term = data.snapshot_last_term;
+                      });
 
     EXPECT_EQ(current_term, 0);
     EXPECT_EQ(voted_for, -1);
@@ -216,6 +241,7 @@ TEST_F(RaftRecoveryTest, ReadMetadataDefaultValues) {
   }
 }
 
+// Test 7: Truncate the log.
 TEST_F(RaftRecoveryTest, TruncateLog) {
   int entries_to_add = 4;
   {
@@ -252,7 +278,7 @@ TEST_F(RaftRecoveryTest, TruncateLog) {
     recovery.ReadLogs(
         [&](const RaftMetadata &data) {},
         [&](std::unique_ptr<WALRecord> record) { list.push_back(*record); },
-        nullptr);
+        [&](const RaftMetadata &data) {});
 
     EXPECT_EQ(list.size(), 2 * entries_to_add + 1);
 
@@ -279,9 +305,9 @@ TEST_F(RaftRecoveryTest, TruncateLog) {
   }
 }
 
-// After a checkpoint fires and the log file is rotated, there should be exactly
-// two .log files on disk: the sealed (checkpointed) file and the new active
-// one.
+// Test 8: After a checkpoint fires and the log file is rotated, there should be
+// exactly two .log files on disk: the sealed (checkpointed) file and the new
+// active one.
 TEST_F(RaftRecoveryTest, CheckpointCreatesNewLogFile) {
   std::promise<bool> insert_done, ckpt_fired;
   auto insert_done_future = insert_done.get_future();
@@ -318,7 +344,7 @@ TEST_F(RaftRecoveryTest, CheckpointCreatesNewLogFile) {
   EXPECT_EQ(log_list.size(), 3);
 }
 
-// After a checkpoint at stable_seq=5, ReadLogs should only replay WAL records
+// Test 9: After a checkpoint at seq=5, ReadLogs should only replay WAL records
 // whose seq is strictly greater than 5.
 TEST_F(RaftRecoveryTest, CheckpointFiltersOldEntries) {
   std::promise<bool> insert_done, ckpt_fired;
@@ -350,9 +376,9 @@ TEST_F(RaftRecoveryTest, CheckpointFiltersOldEntries) {
     std::vector<WALRecord> list;
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
     recovery.ReadLogs(
-        [&](const RaftMetadata &) {},
+        [&](const RaftMetadata &data) {},
         [&](std::unique_ptr<WALRecord> record) { list.push_back(*record); },
-        nullptr);
+        [&](const RaftMetadata &data) {});
 
     // Only WAL seqs 6-9 should be replayed (4 entries).
     ASSERT_EQ(list.size(), 4u);
@@ -365,8 +391,9 @@ TEST_F(RaftRecoveryTest, CheckpointFiltersOldEntries) {
   }
 }
 
-// After a checkpoint rotation, GetMinSeq()/GetMaxSeq() should reset to -1 for
-// the newly opened (empty) file, then update as new entries are appended.
+// Test 10: After a checkpoint rotation, GetMinSeq()/GetMaxSeq() should reset to
+// -1 for the newly opened (empty) file, then update as new entries are
+// appended.
 TEST_F(RaftRecoveryTest, CheckpointResetsMinMaxSeq) {
   std::promise<bool> insert_done, ckpt_fired;
   auto insert_done_future = insert_done.get_future();
@@ -405,8 +432,8 @@ TEST_F(RaftRecoveryTest, CheckpointResetsMinMaxSeq) {
   }
 }
 
-// Two successive checkpoints.  After both fires, only entries whose WAL seq
-// exceeds the second checkpoint value (15) survive replay.
+// Test 11: Two successive checkpoints.  After both fires, only entries whose
+// WAL seq exceeds the second checkpoint value (15) survive replay.
 TEST_F(RaftRecoveryTest, TwoCheckpoints) {
   std::promise<bool> ins1, ck1, ins2, ck2;
   auto ins1f = ins1.get_future(), ck1f = ck1.get_future();
@@ -456,9 +483,9 @@ TEST_F(RaftRecoveryTest, TwoCheckpoints) {
     std::vector<WALRecord> list;
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
     recovery.ReadLogs(
-        [&](const RaftMetadata &) {},
+        [&](const RaftMetadata &data) {},
         [&](std::unique_ptr<WALRecord> record) { list.push_back(*record); },
-        nullptr);
+        [&](const RaftMetadata &data) {});
 
     // ckpt=15: entries with WAL seq > 15 survive: seqs 16-22 (7 entries).
     ASSERT_EQ(list.size(), 7u);
@@ -474,8 +501,8 @@ TEST_F(RaftRecoveryTest, TwoCheckpoints) {
   }
 }
 
-// Metadata lives in a separate file and should be fully preserved across log
-// rotations caused by a checkpoint.
+// Test 12: Metadata lives in a separate file and should be fully preserved
+// across log rotations caused by a checkpoint.
 TEST_F(RaftRecoveryTest, MetadataPersistedAcrossCheckpoint) {
   std::promise<bool> insert_done, ckpt_fired;
   auto insert_done_future = insert_done.get_future();
@@ -514,14 +541,14 @@ TEST_F(RaftRecoveryTest, MetadataPersistedAcrossCheckpoint) {
     uint64_t snapshot_last_term = 0;
 
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
-    recovery.ReadLogs(
-        [&](const RaftMetadata &data) {
-          current_term = data.current_term;
-          voted_for = data.voted_for;
-          snapshot_last_index = data.snapshot_last_index;
-          snapshot_last_term = data.snapshot_last_term;
-        },
-        [&](std::unique_ptr<WALRecord>) {}, nullptr);
+    recovery.ReadLogs([&](const RaftMetadata &data) {},
+                      [&](std::unique_ptr<WALRecord> record) {},
+                      [&](const RaftMetadata &data) {
+                        current_term = data.current_term;
+                        voted_for = data.voted_for;
+                        snapshot_last_index = data.snapshot_last_index;
+                        snapshot_last_term = data.snapshot_last_term;
+                      });
 
     EXPECT_EQ(current_term, 7);
     EXPECT_EQ(voted_for, 2);
@@ -530,8 +557,8 @@ TEST_F(RaftRecoveryTest, MetadataPersistedAcrossCheckpoint) {
   }
 }
 
-// When Storage::Flush() fails, FinishFile() bails out early and the log file
-// must NOT be rotated — only one file should remain on disk.
+// Test 13: When Storage::Flush() fails, FinishFile() bails out early and the
+// log file must NOT be rotated — only one file should remain on disk.
 TEST_F(RaftRecoveryTest, CheckpointNotFinalizedWhenStorageFlushFails) {
   MockStorage storage;
   EXPECT_CALL(storage, Flush).WillRepeatedly(Return(false));
@@ -580,8 +607,8 @@ ResConfigData GetConfigDataNoRecovery(int buf_size = 10) {
   return data;
 }
 
-// When recovery_enabled=false, all write operations are no-ops and the WAL
-// directory is never created on disk.
+// Test 14: When recovery_enabled=false, all write operations are no-ops and the
+// WAL directory is never created on disk.
 TEST_F(RaftRecoveryTest, RecoveryDisabledNoOpsAndCreatesNoDirectory) {
   ResDBConfig config(GetConfigDataNoRecovery(1024), ReplicaInfo(), KeyInfo(),
                      CertificateInfo());
@@ -611,8 +638,8 @@ TEST_F(RaftRecoveryTest, RecoveryDisabledNoOpsAndCreatesNoDirectory) {
     bool metadata_cb_called = false;
     bool record_cb_called = false;
     recovery.ReadLogs(
-        [&](const RaftMetadata &) { metadata_cb_called = true; },
-        [&](std::unique_ptr<WALRecord>) { record_cb_called = true; }, nullptr);
+        nullptr, [&](std::unique_ptr<WALRecord>) { record_cb_called = true; },
+        [&](const RaftMetadata &) { metadata_cb_called = true; });
 
     EXPECT_FALSE(metadata_cb_called);
     EXPECT_FALSE(record_cb_called);
@@ -623,7 +650,8 @@ TEST_F(RaftRecoveryTest, RecoveryDisabledNoOpsAndCreatesNoDirectory) {
       << "WAL directory was created even though recovery is disabled";
 }
 
-// When recovery is disabled, ReadMetadata returns the zero-value struct.
+// Test 15: When recovery is disabled, ReadMetadata returns the zero-value
+// struct.
 TEST_F(RaftRecoveryTest, RecoveryDisabledReadMetadataReturnsDefaults) {
   ResDBConfig config(GetConfigDataNoRecovery(1024), ReplicaInfo(), KeyInfo(),
                      CertificateInfo());
@@ -637,7 +665,7 @@ TEST_F(RaftRecoveryTest, RecoveryDisabledReadMetadataReturnsDefaults) {
   EXPECT_EQ(meta.snapshot_last_term, 0u);
 }
 
-// Truncation record seq == checkpoint value.
+// Test 16: Truncation record seq == checkpoint value.
 //
 // Layout written to WAL:
 //   seq 1 – entry (term 1)
@@ -697,9 +725,9 @@ TEST_F(RaftRecoveryTest, TruncationAtCheckpointBoundary) {
     std::vector<WALRecord> list;
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
     recovery.ReadLogs(
-        [&](const RaftMetadata &) {},
+        [&](const RaftMetadata &data) {},
         [&](std::unique_ptr<WALRecord> record) { list.push_back(*record); },
-        nullptr);
+        [&](const RaftMetadata &data) {});
 
     ASSERT_EQ(list.size(), 5u);
     EXPECT_EQ(list[0].payload_case(), WALRecord::kEntry);
@@ -727,7 +755,7 @@ TEST_F(RaftRecoveryTest, TruncationAtCheckpointBoundary) {
   }
 }
 
-// Truncation record seq BELOW checkpoint value: also dropped.
+// Test 17: Truncation record seq BELOW checkpoint value: also dropped.
 //
 // Same layout but checkpoint fires at stable_seq=5 (above the truncation's
 // seq=2).  All records with seq ≤ 5 are behind the checkpoint; only seq 3
@@ -774,9 +802,9 @@ TEST_F(RaftRecoveryTest, TruncationBelowCheckpointIsDropped) {
     std::vector<WALRecord> list;
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
     recovery.ReadLogs(
-        [&](const RaftMetadata &) {},
+        [&](const RaftMetadata &data) {},
         [&](std::unique_ptr<WALRecord> record) { list.push_back(*record); },
-        nullptr);
+        [&](const RaftMetadata &data) {});
 
     // Entries at seq 6, 7, 8 survive (strictly > ckpt=5).
     // The truncation at seq=2 is entirely behind the checkpoint and must not
@@ -794,7 +822,241 @@ TEST_F(RaftRecoveryTest, TruncationBelowCheckpointIsDropped) {
   }
 }
 
-// TODO: Create tests that corrupt recovery files to test our handling of them.
+// ─────────────────────────────────────────────────────────────
+//  Corruption helpers
+// ─────────────────────────────────────────────────────────────
+
+// Returns every *.log file in the WAL directory sorted by name
+// (chronological order because the names are timestamp/sequence-based).
+static std::vector<std::string> GetLogFiles(const std::string &path) {
+  std::vector<std::string> logs;
+  std::string dir = std::filesystem::path(path).parent_path();
+  for (const auto &entry : std::filesystem::directory_iterator(dir)) {
+    if (entry.path().extension() == ".log")
+      logs.push_back(entry.path().string());
+  }
+  std::sort(logs.begin(), logs.end());
+  return logs;
+}
+
+// Overwrites `n` bytes starting at byte-offset `offset` with `fill`.
+static void CorruptFileAt(const std::string &filepath, std::streamoff offset,
+                          std::size_t n, char fill = 0xFF) {
+  LOG(INFO) << "filepath to corrupt: " << filepath;
+  std::fstream f(filepath, std::ios::in | std::ios::out | std::ios::binary);
+  ASSERT_TRUE(f.is_open()) << "Could not open " << filepath;
+  f.seekp(offset, std::ios::beg);
+  ASSERT_TRUE(f.good());
+  std::string garbage(n, fill);
+  f.write(garbage.data(), static_cast<std::streamsize>(n));
+  ASSERT_TRUE(f.good());
+}
+
+// Truncates `filepath` to `new_size` bytes.
+static void TruncateFileTo(const std::string &filepath,
+                           std::uintmax_t new_size) {
+  LOG(INFO) << "filepath to truncate: " << filepath;
+  std::filesystem::resize_file(filepath, new_size);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Corruption tests
+// ─────────────────────────────────────────────────────────────
+
+// Test 18: Write 5 entries, then overwrite bytes in the middle of the file so
+// that the 3rd record is unreadable.  ReadLogs must surface records 1 and 2,
+// then stop — it must NOT return records 4 or 5 (which come after the
+// corruption).
+TEST_F(RaftRecoveryTest, CorruptMiddleRecordStopsReplay) {
+  {
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    for (int i = 1; i <= 5; ++i) AddTestEntry(recovery, i, i);
+  }
+
+  // Corrupt roughly the middle of the log file.
+  std::vector<std::string> logs = GetLogFiles(log_path);
+  ASSERT_EQ(logs.size(), 1u);
+
+  std::uintmax_t file_size = std::filesystem::file_size(logs[0]);
+  // Aim for ~50 % into the file to land inside record 3.
+  std::streamoff mid = static_cast<std::streamoff>(file_size / 2);
+  CorruptFileAt(logs[0], mid, /*n=*/16);
+
+  {
+    std::vector<WALRecord> list;
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    recovery.ReadLogs([&](const RaftMetadata &) {},
+                      [&](std::unique_ptr<WALRecord> r) { list.push_back(*r); },
+                      [&](const RaftMetadata &) {});
+
+    // Records 1 and 2 precede the corruption and must be intact.
+    ASSERT_GE(list.size(), 2u)
+        << "Expected at least the two pre-corruption entries";
+    EXPECT_EQ(list[0].payload_case(), WALRecord::kEntry);
+    EXPECT_EQ(list[0].entry().term(), 1);
+    EXPECT_EQ(list[1].payload_case(), WALRecord::kEntry);
+    EXPECT_EQ(list[1].entry().term(), 2);
+
+    // Nothing past the corrupt record should appear.
+    EXPECT_LE(list.size(), 2u)
+        << "ReadLogs continued past the corrupted record";
+  }
+}
+
+// Test 19: Corrupt only the very first record. ReadLogs must return an empty
+// list, zero records should be replayed.
+TEST_F(RaftRecoveryTest, CorruptFirstRecordReturnsEmpty) {
+  {
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    for (int i = 1; i <= 4; ++i) AddTestEntry(recovery, i, i);
+  }
+
+  std::vector<std::string> logs = GetLogFiles(log_path);
+  ASSERT_EQ(logs.size(), 1u);
+
+  // Corrupt near the very start (skip a few bytes for any file header).
+  CorruptFileAt(logs[0], /*offset=*/4, /*n=*/16);
+
+  {
+    std::vector<WALRecord> list;
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    recovery.ReadLogs([&](const RaftMetadata &) {},
+                      [&](std::unique_ptr<WALRecord> r) { list.push_back(*r); },
+                      [&](const RaftMetadata &) {});
+
+    EXPECT_EQ(list.size(), 0u)
+        << "Expected no records when the first record is corrupted";
+  }
+}
+
+// Test 20: Hard-truncate the file so the last record is only partially written
+// (simulates a crash mid-write). All complete records before the truncation
+// point must be returned; the partial tail must be silently ignored.
+TEST_F(RaftRecoveryTest, TruncatedTailRecordIsIgnored) {
+  constexpr int kEntries = 5;
+  {
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    for (int i = 1; i <= kEntries; ++i) AddTestEntry(recovery, i, i);
+  }
+
+  std::vector<std::string> logs = GetLogFiles(log_path);
+  ASSERT_EQ(logs.size(), 1u);
+
+  // Lop off the last 8 bytes — enough to break the final length prefix or
+  // checksum without touching earlier records.
+  std::uintmax_t original = std::filesystem::file_size(logs[0]);
+  ASSERT_GT(original, 8u);
+  TruncateFileTo(logs[0], original - 8);
+
+  {
+    std::vector<WALRecord> list;
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    recovery.ReadLogs([&](const RaftMetadata &) {},
+                      [&](std::unique_ptr<WALRecord> r) { list.push_back(*r); },
+                      [&](const RaftMetadata &) {});
+
+    // At minimum the first kEntries-1 intact records should come back.
+    EXPECT_GE(list.size(), static_cast<size_t>(kEntries - 1))
+        << "Too many records dropped — intact prefix not fully replayed";
+    // The partial last record must not appear.
+    EXPECT_LE(list.size(), static_cast<size_t>(kEntries))
+        << "Partial tail record should not be returned";
+
+    // Verify the records that did come back are intact.
+    for (size_t i = 0; i < list.size(); ++i) {
+      EXPECT_EQ(list[i].payload_case(), WALRecord::kEntry);
+      Request req;
+      req.ParseFromString(list[i].entry().command());
+      EXPECT_EQ(req.seq(), static_cast<int>(i + 1));
+    }
+  }
+}
+
+// Test 21: Completely empty the log file (simulates a zero-byte crash
+// artifact). ReadLogs must return cleanly with zero records and not crash or
+// assert.
+TEST_F(RaftRecoveryTest, EmptyLogFileIsHandledGracefully) {
+  {
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    for (int i = 1; i <= 3; ++i) AddTestEntry(recovery, i, i);
+  }
+
+  std::vector<std::string> logs = GetLogFiles(log_path);
+  ASSERT_EQ(logs.size(), 1u);
+  TruncateFileTo(logs[0], 0);
+
+  {
+    std::vector<WALRecord> list;
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    EXPECT_NO_FATAL_FAILURE(recovery.ReadLogs(
+        [&](const RaftMetadata &) {},
+        [&](std::unique_ptr<WALRecord> r) { list.push_back(*r); },
+        [&](const RaftMetadata &) {}));
+
+    EXPECT_EQ(list.size(), 0u);
+  }
+}
+
+// Test 22: Write 9 entries across a checkpoint boundary (ckpt=5 triggers log
+// rotation), then corrupt a record in the *second* (active) log file.  Records
+// from the sealed first file whose seq > ckpt (i.e. seqs 6–9 — wait, ckpt=5 so
+// only records from the new file survive) must be replayed up to the
+// corruption.
+TEST_F(RaftRecoveryTest, CorruptionInSecondLogFileAfterCheckpoint) {
+  std::promise<bool> insert_done, ckpt_fired;
+  auto insert_done_f = insert_done.get_future();
+  auto ckpt_fired_f = ckpt_fired.get_future();
+
+  int call_count = 0;
+  EXPECT_CALL(checkpoint_, GetStableCheckpoint())
+      .WillRepeatedly(Invoke([&]() -> uint64_t {
+        ++call_count;
+        if (call_count == 1)
+          insert_done_f.get();
+        else if (call_count == 2)
+          ckpt_fired.set_value(true);
+        return 5;
+      }));
+
+  {
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    for (int i = 1; i <= 9; ++i) AddTestEntry(recovery, i, i);
+
+    insert_done.set_value(true);
+    ckpt_fired_f.get();  // first file sealed at ckpt=5
+
+    // Write 6 more entries into the freshly opened second file.
+    for (int i = 10; i <= 15; ++i) AddTestEntry(recovery, i, i);
+  }
+
+  // Two .log files should exist now.
+  std::vector<std::string> logs = GetLogFiles(log_path);
+  ASSERT_EQ(logs.size(), 2u);
+
+  // Corrupt the middle of the second (newer) log file.
+  std::uintmax_t sz = std::filesystem::file_size(logs[1]);
+  CorruptFileAt(logs[1], static_cast<std::streamoff>((sz / 2) + 1), /*n=*/16);
+
+  {
+    std::vector<WALRecord> list;
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    recovery.ReadLogs([&](const RaftMetadata &) {},
+                      [&](std::unique_ptr<WALRecord> r) { list.push_back(*r); },
+                      [&](const RaftMetadata &) {});
+
+    // The sealed first file contributes seqs 6–9 (4 records, all > ckpt=5).
+    // The active second file contributes seqs 10-12.
+    EXPECT_EQ(list.size(), 7u)
+        << "All 4 records from the sealed file should be present";
+
+    // The first 4 must be seqs 6–9 from the sealed file.
+    for (size_t i = 0; i < 4 && i < list.size(); ++i) {
+      Request req;
+      req.ParseFromString(list[i].entry().command());
+      EXPECT_EQ(req.seq(), static_cast<int>(i + 6));
+    }
+  }
+}
 
 }  // namespace raft
 }  // namespace resdb

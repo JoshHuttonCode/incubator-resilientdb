@@ -85,6 +85,7 @@ struct RaftStatePatch {
   std::optional<std::vector<uint64_t>> nextIndex;
   std::optional<std::vector<uint64_t>> matchIndex;
   std::optional<std::vector<int>> votes;
+  std::optional<std::vector<std::vector<InFlightMsg>>> inflightVecs;
 };
 #endif
 
@@ -156,10 +157,10 @@ class Raft : public common::ProtocolBase {
   virtual void RecordNewInFlightMsgLocked(
       const AeFields& msg, std::chrono::steady_clock::time_point timestamp);
   virtual bool InFlightPerFollowerLimitReachedLocked(int followerId) const;
-  int GetLogicalLogSize() const;
 #ifdef RAFT_TEST_MODE
  public:
 #endif
+  int GetLogicalLogSize() const;
   const LogEntry& GetLogEntryAtIndex(uint64_t index) const;
   const uint64_t GetLogTermAtIndex(uint64_t index) const;
 #ifdef RAFT_TEST_MODE
@@ -214,20 +215,21 @@ class Raft : public common::ProtocolBase {
  public:
   void SetStateForTest(RaftStatePatch patch) {
     std::lock_guard lk(mutex_);
-    if (patch.currentTerm)  currentTerm_  = *patch.currentTerm;
-    if (patch.votedFor)     votedFor_     = *patch.votedFor;
-    if (patch.commitIndex)  commitIndex_  = *patch.commitIndex;
+    if (patch.currentTerm) currentTerm_ = *patch.currentTerm;
+    if (patch.votedFor) votedFor_ = *patch.votedFor;
+    if (patch.commitIndex) commitIndex_ = *patch.commitIndex;
     if (patch.lastCommitted) lastCommitted_ = *patch.lastCommitted;
-    if (patch.role)         role_         = *patch.role;
+    if (patch.role) role_ = *patch.role;
 
     if (patch.log) {
       log_ = *patch.log;
       lastLogIndex_ = log_.empty() ? 0 : log_.size() - 1;
     }
 
-    if (patch.nextIndex)   nextIndex_  = *patch.nextIndex;
-    if (patch.matchIndex)  matchIndex_ = *patch.matchIndex;
-    if (patch.votes)       votes_      = *patch.votes;
+    if (patch.nextIndex) nextIndex_ = *patch.nextIndex;
+    if (patch.matchIndex) matchIndex_ = *patch.matchIndex;
+    if (patch.votes) votes_ = *patch.votes;
+    if (patch.inflightVecs) inflightVecs_ = *patch.inflightVecs;
   }
 
   uint64_t GetCurrentTerm() const {

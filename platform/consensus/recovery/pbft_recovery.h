@@ -27,9 +27,12 @@ namespace resdb {
 using CallbackType =
     std::function<void(std::unique_ptr<Context>, std::unique_ptr<Request>)>;
 
-class PBFTRecovery
-    : public RecoveryBase<PBFTRecovery, SystemInfoData, CallbackType> {
-  friend class RecoveryBase<PBFTRecovery, SystemInfoData, CallbackType>;
+using StartPointType = std::function<void(int)>;
+
+class PBFTRecovery : public RecoveryBase<PBFTRecovery, SystemInfoData,
+                                         CallbackType, StartPointType> {
+  friend class RecoveryBase<PBFTRecovery, SystemInfoData, CallbackType,
+                            StartPointType>;
 
  public:
   PBFTRecovery(const ResDBConfig& config, CheckPoint* checkpoint,
@@ -66,6 +69,8 @@ class PBFTRecovery
 
   void HandleSystemInfo(
       int fd, std::function<void(const SystemInfoData&)> system_callback);
+
+  void HandleStartPoint(int64_t ckpt, StartPointType set_start_point);
 
   SystemInfo* system_info_;
 };

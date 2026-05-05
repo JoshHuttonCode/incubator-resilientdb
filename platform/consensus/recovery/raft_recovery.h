@@ -43,9 +43,12 @@ struct RaftMetadata {
 
 using CallbackType = std::function<void(std::unique_ptr<WALRecord>)>;
 
-class RaftRecovery
-    : public RecoveryBase<RaftRecovery, RaftMetadata, CallbackType> {
-  friend class RecoveryBase<RaftRecovery, RaftMetadata, CallbackType>;
+using StartPointType = std::function<void(const RaftMetadata&)>;
+
+class RaftRecovery : public RecoveryBase<RaftRecovery, RaftMetadata,
+                                         CallbackType, StartPointType> {
+  friend class RecoveryBase<RaftRecovery, RaftMetadata, CallbackType,
+                            StartPointType>;
 
  public:
   RaftRecovery(const ResDBConfig& config, CheckPoint* checkpoint,
@@ -78,8 +81,9 @@ class RaftRecovery
       std::function<void(std::unique_ptr<WALRecord> record)> call_back,
       int64_t ckpt);
 
-  void HandleSystemInfo(
-      int /*fd*/, std::function<void(const RaftMetadata&)> system_callback);
+  void HandleSystemInfo(int /*fd*/, StartPointType system_callback);
+
+  void HandleStartPoint(int64_t /*ckpt*/, StartPointType set_start_point);
 
   int metadata_fd_;
   std::string meta_file_path_;

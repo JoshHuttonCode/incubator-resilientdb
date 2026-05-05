@@ -40,7 +40,7 @@ using CallbackType = std::function<void(std::unique_ptr<WALRecord>)>;
 RaftRecovery::RaftRecovery(const ResDBConfig& config, CheckPoint* checkpoint,
                            Storage* storage,
                            std::function<void(uint64_t)> on_checkpoint)
-    : RecoveryBase<RaftRecovery, RaftMetadata, CallbackType>(
+    : RecoveryBase<RaftRecovery, RaftMetadata, CallbackType, StartPointType>(
           config, checkpoint, storage, on_checkpoint) {
   Init();
 }
@@ -305,12 +305,15 @@ void RaftRecovery::PerformCallback(
   LOG(ERROR) << " recovery max seq:" << max_seq;
 }
 
-void RaftRecovery::HandleSystemInfo(
-    int /*fd*/, std::function<void(const RaftMetadata&)> system_callback) {
+void RaftRecovery::HandleSystemInfo(int /*fd*/,
+                                    StartPointType system_callback) {}
+
+void RaftRecovery::HandleStartPoint(int64_t /*ckpt*/,
+                                    StartPointType set_start_point) {
   metadata_ = ReadMetadata();
   LOG(ERROR) << " metadata_.voted_for: " << metadata_.voted_for
              << "\nmetadata_.current_term " << metadata_.current_term;
-  system_callback(metadata_);
+  set_start_point(metadata_);
 }
 
 }  // namespace raft

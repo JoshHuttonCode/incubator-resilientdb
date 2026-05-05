@@ -122,14 +122,7 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
 
 void Consensus::RecoverFromLogs() {
   recovery_->ReadLogs(
-      [&](const RaftMetadata& metadata) {
-        LOG(INFO) << " read current term: " << metadata.current_term
-                  << " voted for: " << metadata.voted_for;
-        raft_->SetCurrentTerm(metadata.current_term, false);
-        raft_->SetVotedFor(metadata.voted_for, false);
-        raft_->SetSnapshotLastIndexAndTerm(metadata.snapshot_last_index,
-                                           metadata.snapshot_last_term, false);
-      },
+      [](const RaftMetadata& metadata) {},
       [&](std::unique_ptr<WALRecord> record) {
         switch (record->payload_case()) {
           case WALRecord::kEntry: {
@@ -147,7 +140,14 @@ void Consensus::RecoverFromLogs() {
             break;
         }
       },
-      [](int) {});
+      [&](const RaftMetadata& metadata) {
+        LOG(INFO) << " read current term: " << metadata.current_term
+                  << " voted for: " << metadata.voted_for;
+        raft_->SetCurrentTerm(metadata.current_term, false);
+        raft_->SetVotedFor(metadata.voted_for, false);
+        raft_->SetSnapshotLastIndexAndTerm(metadata.snapshot_last_index,
+                                           metadata.snapshot_last_term, false);
+      });
 }
 
 int Consensus::ProcessNewTransaction(std::unique_ptr<Request> request) {
