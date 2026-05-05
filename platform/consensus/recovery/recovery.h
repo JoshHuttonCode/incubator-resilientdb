@@ -40,7 +40,8 @@
 
 namespace resdb {
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
 class RecoveryBase {
  public:
   RecoveryBase(const ResDBConfig& config, CheckPoint* checkpoint,
@@ -50,7 +51,7 @@ class RecoveryBase {
 
   void ReadLogs(
       std::function<void(const TSystemInfoData& data)> system_callback,
-      TCallback call_back, std::function<void(int)> start_point);
+      TCallback call_back, TStartPoint start_point);
 
   int64_t GetMaxSeq();
   int64_t GetMinSeq();

@@ -218,12 +218,13 @@ bool Raft::ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae) {
     // ---------- Appending entries ----------
     uint64_t logIdx = ae->prevlogindex() + 1;
     uint64_t entriesIdx = 0;
-    // If we receive an entry that has already been snapshotted, that means it
-    // was committed, which means it must be identical to what we have. So, skip
-    // to the first entry after a snapshot.
-    if (logIdx <= snapshot_last_index_) {
-      entriesIdx = snapshot_last_index_ - logIdx + 1;
-      logIdx = snapshot_last_index_ + 1;
+    // If we receive an entry that has already been committed, it must be
+    // identical to what we have. So, skip to the first entry after the
+    // committed entry.
+    assert(snapshot_last_index_ <= commitIndex_);
+    if (logIdx <= commitIndex_) {
+      entriesIdx = commitIndex_ - logIdx + 1;
+      logIdx = commitIndex_ + 1;
     }
     uint64_t entriesSize = static_cast<uint64_t>(ae->entries_size());
     // check for conflicting entry terms in existing indices
@@ -877,8 +878,8 @@ const LogEntry& Raft::GetLogEntryAtIndex(uint64_t index) const {
          "Tried to access entry that has been snapshotted");
   // A sentinel value is always included after a snapshot
   // Example: snapshot_last_index_ = 5, we have truncated the entire log, added
-  // 1 entry, then log.size() == 2 with the sentinel. index could be 6, and
-  // snapshot_last_index_ + log.size() == 7
+  // 1 entry, then log_.size() == 2 with the sentinel. index could be 6, and
+  // snapshot_last_index_ + log_.size() == 7
   assert(index < snapshot_last_index_ + log_.size() &&
          "Tried to access element that has not been added yet");
   return log_[index - snapshot_last_index_];
@@ -887,10 +888,6 @@ const LogEntry& Raft::GetLogEntryAtIndex(uint64_t index) const {
 const uint64_t Raft::GetLogTermAtIndex(uint64_t index) const {
   assert(index >= snapshot_last_index_ &&
          "Tried to access entry that has been snapshotted");
-  // A sentinel value is always included after a snapshot
-  // Example: snapshot_last_index_ = 5, we have truncated the entire log, added
-  // 1 entry, then log.size() == 2 with the sentinel. index could be 6, and
-  // snapshot_last_index_ + log.size() == 7
   assert(index < snapshot_last_index_ + log_.size() &&
          "Tried to access element that has not been added yet");
   if (index == snapshot_last_index_) {
@@ -900,7 +897,7 @@ const uint64_t Raft::GetLogTermAtIndex(uint64_t index) const {
   return log_[index - snapshot_last_index_].entry.term();
 }
 
-// This would be what log.size() returns if no prefix truncation occurred.
+// This would be what log_.size() returns if no prefix truncation occurred.
 int Raft::GetLogicalLogSize() const {
   return log_.size() + snapshot_last_index_;
 }
@@ -931,24 +928,19 @@ void Raft::SetCurrentTermAndVotedFor(uint64_t currentTerm, int votedFor,
 void Raft::SetSnapshotLastIndexAndTerm(uint64_t snapshot_last_index,
                                        uint64_t snapshot_last_term,
                                        bool writeMetadata) {
-  uint64_t old_snapshot_last_index = snapshot_last_index_;
   snapshot_last_index_ = snapshot_last_index;
   snapshot_last_term_ = snapshot_last_term;
+  log_[0].entry.set_term(snapshot_last_term_);
   LOG(INFO) << "setting snapshot_last_index " << snapshot_last_index
             << " and snapshot_last_term" << snapshot_last_term;
   if (writeMetadata) {
     WriteMetadata();
     return;
   }
-  if (old_snapshot_last_index) {
-    LOG(INFO) << "snapshot_last_index already set during recovery";
-    return;
-  }
 
   lastLogIndex_ = snapshot_last_index_;
   commitIndex_ = snapshot_last_index_;
   lastCommitted_ = snapshot_last_index_;
-  log_[0].entry.set_term(snapshot_last_term_);
 }
 
 uint64_t Raft::GetSnapshotLastIndex() { return snapshot_last_index_; }
@@ -1019,7 +1011,6 @@ void Raft::TruncatePrefixLocked(uint64_t index) {
   auto erase_end = log_.begin() + (index - snapshot_last_index_);
   auto last_snapshotted_entry_term = GetLogTermAtIndex(index);
   log_.erase(log_.begin() + 1, erase_end + 1);
-  assert(log_[0].entry.term() == last_snapshotted_entry_term);
   SetSnapshotLastIndexAndTerm(index, last_snapshotted_entry_term);
 
   assert(lastLogIndex_ == GetLogicalLogSize() - 1);

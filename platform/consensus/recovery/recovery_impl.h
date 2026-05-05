@@ -17,8 +17,9 @@
  * under the License.
  */
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-RecoveryBase<TDerived, TSystemInfoData, TCallback>::RecoveryBase(
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::RecoveryBase(
     const ResDBConfig& config, CheckPoint* checkpoint, Storage* storage,
     std::function<void(uint64_t)> on_checkpoint)
     : config_(config),
@@ -67,8 +68,10 @@ RecoveryBase<TDerived, TSystemInfoData, TCallback>::RecoveryBase(
   stop_ = false;
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-RecoveryBase<TDerived, TSystemInfoData, TCallback>::~RecoveryBase() {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+RecoveryBase<TDerived, TSystemInfoData, TCallback,
+             TStartPoint>::~RecoveryBase() {
   if (recovery_enabled_ == false) {
     return;
   }
@@ -80,19 +83,24 @@ RecoveryBase<TDerived, TSystemInfoData, TCallback>::~RecoveryBase() {
   }
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-int64_t RecoveryBase<TDerived, TSystemInfoData, TCallback>::GetMaxSeq() {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+int64_t
+RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::GetMaxSeq() {
   return max_seq_;
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-int64_t RecoveryBase<TDerived, TSystemInfoData, TCallback>::GetMinSeq() {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+int64_t
+RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::GetMinSeq() {
   return min_seq_;
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-void RecoveryBase<TDerived, TSystemInfoData,
-                  TCallback>::UpdateStableCheckPoint() {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+void RecoveryBase<TDerived, TSystemInfoData, TCallback,
+                  TStartPoint>::UpdateStableCheckPoint() {
   if (checkpoint_ == nullptr) {
     return;
   }
@@ -108,8 +116,10 @@ void RecoveryBase<TDerived, TSystemInfoData,
   }
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-void RecoveryBase<TDerived, TSystemInfoData, TCallback>::GetLastFile() {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+void RecoveryBase<TDerived, TSystemInfoData, TCallback,
+                  TStartPoint>::GetLastFile() {
   std::string dir = std::filesystem::path(file_path_).parent_path();
   last_ckpt_ = -1;
   uint64_t m_time_s = 0;
@@ -147,9 +157,12 @@ void RecoveryBase<TDerived, TSystemInfoData, TCallback>::GetLastFile() {
   }
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-std::string RecoveryBase<TDerived, TSystemInfoData, TCallback>::GenerateFile(
-    int64_t seq, int64_t min_seq, int64_t max_seq) {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+std::string RecoveryBase<TDerived, TSystemInfoData, TCallback,
+                         TStartPoint>::GenerateFile(int64_t seq,
+                                                    int64_t min_seq,
+                                                    int64_t max_seq) {
   std::string dir = std::filesystem::path(file_path_).parent_path();
   std::string file_name = std::filesystem::path(base_file_path_).stem();
   int64_t time = GetCurrentTime();
@@ -161,9 +174,10 @@ std::string RecoveryBase<TDerived, TSystemInfoData, TCallback>::GenerateFile(
   return dir + "/" + file_name + "." + ext;
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-void RecoveryBase<TDerived, TSystemInfoData, TCallback>::FinishFile(
-    int64_t seq) {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+void RecoveryBase<TDerived, TSystemInfoData, TCallback,
+                  TStartPoint>::FinishFile(int64_t seq) {
   {
     std::unique_lock<std::mutex> lk(mutex_);
     Flush();
@@ -198,16 +212,18 @@ void RecoveryBase<TDerived, TSystemInfoData, TCallback>::FinishFile(
   }
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-void RecoveryBase<TDerived, TSystemInfoData, TCallback>::AppendData(
-    const std::string& data) {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+void RecoveryBase<TDerived, TSystemInfoData, TCallback,
+                  TStartPoint>::AppendData(const std::string& data) {
   size_t len = data.size();
   buffer_.append(reinterpret_cast<const char*>(&len), sizeof(len));
   buffer_.append(data);
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-auto RecoveryBase<TDerived, TSystemInfoData, TCallback>::ParseData(
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+auto RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::ParseData(
     const std::string& data) {
   std::vector<std::string> data_list;
   int pos = 0;
@@ -224,9 +240,10 @@ auto RecoveryBase<TDerived, TSystemInfoData, TCallback>::ParseData(
   return static_cast<TDerived*>(this)->ParseDataListItem(data_list);
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
 std::vector<std::string>
-RecoveryBase<TDerived, TSystemInfoData, TCallback>::ParseRawData(
+RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::ParseRawData(
     const std::string& data) {
   std::vector<std::string> data_list;
   int pos = 0;
@@ -242,15 +259,18 @@ RecoveryBase<TDerived, TSystemInfoData, TCallback>::ParseRawData(
   return data_list;
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-void RecoveryBase<TDerived, TSystemInfoData, TCallback>::MayFlush() {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+void RecoveryBase<TDerived, TSystemInfoData, TCallback,
+                  TStartPoint>::MayFlush() {
   if (buffer_.size() > buffer_size_) {
     Flush();
   }
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-void RecoveryBase<TDerived, TSystemInfoData, TCallback>::Flush() {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+void RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::Flush() {
   size_t len = buffer_.size();
   if (len == 0) {
     return;
@@ -262,9 +282,10 @@ void RecoveryBase<TDerived, TSystemInfoData, TCallback>::Flush() {
   fsync(fd_);
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-void RecoveryBase<TDerived, TSystemInfoData, TCallback>::Write(const char* data,
-                                                               size_t len) {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+void RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::Write(
+    const char* data, size_t len) {
   int pos = 0;
   while (len > 0) {
     int write_len = write(fd_, data + pos, len);
@@ -274,10 +295,10 @@ void RecoveryBase<TDerived, TSystemInfoData, TCallback>::Write(const char* data,
   }
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-bool RecoveryBase<TDerived, TSystemInfoData, TCallback>::Read(int fd,
-                                                              size_t len,
-                                                              char* data) {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+bool RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::Read(
+    int fd, size_t len, char* data) {
   int pos = 0;
   while (len > 0) {
     int read_len = read(fd, data + pos, len);
@@ -290,10 +311,11 @@ bool RecoveryBase<TDerived, TSystemInfoData, TCallback>::Read(int fd,
   return true;
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
 std::pair<std::vector<std::pair<int64_t, std::string>>, int64_t>
-RecoveryBase<TDerived, TSystemInfoData, TCallback>::GetRecoveryFiles(
-    int64_t ckpt) {
+RecoveryBase<TDerived, TSystemInfoData, TCallback,
+             TStartPoint>::GetRecoveryFiles(int64_t ckpt) {
   std::string dir = std::filesystem::path(file_path_).parent_path();
   int64_t last_ckpt = 0;
   for (const auto& entry : std::filesystem::directory_iterator(dir)) {
@@ -347,10 +369,12 @@ RecoveryBase<TDerived, TSystemInfoData, TCallback>::GetRecoveryFiles(
   return std::make_pair(list, last_ckpt);
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
 std::vector<std::pair<int64_t, std::string>>
-RecoveryBase<TDerived, TSystemInfoData, TCallback>::GetSortedRecoveryFiles(
-    uint64_t need_min_seq, uint64_t need_max_seq) {
+RecoveryBase<TDerived, TSystemInfoData, TCallback,
+             TStartPoint>::GetSortedRecoveryFiles(uint64_t need_min_seq,
+                                                  uint64_t need_max_seq) {
   std::string dir = std::filesystem::path(file_path_).parent_path();
 
   std::vector<std::pair<int64_t, std::string>> list;
@@ -395,10 +419,11 @@ RecoveryBase<TDerived, TSystemInfoData, TCallback>::GetSortedRecoveryFiles(
   return list;
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-void RecoveryBase<TDerived, TSystemInfoData, TCallback>::ReadLogs(
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+void RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::ReadLogs(
     std::function<void(const TSystemInfoData& data)> system_callback,
-    TCallback call_back, std::function<void(int)> set_start_point) {
+    TCallback call_back, TStartPoint set_start_point) {
   if (recovery_enabled_ == false) {
     return;
   }
@@ -412,7 +437,7 @@ void RecoveryBase<TDerived, TSystemInfoData, TCallback>::ReadLogs(
   auto recovery_files_pair = GetRecoveryFiles(storage_ckpt);
   int64_t ckpt = recovery_files_pair.second;
   if (set_start_point) {
-    set_start_point(ckpt);
+    static_cast<TDerived*>(this)->HandleStartPoint(ckpt, set_start_point);
   }
   int idx = 0;
   for (auto path : recovery_files_pair.first) {
@@ -420,9 +445,11 @@ void RecoveryBase<TDerived, TSystemInfoData, TCallback>::ReadLogs(
   }
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-void RecoveryBase<TDerived, TSystemInfoData, TCallback>::SwitchFile(
-    const std::string& file_path, TCallback call_back) {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+void RecoveryBase<TDerived, TSystemInfoData, TCallback,
+                  TStartPoint>::SwitchFile(const std::string& file_path,
+                                           TCallback call_back) {
   std::unique_lock<std::mutex> lk(mutex_);
 
   min_seq_ = -1;
@@ -434,8 +461,9 @@ void RecoveryBase<TDerived, TSystemInfoData, TCallback>::SwitchFile(
             << "[" << min_seq_ << "," << max_seq_ << "]";
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-void RecoveryBase<TDerived, TSystemInfoData, TCallback>::OpenFile(
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+void RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::OpenFile(
     const std::string& path) {
   if (fd_ >= 0) {
     close(fd_);
@@ -458,11 +486,13 @@ void RecoveryBase<TDerived, TSystemInfoData, TCallback>::OpenFile(
   assert(fd_ >= 0);
 }
 
-template <typename TDerived, typename TSystemInfoData, typename TCallback>
-void RecoveryBase<TDerived, TSystemInfoData, TCallback>::ReadLogsFromFiles(
-    const std::string& path, int64_t ckpt, int file_idx,
-    std::function<void(const TSystemInfoData& data)> system_callback,
-    TCallback call_back) {
+template <typename TDerived, typename TSystemInfoData, typename TCallback,
+          typename TStartPoint>
+void RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::
+    ReadLogsFromFiles(
+        const std::string& path, int64_t ckpt, int file_idx,
+        std::function<void(const TSystemInfoData& data)> system_callback,
+        TCallback call_back) {
   int fd = open(path.c_str(), O_CREAT | O_RDONLY, 0666);
   if (fd < 0) {
     LOG(ERROR) << " open file fail:" << path;
@@ -476,14 +506,17 @@ void RecoveryBase<TDerived, TSystemInfoData, TCallback>::ReadLogsFromFiles(
   decltype(ParseData(std::string{})) request_list;
 
   while (Read(fd, sizeof(data_len), reinterpret_cast<char*>(&data_len))) {
-    std::string data;
-    char* buf = new char[data_len];
-    if (!Read(fd, data_len, buf)) {
+    constexpr size_t kMaxRecordSize = 64 * 1024 * 1024;  // 64 MB
+    if (data_len == 0 || data_len > kMaxRecordSize) {
+      LOG(ERROR) << "Corrupt record: invalid data_len=" << data_len;
+      break;
+    }
+    std::vector<char> buf(data_len);
+    if (!Read(fd, data_len, buf.data())) {
       LOG(ERROR) << "Read data log fail";
       break;
     }
-    data = std::string(buf, data_len);
-    delete buf;
+    std::string data = std::string(buf.data(), data_len);
 
     auto list = ParseData(data);
     if (list.size() == 0) {

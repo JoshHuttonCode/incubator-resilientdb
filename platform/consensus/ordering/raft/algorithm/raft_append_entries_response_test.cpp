@@ -231,5 +231,103 @@ TEST_F(RaftTest,
   EXPECT_EQ(raft_->GetCommitIndex(), 0);
 }
 
+// Test 9: A leader receiving an AppendEntriesResponse success, updating the
+// follower's matchIndex, and not committing
+TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccessAndDoesNotCommit) {
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(mock_commit, Commit(_)).Times(0);
+
+  AppendEntriesResponse aeResponse;
+  aeResponse.set_success(true);
+  aeResponse.set_term(1);
+  aeResponse.set_id(2);
+  aeResponse.set_lastlogindex(2);
+
+  raft_->SetStateForTest({.currentTerm = 1,
+                          .commitIndex = 0,
+                          .lastCommitted = 0,
+                          .role = Role::LEADER,
+                          .log = CreateLogEntries(
+                              {
+                                  {1, "Transaction 1"},
+                                  {1, "Transaction 2"},
+                              },
+                              true),
+                          .nextIndex = std::vector<uint64_t>{1, 2, 2, 2, 2},
+                          .matchIndex = std::vector<uint64_t>{0, 0, 0, 1, 0}});
+
+  bool success = raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aeResponse));
+  EXPECT_TRUE(success);
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 0, 2, 1, 0));
+  EXPECT_EQ(raft_->GetCommitIndex(), 0);
+}
+
+// Test 10: A leader receiving an AppendEntriesResponse success with a lower
+// lastLogIndex than the matchIndex corresponding to that follower does not
+// lower that matchIndex
+TEST_F(RaftTest, LeaderReceivingOutOfDateAERDoesNotLowerMatchIndex) {
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(mock_commit, Commit(_)).Times(0);
+
+  AppendEntriesResponse aeResponse;
+  aeResponse.set_success(true);
+  aeResponse.set_term(1);
+  aeResponse.set_id(2);
+  aeResponse.set_lastlogindex(1);
+
+  raft_->SetStateForTest({.currentTerm = 1,
+                          .commitIndex = 0,
+                          .lastCommitted = 0,
+                          .role = Role::LEADER,
+                          .log = CreateLogEntries(
+                              {
+                                  {1, "Transaction 1"},
+                                  {1, "Transaction 2"},
+                              },
+                              true),
+                          .nextIndex = std::vector<uint64_t>{1, 2, 2, 2, 2},
+                          .matchIndex = std::vector<uint64_t>{0, 0, 2, 1, 0}});
+
+  bool success = raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aeResponse));
+  EXPECT_TRUE(success);
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 0, 2, 1, 0));
+  EXPECT_EQ(raft_->GetCommitIndex(), 0);
+}
+
+// Test 11: A leader receiving an AppendEntriesResponse success does not commit
+// an entry from a previous term (without committing it transitively via a
+// commit from its own term)
+TEST_F(RaftTest, LeaderReceivingAERDoesNotCommitFromPreviousTerm) {
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(mock_commit, Commit(_)).Times(0);
+
+  AppendEntriesResponse aeResponse;
+  aeResponse.set_success(true);
+  aeResponse.set_term(2);
+  aeResponse.set_id(2);
+  aeResponse.set_lastlogindex(1);
+
+  raft_->SetStateForTest({.currentTerm = 2,
+                          .commitIndex = 0,
+                          .lastCommitted = 0,
+                          .role = Role::LEADER,
+                          .log = CreateLogEntries(
+                              {
+                                  {1, "Transaction 1"},
+                                  {1, "Transaction 2"},
+                              },
+                              true),
+                          .nextIndex = std::vector<uint64_t>{1, 2, 2, 2, 2},
+                          .matchIndex = std::vector<uint64_t>{0, 2, 0, 1, 0}});
+
+  bool success = raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aeResponse));
+  EXPECT_TRUE(success);
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 1, 1, 0));
+  EXPECT_EQ(raft_->GetCommitIndex(), 0);
+}
+
 }  // namespace raft
 }  // namespace resdb

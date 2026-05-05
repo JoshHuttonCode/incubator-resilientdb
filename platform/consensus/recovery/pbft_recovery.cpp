@@ -39,7 +39,7 @@ using CallbackType =
 
 PBFTRecovery::PBFTRecovery(const ResDBConfig& config, CheckPoint* checkpoint,
                            SystemInfo* system_info, Storage* storage)
-    : RecoveryBase<PBFTRecovery, SystemInfoData, CallbackType>(
+    : RecoveryBase<PBFTRecovery, SystemInfoData, CallbackType, StartPointType>(
           config, checkpoint, storage),
       system_info_(system_info) {
   Init();
@@ -197,6 +197,11 @@ void PBFTRecovery::HandleSystemInfo(
   if (!successful_callback) {
     LOG(ERROR) << "parse info fail:" << data.size();
   }
+}
+
+void PBFTRecovery::HandleStartPoint(int64_t ckpt,
+                                    StartPointType set_start_point) {
+  set_start_point(ckpt);
 }
 
 std::map<
