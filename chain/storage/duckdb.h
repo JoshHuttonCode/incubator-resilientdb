@@ -99,6 +99,7 @@ class DuckDB : public Storage {
   }
 
   bool Flush() override { return true; }
+  void Clear() override;
 
  private:
   std::unique_ptr<duckdb::DuckDB> db_;

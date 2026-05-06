@@ -115,6 +115,26 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
     }
     performance_manager_->SetPrimary(dtl->leaderid());
     return 0;
+  } else if (request->user_type() == MessageType::InstallSnapshotMsg) {
+    std::unique_ptr<InstallSnapshot> is =
+        std::make_unique<resdb::raft::InstallSnapshot>();
+    if (!is->ParseFromString(request->data())) {
+      LOG(ERROR) << "parse InstallSnapshot fail";
+      assert(1 == 0);
+      return -1;
+    }
+    raft_->ReceiveInstallSnapshot(std::move(is));
+    return 0;
+  } else if (request->user_type() == MessageType::InstallSnapshotResponseMsg) {
+    std::unique_ptr<InstallSnapshotResponse> isr =
+        std::make_unique<resdb::raft::InstallSnapshotResponse>();
+    if (!isr->ParseFromString(request->data())) {
+      LOG(ERROR) << "parse InstallSnapshotResponse fail";
+      assert(1 == 0);
+      return -1;
+    }
+    raft_->ReceiveInstallSnapshotResponse(std::move(isr));
+    return 0;
   }
   LOG(ERROR) << "Unknown message type";
   return 0;
@@ -171,8 +191,10 @@ int Consensus::ResponseMsg(const BatchUserResponse& batch_resp) {
   // transactions before batch_resp.seq() have been executed.
   last_applied_ = std::max(batch_resp.seq(), last_applied_);
 
-  // raft_checkpoint_manager_->SetStableCheckpoint(batch_resp.seq());
-  if (batch_resp.seq() >= snapshot_interval_ + last_snapshot_initiated_at_) {
+  // Pause creating more snapshots if we are in the process of sending one to
+  // any follower. One may be in progress, but no more will be initiated.
+  if (batch_resp.seq() >= snapshot_interval_ + last_snapshot_initiated_at_ &&
+      !raft_->IsSendSnapshotInProgress()) {
     LOG(INFO) << "Initiating checkpoint at seq: " << batch_resp.seq();
     // Update the checkpoint in the manager
     raft_checkpoint_manager_->SetStableCheckpoint(batch_resp.seq());

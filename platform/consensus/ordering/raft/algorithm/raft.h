@@ -109,6 +109,9 @@ class Raft : public common::ProtocolBase {
   virtual void ReceiveRequestVote(std::unique_ptr<RequestVote> rv);
   virtual void ReceiveRequestVoteResponse(
       std::unique_ptr<RequestVoteResponse> rvr);
+  virtual bool ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is);
+  virtual bool ReceiveInstallSnapshotResponse(
+      std::unique_ptr<InstallSnapshotResponse> isr);
   virtual void StartElection();
   virtual void SendHeartBeat();
   virtual Role GetRoleSnapshot() const;
@@ -133,6 +136,14 @@ class Raft : public common::ProtocolBase {
                 bool writeMetadata = true);
   void TruncateLog(uint64_t first, bool writeMetadata = true);
   void TruncatePrefix(uint64_t index);
+  bool IsSendSnapshotInProgress() {
+    for (auto in_progress : snapshot_in_progress_) {
+      if (in_progress) {
+        return true;
+      }
+    }
+    return false;
+  };
 
  private:
   mutable std::mutex mutex_;
@@ -159,14 +170,15 @@ class Raft : public common::ProtocolBase {
   virtual bool InFlightPerFollowerLimitReachedLocked(int followerId) const;
 #ifdef RAFT_TEST_MODE
  public:
+  std::string GetSnapshotFilePath() const { return snapshot_file_path_; }
 #endif
   int GetLogicalLogSize() const;
   const LogEntry& GetLogEntryAtIndex(uint64_t index) const;
   const uint64_t GetLogTermAtIndex(uint64_t index) const;
+  void SendInstallSnapshot(int followerId, size_t byte_offset);
 #ifdef RAFT_TEST_MODE
  private:
 #endif
-  void SendInstallSnapshot(int followerId);
   void TruncatePrefixLocked(uint64_t index);
   void SetRoleLocked(Role role);
 
@@ -194,6 +206,31 @@ class Raft : public common::ProtocolBase {
   //std::chrono::steady_clock::time_point last_heartbeat_time_; // Protected by mutex_
   int64_t snapshot_last_index_;
   int64_t snapshot_last_term_;
+  std::vector<bool> snapshot_in_progress_;  // Protected by mutex_
+
+  // Reassembly state for incoming chunked InstallSnapshot RPCs (follower side).
+  // Key: leaderId. Cleared when snapshot finishes or a new one starts.
+  // Chunks are written to a temp file as they arrive. On completion the temp
+  // file is renamed to the final snapshot path and applied to the state
+  // machine.
+  struct PendingSnapshot {
+    uint64_t lastIncludedIndex = 0;
+    uint64_t lastIncludedTerm = 0;
+    // next byte offset we expect from the leader
+    uint64_t expectedOffset = 0;
+    // open fd to the temp file, or -1 if not open
+    int fd = -1;
+    std::string tmpPath;
+  };
+  std::map<int, PendingSnapshot>
+      pending_snapshot_chunks_;  // Protected by mutex_
+  // 1 MiB per snapshot chunk
+  static constexpr size_t chunk_size_in_bytes_ = 1 * 1024 * 1024;
+
+  // final committed snapshot path
+  std::string snapshot_file_path_;
+  // temp path used during leader serialization
+  std::string snapshot_tmp_path_;
 
   bool is_stop_;
   const uint64_t quorum_;
@@ -223,7 +260,7 @@ class Raft : public common::ProtocolBase {
 
     if (patch.log) {
       log_ = *patch.log;
-      lastLogIndex_ = log_.empty() ? 0 : log_.size() - 1;
+      lastLogIndex_ = log_.size() - 1 + snapshot_last_index_;
     }
 
     if (patch.nextIndex) nextIndex_ = *patch.nextIndex;

@@ -58,6 +58,7 @@ class MockStorage : public Storage {
   MOCK_METHOD(ValuesSeqType, GetAllItemsWithSeq, (), (override));
 
   MOCK_METHOD(bool, Flush, (bool should_sync), (override));
+  MOCK_METHOD(void, Clear, (), (override));
 };
 
 }  // namespace resdb
