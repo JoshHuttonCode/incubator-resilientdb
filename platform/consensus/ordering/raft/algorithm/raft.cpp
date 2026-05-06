@@ -368,7 +368,8 @@ bool Raft::ReceiveAppendEntriesResponse(std::unique_ptr<AppendEntriesResponse> a
     }
     PruneExpiredInFlightMsgsLocked();
     PruneRedundantInFlightMsgsLocked(followerId, aer->lastlogindex());
-    nextIndex_[followerId] = aer->lastlogindex() + 1;
+    nextIndex_[followerId] =
+        std::min(aer->lastlogindex() + 1, lastLogIndex_ + 1);
 
     // if successful, update matchIndex and try to commit more entries
     if (aer->success()) {
