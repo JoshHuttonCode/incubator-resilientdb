@@ -20,15 +20,20 @@
 #include "platform/consensus/ordering/raft/algorithm/raft.h"
 
 #include <execinfo.h>
+#include <fcntl.h>
 #include <glog/logging.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <memory>
 
+#include "chain/storage/storage.h"
 #include "common/crypto/signature_verifier.h"
 #include "common/utils/utils.h"
 #include "platform/consensus/ordering/raft/proto/proposal.pb.h"
@@ -94,6 +99,15 @@ Raft::Raft(int id, int f, int total_num, SignatureVerifier* verifier,
   id_ = id;
   total_num_ = total_num;
   f_ = (total_num-1)/2;
+
+  // Derive snapshot file paths from the same directory as the WAL/metadata.
+  // recovery_->GetFilePath() returns e.g. "./wal_log/log", so we use its
+  // parent directory.
+  {
+    std::string wal_dir = recovery_->GetWalDir();
+    snapshot_file_path_ = wal_dir + "/snapshot.dat";
+    snapshot_tmp_path_ = wal_dir + "/snapshot.dat.tmp";
+  }
   //last_ae_time_ = std::chrono::steady_clock::now();
   //last_heartbeat_time_ = std::chrono::steady_clock::now();
 
@@ -109,6 +123,7 @@ Raft::Raft(int id, int f, int total_num, SignatureVerifier* verifier,
   }
   nextIndex_.assign(total_num_ + 1, lastLogIndex_ + 1);
   matchIndex_.assign(total_num_ + 1, lastLogIndex_);
+  snapshot_in_progress_.assign(total_num_ + 1, false);
 }
 
 Raft::~Raft() { 
@@ -381,7 +396,7 @@ bool Raft::ReceiveAppendEntriesResponse(std::unique_ptr<AppendEntriesResponse> a
       }
       if (aer->lastlogindex() < snapshot_last_index_) {
         LOG(INFO) << "snapshot_last_index_ is: " << snapshot_last_index_;
-        SendInstallSnapshot(followerId);
+        SendInstallSnapshot(followerId, 0);
       } else if (!InFlightPerFollowerLimitReachedLocked(followerId)) {
         fields = GatherAeFieldsLocked(followerId);
         resending = true;
@@ -1016,17 +1031,623 @@ void Raft::TruncatePrefixLocked(uint64_t index) {
   assert(lastLogIndex_ == GetLogicalLogSize() - 1);
 }
 
-void Raft::SendInstallSnapshot(int followerId) {}
+// Serialize the storage state machine snapshot.
+// Format per entry: [4-byte key_len][key][4-byte val_len][val]
+static std::string SerializeSnapshot(Storage* storage) {
+  LOG(INFO) << "Serializing Storage snapshot";
+  std::string data;
+  if (!storage) {
+    return data;
+  }
 
-/*
-void Raft::ReceiveInstallSnapshot() {
-
+  for (const auto& [key, value_ver] : storage->GetAllItems()) {
+    const std::string& value = value_ver.first;
+    uint32_t key_length = static_cast<uint32_t>(key.size());
+    uint32_t value_length = static_cast<uint32_t>(value.size());
+    data.append(reinterpret_cast<const char*>(&key_length), 4);
+    data.append(key);
+    data.append(reinterpret_cast<const char*>(&value_length), 4);
+    data.append(value);
+  }
+  return data;
 }
 
-void Raft::ReceiveInstallSnapshotResponse() {
+static void ApplySnapshot(Storage* storage, const std::string& raw) {
+  if (!storage) {
+    return;
+  }
+  LOG(INFO) << "Applying Snapshot";
 
+  // Clear existing storage before applying snapshot
+  storage->Clear();
+  if (raw.empty()) {
+    storage->Flush(true);
+    return;
+  }
+  size_t pos = 0;
+  while (pos + 8 <= raw.size()) {
+    uint32_t key_length;
+    std::memcpy(&key_length, raw.data() + pos, 4);
+    pos += 4;
+    if (pos + key_length > raw.size()) {
+      break;
+    }
+    std::string key(raw.data() + pos, key_length);
+    pos += key_length;
+
+    uint32_t value_length;
+    if (pos + 4 > raw.size()) {
+      break;
+    }
+    std::memcpy(&value_length, raw.data() + pos, 4);
+    pos += 4;
+    if (pos + value_length > raw.size()) {
+      break;
+    }
+    std::string val(raw.data() + pos, value_length);
+    pos += value_length;
+
+    storage->SetValue(key, val);
+  }
+  // Flush storage to disk before WriteMetadata()
+  storage->Flush(/*should_sync=*/true);
 }
-*/
+
+// Send one chunk of a snapshot to a follower whose log has fallen behind the
+// entries remaining in the leader's log. Before the first chunk sent, the
+// snapshot is written to disk. Then it is read back one chunk at a time.
+// Subsequent chunks are sent after the follower ACKs each one.
+void Raft::SendInstallSnapshot(int followerId, size_t byte_offset) {
+  LOG(INFO) << "SendInstallSnapshot to follower " << followerId << " at offset "
+            << byte_offset;
+
+  // Gather snapshot metadata under the lock.
+  uint64_t term;
+  uint64_t lastIncludedIndex;
+  uint64_t lastIncludedTerm;
+  {
+    std::lock_guard<std::mutex> lk(mutex_);
+    term = currentTerm_;
+    lastIncludedIndex = snapshot_last_index_;
+    lastIncludedTerm = snapshot_last_term_;
+  }
+
+  // For the first chunk, (re-)serialize the state machine to disk so the file
+  // is consistent with the current snapshot point. Write to a temp path then
+  // rename so we never serve a partially-written file.
+  if (byte_offset == 0) {
+    std::string serialized = SerializeSnapshot(recovery_->GetStorage());
+
+    int tmp_fd =
+        open(snapshot_tmp_path_.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
+    if (tmp_fd < 0) {
+      LOG(ERROR) << "SendInstallSnapshot: failed to open tmp snapshot file "
+                 << snapshot_tmp_path_ << ": " << strerror(errno);
+      return;
+    }
+
+    const char* ptr = serialized.data();
+    size_t remaining = serialized.size();
+    while (remaining > 0) {
+      ssize_t written = write(tmp_fd, ptr, remaining);
+      if (written <= 0) {
+        LOG(ERROR) << "SendInstallSnapshot: write failed: " << strerror(errno);
+        close(tmp_fd);
+        unlink(snapshot_tmp_path_.c_str());
+        return;
+      }
+      ptr += written;
+      remaining -= static_cast<size_t>(written);
+    }
+
+    if (fsync(tmp_fd) < 0) {
+      LOG(ERROR) << "SendInstallSnapshot: fsync failed: " << strerror(errno);
+      close(tmp_fd);
+      unlink(snapshot_tmp_path_.c_str());
+      return;
+    }
+    close(tmp_fd);
+
+    if (rename(snapshot_tmp_path_.c_str(), snapshot_file_path_.c_str()) < 0) {
+      LOG(ERROR) << "SendInstallSnapshot: rename failed: " << strerror(errno);
+      unlink(snapshot_tmp_path_.c_str());
+      return;
+    }
+  }
+
+  // Open the committed snapshot file and read one chunk starting at
+  // byte_offset.
+  int snap_fd = open(snapshot_file_path_.c_str(), O_RDONLY);
+  if (snap_fd < 0) {
+    LOG(ERROR) << "SendInstallSnapshot: failed to open snapshot file "
+               << snapshot_file_path_ << ": " << strerror(errno);
+    return;
+  }
+
+  struct stat st;
+  if (fstat(snap_fd, &st) < 0) {
+    LOG(ERROR) << "SendInstallSnapshot: fstat failed: " << strerror(errno);
+    close(snap_fd);
+    return;
+  }
+  size_t total_size = static_cast<size_t>(st.st_size);
+
+  if (byte_offset > total_size) {
+    LOG(WARNING) << "SendInstallSnapshot: byte_offset " << byte_offset
+                 << " exceeds snapshot size " << total_size;
+    close(snap_fd);
+    return;
+  }
+
+  if (lseek(snap_fd, static_cast<off_t>(byte_offset), SEEK_SET) < 0) {
+    LOG(ERROR) << "SendInstallSnapshot: lseek failed: " << strerror(errno);
+    close(snap_fd);
+    return;
+  }
+
+  size_t chunk_size = std::min(chunk_size_in_bytes_, total_size - byte_offset);
+  std::string chunk(chunk_size, '\0');
+  size_t bytes_read = 0;
+  while (bytes_read < chunk_size) {
+    ssize_t n =
+        read(snap_fd, chunk.data() + bytes_read, chunk_size - bytes_read);
+    if (n <= 0) {
+      LOG(ERROR) << "SendInstallSnapshot: read failed: " << strerror(errno);
+      close(snap_fd);
+      return;
+    }
+    bytes_read += static_cast<size_t>(n);
+  }
+  close(snap_fd);
+
+  bool done = (byte_offset + chunk_size >= total_size);
+
+  InstallSnapshot msg;
+  msg.set_term(term);
+  msg.set_leaderid(id_);
+  msg.set_lastincludedindex(lastIncludedIndex);
+  msg.set_lastincludedterm(lastIncludedTerm);
+  msg.set_offset(byte_offset);
+  msg.set_data(std::move(chunk));
+  msg.set_done(done);
+
+  LOG(INFO) << "SendInstallSnapshot to follower " << followerId
+            << " lastIncludedIndex=" << lastIncludedIndex
+            << " offset=" << byte_offset << " totalBytes=" << total_size
+            << " chunkBytes=" << chunk_size << " done=" << done;
+
+  snapshot_in_progress_[followerId] = true;
+  SendMessage(MessageType::InstallSnapshotMsg, msg, followerId);
+}
+
+bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
+  LOG(INFO) << "Snapshot chunk received";
+  int leaderId = is->leaderid();
+  uint64_t incomingOffset = is->offset();
+  uint64_t lastIncludedIndex = is->lastincludedindex();
+  uint64_t lastIncludedTerm = is->lastincludedterm();
+  bool done = is->done();
+
+  // Variables set inside the lock, acted on outside.
+  bool demoted = false;
+  bool should_install = false;
+  uint64_t ourTerm = 0;
+  uint64_t bytes_stored = 0;
+  // Temp file path to rename into place after all chunks arrive (set outside
+  // lock).
+  std::string tmp_path_to_rename;
+
+  // Helper to close and clean up a PendingSnapshot's temp file, then erase it.
+  auto AbortPending = [&](std::map<int, PendingSnapshot>::iterator it) {
+    LOG(INFO) << "New snapshot received while one was in progress, aborting.";
+    if (it->second.fd >= 0) {
+      close(it->second.fd);
+    }
+    if (!it->second.tmpPath.empty()) {
+      unlink(it->second.tmpPath.c_str());
+    }
+    pending_snapshot_chunks_.erase(it);
+  };
+
+  {
+    std::lock_guard<std::mutex> lk(mutex_);
+    ourTerm = currentTerm_;
+
+    TermRelation rel = TermCheckLocked(is->term());
+    if (rel == TermRelation::STALE) {
+      LOG(INFO) << "ReceiveInstallSnapshot: stale term " << is->term()
+                << " (ours=" << ourTerm << ")";
+      InstallSnapshotResponse isr;
+      isr.set_term(ourTerm);
+      isr.set_id(id_);
+      isr.set_need_snapshot(false);
+      isr.set_bytes_stored(0);
+      isr.set_last_included_index(lastIncludedIndex);
+      isr.set_transfer_complete(false);
+      SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
+      return false;
+    }
+    leader_election_manager_->OnHeartBeat();
+    if (rel == TermRelation::NEW) {
+      demoted = DemoteSelfLocked(is->term());
+      ourTerm = currentTerm_;
+    }
+
+    // If offset == 0 and the snapshot is older than what we already have, our
+    // state is already further ahead.
+    if (incomingOffset == 0) {
+      if (lastIncludedIndex <= snapshot_last_index_) {
+        LOG(INFO) << "ReceiveInstallSnapshot: ignoring snapshot at index "
+                  << lastIncludedIndex << ", already have snapshot up to "
+                  << snapshot_last_index_;
+        InstallSnapshotResponse isr;
+        isr.set_term(ourTerm);
+        isr.set_id(id_);
+        isr.set_need_snapshot(false);
+        isr.set_bytes_stored(0);
+        isr.set_last_included_index(lastIncludedIndex);
+        isr.set_transfer_complete(false);
+        SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
+        if (demoted) {
+          leader_election_manager_->OnRoleChange();
+        }
+        return true;
+      }
+
+      // Discard any in-progress transfer from this leader and start fresh.
+      auto existing = pending_snapshot_chunks_.find(leaderId);
+      if (existing != pending_snapshot_chunks_.end()) {
+        AbortPending(existing);
+      }
+
+      // Open a new temp file for this snapshot transfer.
+      std::string tmp_path = snapshot_file_path_ + ".recv.tmp";
+      int fd = open(tmp_path.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
+      if (fd < 0) {
+        LOG(ERROR) << "ReceiveInstallSnapshot: failed to open recv tmp file "
+                   << tmp_path << ": " << strerror(errno);
+        InstallSnapshotResponse isr;
+        isr.set_term(ourTerm);
+        isr.set_id(id_);
+        isr.set_need_snapshot(true);
+        isr.set_bytes_stored(0);
+        isr.set_last_included_index(lastIncludedIndex);
+        isr.set_transfer_complete(false);
+        SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
+        if (demoted) {
+          leader_election_manager_->OnRoleChange();
+        }
+        return false;
+      }
+
+      PendingSnapshot ps;
+      ps.lastIncludedIndex = lastIncludedIndex;
+      ps.lastIncludedTerm = lastIncludedTerm;
+      ps.expectedOffset = 0;
+      ps.fd = fd;
+      ps.tmpPath = std::move(tmp_path);
+      pending_snapshot_chunks_[leaderId] = std::move(ps);
+    }
+
+    auto it = pending_snapshot_chunks_.find(leaderId);
+    // Non-first chunk with no transfer in progress.
+    if (it == pending_snapshot_chunks_.end()) {
+      LOG(WARNING) << "ReceiveInstallSnapshot: chunk at offset "
+                   << incomingOffset << " but no pending transfer from leader "
+                   << leaderId << "; requesting restart";
+      InstallSnapshotResponse isr;
+      isr.set_term(ourTerm);
+      isr.set_id(id_);
+      isr.set_need_snapshot(true);
+      isr.set_bytes_stored(0);
+      isr.set_last_included_index(lastIncludedIndex);
+      isr.set_transfer_complete(false);
+      SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
+      if (demoted) {
+        leader_election_manager_->OnRoleChange();
+      }
+      return false;
+    }
+
+    PendingSnapshot& pending = it->second;
+
+    // Restart if this chunk belongs to a different snapshot.
+    if (pending.lastIncludedIndex != lastIncludedIndex ||
+        pending.lastIncludedTerm != lastIncludedTerm) {
+      LOG(WARNING) << "ReceiveInstallSnapshot: chunk belongs to different "
+                      "snapshot (index "
+                   << lastIncludedIndex << " vs pending "
+                   << pending.lastIncludedIndex << "); requesting restart";
+      AbortPending(it);
+      InstallSnapshotResponse isr;
+      isr.set_term(ourTerm);
+      isr.set_id(id_);
+      isr.set_need_snapshot(true);
+      isr.set_bytes_stored(0);
+      isr.set_last_included_index(lastIncludedIndex);
+      isr.set_transfer_complete(false);
+      SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
+      if (demoted) {
+        leader_election_manager_->OnRoleChange();
+      }
+      return false;
+    }
+
+    // Reject out-of-order chunks and tell the leader what offset we expect
+    // next.
+    if (incomingOffset != pending.expectedOffset) {
+      LOG(WARNING) << "ReceiveInstallSnapshot: out-of-order chunk: expected "
+                   << pending.expectedOffset << " got " << incomingOffset;
+      InstallSnapshotResponse isr;
+      isr.set_term(ourTerm);
+      isr.set_id(id_);
+      isr.set_need_snapshot(true);
+      isr.set_bytes_stored(pending.expectedOffset);
+      isr.set_last_included_index(lastIncludedIndex);
+      isr.set_transfer_complete(false);
+      SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
+      if (demoted) {
+        leader_election_manager_->OnRoleChange();
+      }
+      return false;
+    }
+
+    // Write chunk data to the temp file at the correct offset.
+    {
+      LOG(INFO) << "Writing snapshot chunk to file";
+      const std::string& chunk = is->data();
+      const char* ptr = chunk.data();
+      size_t remaining = chunk.size();
+      while (remaining > 0) {
+        ssize_t written = write(pending.fd, ptr, remaining);
+        LOG(INFO) << "writing snapshot chunk to: " << pending.tmpPath;
+        if (written <= 0 || fsync(pending.fd) < 0) {
+          LOG(ERROR) << "ReceiveInstallSnapshot: write to temp file failed: "
+                     << strerror(errno);
+          AbortPending(it);
+          InstallSnapshotResponse isr;
+          isr.set_term(ourTerm);
+          isr.set_id(id_);
+          isr.set_need_snapshot(true);
+          isr.set_bytes_stored(0);
+          isr.set_last_included_index(lastIncludedIndex);
+          isr.set_transfer_complete(false);
+          SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
+          if (demoted) {
+            leader_election_manager_->OnRoleChange();
+          }
+          return false;
+        }
+        ptr += written;
+        remaining -= static_cast<size_t>(written);
+      }
+      pending.expectedOffset += static_cast<uint64_t>(chunk.size());
+      bytes_stored = pending.expectedOffset;
+    }
+
+    // Reply and wait for more chunks if not done.
+    if (!done) {
+      LOG(INFO) << "Snapshot chunk added, waiting for more";
+      InstallSnapshotResponse isr;
+      isr.set_term(ourTerm);
+      isr.set_id(id_);
+      isr.set_need_snapshot(true);
+      isr.set_bytes_stored(bytes_stored);
+      isr.set_last_included_index(lastIncludedIndex);
+      isr.set_transfer_complete(false);
+      SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
+      if (demoted) {
+        leader_election_manager_->OnRoleChange();
+      }
+      return true;
+    }
+
+    // At this point, all chunks of the snapshot have been received.
+
+    // Step 5: fsync and close the temp file, then set up for rename outside
+    // lock.
+    if (fsync(pending.fd) < 0) {
+      LOG(ERROR) << "ReceiveInstallSnapshot: fsync failed: " << strerror(errno);
+      AbortPending(it);
+      InstallSnapshotResponse isr;
+      isr.set_term(ourTerm);
+      isr.set_id(id_);
+      isr.set_need_snapshot(true);
+      isr.set_bytes_stored(0);
+      isr.set_last_included_index(lastIncludedIndex);
+      isr.set_transfer_complete(false);
+      SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
+      if (demoted) {
+        leader_election_manager_->OnRoleChange();
+      }
+      return false;
+    }
+    LOG(INFO) << "Completed snapshot is fsynced to disk";
+    close(pending.fd);
+    pending.fd = -1;
+    tmp_path_to_rename = pending.tmpPath;
+    pending_snapshot_chunks_.erase(it);
+
+    // If our log already contains lastIncludedIndex with matching term,
+    // the snapshot is redundant — we already have that state.
+    bool log_contains_index =
+        lastIncludedIndex >= snapshot_last_index_ &&
+        lastIncludedIndex <
+            snapshot_last_index_ + static_cast<uint64_t>(log_.size());
+    bool log_contains_matching_index_and_term =
+        log_contains_index &&
+        GetLogTermAtIndex(lastIncludedIndex) == lastIncludedTerm;
+
+    if (log_contains_matching_index_and_term) {
+      LOG(INFO) << "ReceiveInstallSnapshot: log matches at index="
+                << lastIncludedIndex << "; no state machine reset needed";
+      // Clean up the temp file — we won't use it.
+      unlink(tmp_path_to_rename.c_str());
+      tmp_path_to_rename.clear();
+      InstallSnapshotResponse isr;
+      isr.set_term(ourTerm);
+      isr.set_id(id_);
+      isr.set_need_snapshot(false);
+      isr.set_bytes_stored(bytes_stored);
+      isr.set_last_included_index(lastIncludedIndex);
+      isr.set_transfer_complete(true);
+      SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
+      if (demoted) {
+        leader_election_manager_->OnRoleChange();
+      }
+      return true;
+    }
+
+    // Discard the entire log and update the sentinel.
+    log_.clear();
+    LogEntry sentinel;
+    sentinel.entry.set_term(lastIncludedTerm);
+    sentinel.entry.set_command("COMMON_PREFIX");
+    log_.push_back(sentinel);
+
+    snapshot_last_index_ = lastIncludedIndex;
+    snapshot_last_term_ = lastIncludedTerm;
+    lastLogIndex_ = lastIncludedIndex;
+    commitIndex_ = lastIncludedIndex;
+    lastCommitted_ = lastIncludedIndex;
+
+    should_install = true;
+  }
+
+  if (demoted) {
+    leader_election_manager_->OnRoleChange();
+  }
+
+  if (should_install) {
+    LOG(INFO) << "All snapshot chunks received, applying snapshot";
+    // Atomically rename the temp file to the committed snapshot
+    // path so we always have a consistent snapshot file on disk.
+    if (rename(tmp_path_to_rename.c_str(), snapshot_file_path_.c_str()) < 0) {
+      LOG(ERROR) << "ReceiveInstallSnapshot: rename failed: "
+                 << strerror(errno);
+    }
+
+    // Read the snapshot back from the committed file and apply it.
+    std::string full_data;
+    {
+      int snap_fd = open(snapshot_file_path_.c_str(), O_RDONLY);
+      if (snap_fd < 0) {
+        // Fall back to temp path if rename failed.
+        snap_fd = open(tmp_path_to_rename.c_str(), O_RDONLY);
+      }
+      if (snap_fd < 0) {
+        LOG(ERROR)
+            << "ReceiveInstallSnapshot: failed to open snapshot for apply: "
+            << strerror(errno);
+      } else {
+        struct stat st;
+        if (fstat(snap_fd, &st) == 0) {
+          full_data.resize(static_cast<size_t>(st.st_size));
+          size_t bytes_read = 0;
+          while (bytes_read < full_data.size()) {
+            ssize_t n = read(snap_fd, full_data.data() + bytes_read,
+                             full_data.size() - bytes_read);
+            if (n <= 0) {
+              LOG(ERROR) << "ReceiveInstallSnapshot: read failed: "
+                         << strerror(errno);
+              break;
+            }
+            bytes_read += static_cast<size_t>(n);
+          }
+        }
+        close(snap_fd);
+      }
+    }
+
+    ApplySnapshot(recovery_->GetStorage(), full_data);
+    WriteMetadata();
+    LOG(INFO) << "ReceiveInstallSnapshot: installed snapshot up to index="
+              << lastIncludedIndex;
+  }
+
+  // Send final ACK.
+  {
+    std::lock_guard<std::mutex> lk(mutex_);
+    InstallSnapshotResponse isr;
+    isr.set_term(currentTerm_);
+    isr.set_id(id_);
+    isr.set_need_snapshot(false);
+    isr.set_bytes_stored(bytes_stored);
+    isr.set_last_included_index(lastIncludedIndex);
+    isr.set_transfer_complete(true);
+    SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
+  }
+  return true;
+}
+
+bool Raft::ReceiveInstallSnapshotResponse(
+    std::unique_ptr<InstallSnapshotResponse> isr) {
+  int followerId = isr->id();
+  uint64_t lastIncludedIndex = isr->last_included_index();
+  bool need_snapshot = isr->need_snapshot();
+  uint64_t bytes_stored = isr->bytes_stored();
+  bool transfer_complete = isr->transfer_complete();
+
+  bool demoted = false;
+  Role initialRole = Role::FOLLOWER;
+  AeFields catchupFields;
+  bool send_catchup_ae = false;
+
+  {
+    std::lock_guard<std::mutex> lk(mutex_);
+    initialRole = role_;
+
+    TermRelation rel = TermCheckLocked(isr->term());
+    if (rel == TermRelation::NEW) {
+      demoted = DemoteSelfLocked(isr->term());
+    }
+
+    if (role_ != Role::LEADER || rel == TermRelation::STALE) {
+      if (demoted) {
+        leader_election_manager_->OnRoleChange();
+      }
+      return false;
+    }
+
+    if (!need_snapshot) {
+      snapshot_in_progress_[followerId] = false;
+      if (transfer_complete) {
+        LOG(INFO) << "ReceiveInstallSnapshotResponse: snapshot complete for "
+                  << "follower " << followerId
+                  << " lastIncludedIndex=" << lastIncludedIndex;
+        nextIndex_[followerId] = lastIncludedIndex + 1;
+        matchIndex_[followerId] =
+            std::max(matchIndex_[followerId], lastIncludedIndex);
+        // If the follower still needs log entries, send them now.
+        if (nextIndex_[followerId] <= lastLogIndex_) {
+          catchupFields = GatherAeFieldsLocked(followerId);
+          send_catchup_ae = true;
+        }
+      } else {
+        // The follower rejected the snapshot and does not need it.
+        LOG(INFO) << "ReceiveInstallSnapshotResponse: Rejection from follower "
+                  << followerId;
+      }
+    }
+  }
+
+  if (demoted) {
+    leader_election_manager_->OnRoleChange();
+    LOG(INFO) << "ReceiveInstallSnapshotResponse: demoted from "
+              << (initialRole == Role::LEADER ? "LEADER" : "CANDIDATE")
+              << " to FOLLOWER";
+    return false;
+  }
+
+  if (need_snapshot) {
+    // Restart / continue the snapshot transfer.
+    SendInstallSnapshot(followerId, bytes_stored);
+  } else if (send_catchup_ae) {
+    CreateAndSendAppendEntryMsg(catchupFields);
+  }
+
+  return true;
+}
 
 void Raft::PrintDebugStateLocked() const {
   std::lock_guard<std::mutex> lk(mutex_);

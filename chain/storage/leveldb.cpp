@@ -497,6 +497,20 @@ std::vector<std::string> ResLevelDB::GetByCompositeKeyPrefix(
     out.emplace_back(key.data(), key.size());
   }
   return out;
+
+// Iterate every key and batch-delete it, then flush to disk.
+void ResLevelDB::Clear() {
+  leveldb::WriteBatch batch;
+  leveldb::Iterator* it = db_->NewIterator(leveldb::ReadOptions());
+  for (it->SeekToFirst(); it->Valid(); it->Next()) {
+    batch.Delete(it->key());
+  }
+  delete it;
+  leveldb::WriteOptions opts;
+  opts.sync = true;
+  db_->Write(opts, &batch);
+  // Clear any unflushed in-memory batch.
+  batch_.Clear();
 }
 
 }  // namespace storage

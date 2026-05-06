@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <thread>
 
 #include "chain/storage/storage.h"
@@ -57,6 +58,10 @@ class RaftRecovery : public RecoveryBase<RaftRecovery, RaftMetadata,
 
   RaftMetadata ReadMetadata();
   void Init();
+  Storage* GetStorage() { return storage_; }
+  std::string GetWalDir() const {
+    return std::filesystem::path(base_file_path_).parent_path().string();
+  }
   void WriteMetadata(int64_t current_term, int32_t voted_for,
                      uint64_t snapshot_last_index, uint64_t snapshot_last_term);
   void AddLogEntry(const Entry* entry, int64_t seq);

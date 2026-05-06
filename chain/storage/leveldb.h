@@ -84,6 +84,7 @@ class ResLevelDB : public Storage {
   bool UpdateMetrics();
 
   bool Flush(bool should_sync = false) override;
+  void Clear() override;
 
   virtual uint64_t GetLastCheckpoint() override;
 
