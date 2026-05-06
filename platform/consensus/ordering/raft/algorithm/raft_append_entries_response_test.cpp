@@ -329,5 +329,35 @@ TEST_F(RaftTest, LeaderReceivingAERDoesNotCommitFromPreviousTerm) {
   EXPECT_EQ(raft_->GetCommitIndex(), 0);
 }
 
+// Test 12: A leader receiving an AppendEntriesResponse from a follower whose
+// log is longer and does not crash.
+TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseFromLongerLog) {
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aeResponse;
+  aeResponse.set_success(false);
+  aeResponse.set_term(1);
+  aeResponse.set_id(2);
+  aeResponse.set_lastlogindex(8);
+
+  raft_->SetStateForTest({.currentTerm = 1,
+                          .commitIndex = 0,
+                          .role = Role::LEADER,
+                          .log = CreateLogEntries(
+                              {
+                                  {0, "Transaction 1"},
+                                  {0, "Transaction 2"},
+                              },
+                              true),
+                          .nextIndex = std::vector<uint64_t>{0, 2, 0, 0, 0},
+                          .matchIndex = std::vector<uint64_t>{0, 2, 0, 0, 0}});
+
+  bool success = raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aeResponse));
+  EXPECT_TRUE(success);
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 0, 0, 0));
+  EXPECT_THAT(raft_->GetNextIndex(), ::testing::ElementsAre(0, 2, 3, 0, 0));
+}
+
 }  // namespace raft
 }  // namespace resdb
