@@ -207,7 +207,7 @@ int Consensus::ResponseMsg(const BatchUserResponse& batch_resp) {
 
 void Consensus::OnCheckpointFinish(uint64_t seq) {
   LOG(INFO) << "Checkpointed all entries up to " << seq;
-  // raft_->TruncatePrefix(seq);
+  raft_->TruncatePrefix(seq);
 }
 
 }  // namespace raft
