@@ -954,6 +954,8 @@ void Raft::SetSnapshotLastIndexAndTerm(uint64_t snapshot_last_index,
     return;
   }
 
+  // Function is only called writeMetadata == false on Initial recovery, so
+  // these variables need to be set
   lastLogIndex_ = snapshot_last_index_;
   commitIndex_ = snapshot_last_index_;
   lastCommitted_ = snapshot_last_index_;
@@ -1021,7 +1023,7 @@ void Raft::TruncatePrefixLocked(uint64_t index) {
          "Tried to truncate an entry that has been snapshotted");
   assert(index <= lastCommitted_ &&
          "Tried to prefix truncate an element that has not been committed");
-  LOG(INFO) << "Setting Snapshot last index to:" << index + 1;
+  LOG(INFO) << "Setting Snapshot last index to:" << index;
 
   // Keep the sentinel, erase everything up to the index.
   auto erase_end = log_.begin() + (index - snapshot_last_index_);
@@ -1217,7 +1219,10 @@ void Raft::SendInstallSnapshot(int followerId, size_t byte_offset) {
             << " offset=" << byte_offset << " totalBytes=" << total_size
             << " chunkBytes=" << chunk_size << " done=" << done;
 
-  snapshot_in_progress_[followerId] = true;
+  {
+    std::lock_guard<std::mutex> lk(mutex_);
+    snapshot_in_progress_[followerId] = true;
+  }
   SendMessage(MessageType::InstallSnapshotMsg, msg, followerId);
 }
 
@@ -1277,10 +1282,10 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
     // If offset == 0 and the snapshot is older than what we already have, our
     // state is already further ahead.
     if (incomingOffset == 0) {
-      if (lastIncludedIndex <= snapshot_last_index_) {
+      if (lastIncludedIndex <= commitIndex_) {
         LOG(INFO) << "ReceiveInstallSnapshot: ignoring snapshot at index "
-                  << lastIncludedIndex << ", already have snapshot up to "
-                  << snapshot_last_index_;
+                  << lastIncludedIndex
+                  << ", already have committed entries up to " << commitIndex_;
         InstallSnapshotResponse isr;
         isr.set_term(ourTerm);
         isr.set_id(id_);
@@ -1402,7 +1407,7 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
       while (remaining > 0) {
         ssize_t written = write(pending.fd, ptr, remaining);
         LOG(INFO) << "writing snapshot chunk to: " << pending.tmpPath;
-        if (written <= 0 || fsync(pending.fd) < 0) {
+        if (written <= 0) {
           LOG(ERROR) << "ReceiveInstallSnapshot: write to temp file failed: "
                      << strerror(errno);
           AbortPending(it);
@@ -1421,6 +1426,10 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
         }
         ptr += written;
         remaining -= static_cast<size_t>(written);
+      }
+      if (fsync(pending.fd) < 0) {
+        LOG(ERROR) << "ReceiveInstallSnapshot: Failed to fsync to temp file"
+                   << strerror(errno);
       }
       pending.expectedOffset += static_cast<uint64_t>(chunk.size());
       bytes_stored = pending.expectedOffset;
