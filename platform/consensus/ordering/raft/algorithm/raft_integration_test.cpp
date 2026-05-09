@@ -414,8 +414,6 @@ TEST_F(RaftRecoveryIntegrationTest, TruncationPersistsAfterCheckpoint) {
                            /*snapshot_last_term=*/3);
 
     // Truncate from index 4 onward (entries 4 and 5 are discarded).
-    // NOTE: Assumes RaftRecovery::TruncateLog(from_index) writes a
-    // kTruncation WAL record.  Adjust the call if the API differs.
     TruncationRecord truncation;
     truncation.set_truncate_from_index(4);
     truncation.set_truncate_from_term(3);
@@ -474,6 +472,30 @@ TEST_F(RaftRecoveryIntegrationTest, TruncationPersistsAfterCheckpoint) {
     EXPECT_EQ(raft.GetLogTermAtIndex(4), 6);
     EXPECT_EQ(raft.GetLogTermAtIndex(5), 6);
   }
+}
+
+// Test 5: Check Raft behavior after on recovering metadata but not WAL log
+TEST_F(RaftRecoveryIntegrationTest, RecoveryEmptyWALWithNonEmptyMetadata) {
+  {
+    RaftRecovery recovery(config_, nullptr, nullptr, nullptr);
+    recovery.WriteMetadata(7, 2, /*snapshot_last_index=*/50,
+                           /*snapshot_last_term=*/7);
+    // Deliberately write no WAL entries — simulates a node that snapshotted
+    // and then had its WAL cleaned up before the next restart.
+  }
+ 
+  MockSignatureVerifier verifier;
+  MockLeaderElectionManager lem(config_);
+  MockReplicaCommunicator comm;
+ 
+  RaftRecovery recovery2(config_, nullptr, nullptr, nullptr);
+  Raft raft(1, 1, 4, &verifier, &lem, &comm, &recovery2);
+  RecoverFromLogs(recovery2, raft);
+ 
+  EXPECT_EQ(raft.GetCurrentTerm(), 7u);
+  EXPECT_EQ(raft.GetVotedFor(), 2);
+  EXPECT_EQ(raft.GetSnapshotLastIndex(), 50u);
+  EXPECT_EQ(raft.GetLastLogIndex(), 50u);
 }
 
 }  // namespace raft

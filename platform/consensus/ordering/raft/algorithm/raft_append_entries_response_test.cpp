@@ -265,7 +265,7 @@ TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccessAndDoesNotCommit) {
 
 // Test 10: A leader receiving an AppendEntriesResponse success with a lower
 // lastLogIndex than the matchIndex corresponding to that follower does not
-// lower that matchIndex
+// lower that matchIndex.
 TEST_F(RaftTest, LeaderReceivingOutOfDateAERDoesNotLowerMatchIndex) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_commit, Commit(_)).Times(0);
@@ -358,6 +358,47 @@ TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseFromLongerLog) {
   EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 0, 0, 0));
   EXPECT_THAT(raft_->GetNextIndex(), ::testing::ElementsAre(0, 2, 3, 0, 0));
 }
+
+// Test 13: A leader receiving an out of order AppendEntriesResponse does not decrease a follower's nextIndex below 1 + matchIndex.
+TEST_F(RaftTest, AppendEntriesResponseDoesNotDecreaseNextIndexBelowMatchIndex) {
+  raft_->SetStateForTest({
+      .currentTerm = 2,
+      .commitIndex = 0,
+      .lastCommitted = 0,
+      .role = Role::LEADER,
+      .log = CreateLogEntries(
+          {
+            {2, "Transaction 1"},
+            {2, "Transaction 2"},
+            {2, "Transaction 3"},
+            {2, "Transaction 4"}
+          },
+          true),
+      .nextIndex = std::vector<uint64_t>{1, 5, 5, 5, 5},
+      .matchIndex = std::vector<uint64_t>{0, 3, 3, 3, 3},
+  });
+ 
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  // The leader will send out an AppendEntries containing elements 4 and 5.
+  EXPECT_CALL(mock_call, Call(_, _, _)).Times(1);
+ 
+  // Stale success AER from follower 2 reporting lastLogIndex=2
+  // (older than the already-acknowledged matchIndex of 3).
+  AppendEntriesResponse aer;
+  aer.set_success(true);
+  aer.set_term(2);
+  aer.set_id(2);
+  aer.set_lastlogindex(2);
+ 
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+ 
+  EXPECT_EQ(raft_->GetMatchIndex()[2], 3u)
+      << "matchIndex must never decrease";
+  EXPECT_EQ(raft_->GetNextIndex()[2], 4u)
+      << "nextIndex for a follower must never decrease below 1 + its matchIndex";
+}
+
 
 }  // namespace raft
 }  // namespace resdb

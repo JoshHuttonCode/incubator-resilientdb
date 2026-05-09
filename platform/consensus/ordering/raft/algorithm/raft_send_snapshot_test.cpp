@@ -101,8 +101,10 @@ void RunTransfer(Raft& leader, Raft& follower, int followerId, int leaderId,
       }));
 
   // Send the first snapshot chunk
+  EXPECT_FALSE(leader.IsSendSnapshotInProgress());
   leader.SendInstallSnapshot(followerId, /*byte_offset=*/0);
   EXPECT_EQ(toFollower.size(), 1);
+  EXPECT_TRUE(leader.IsSendSnapshotInProgress());
 
   size_t fi = 0, li = 0;
   for (int iter = 0; iter < 1000; ++iter) {
@@ -110,6 +112,7 @@ void RunTransfer(Raft& leader, Raft& follower, int followerId, int leaderId,
       LOG(INFO) << "Follower is going to install snapshot";
       follower.ReceiveInstallSnapshot(
           std::make_unique<InstallSnapshot>(toFollower[fi++]));
+      EXPECT_TRUE(leader.IsSendSnapshotInProgress());
     }
     while (li < toLeader.size()) {
       LOG(INFO) << "Leader is going to receive snapshot response";
@@ -118,6 +121,7 @@ void RunTransfer(Raft& leader, Raft& follower, int followerId, int leaderId,
     }
     // Once the follower has responded to the leader with transfer_complete, the snapshot has completed.
     if (!toLeader.empty() && toLeader.back().transfer_complete()) {
+      EXPECT_FALSE(leader.IsSendSnapshotInProgress());
       return;
     }
   }
@@ -664,6 +668,198 @@ TEST_F(RaftSnapshotFileTest, FollowerDiscardsOldTempFileOnNewOffsetZeroChunk) {
   EXPECT_TRUE(on_disk.find_first_not_of('B') == std::string::npos)
       << "Committed snapshot file should contain only the second attempt's "
          "data";
+}
+
+// Test 6: A follower rejects a snapshot covering only entries that it has already committed.
+TEST_F(RaftSnapshotFileTest, StaleSnapshotRejected) {
+  ResDBConfig cfg = MakeConfig(follower_log_, /*self_id=*/2);
+  auto storage = resdb::storage::NewMemoryDB();
+  RaftRecovery recovery(cfg, nullptr, storage.get(),
+                                 nullptr);
+ 
+  MockSignatureVerifier verifier;
+  MockLeaderElectionManager leader_election_manager(cfg);
+  MockReplicaCommunicator replica_communicator;
+  MockSendMessageFunction send_message;
+  MockCommitFunction commit;
+ 
+  Raft follower(2, 1, 4, &verifier, &leader_election_manager, &replica_communicator, &recovery);
+  follower.SetSingleCallFunc(
+      [&](int type, const google::protobuf::Message& msg, int node_id) {
+        return send_message.Call(type, msg, node_id);
+      });
+  follower.SetCommitFunc([&](const google::protobuf::Message& msg) {
+    return commit.Commit(msg);
+  });
+ 
+  // Follower already has committed up to index 20.
+  follower.SetStateForTest({
+      .currentTerm = 5,
+      .commitIndex = 20,
+      .lastCommitted = 20,
+      .role = Role::FOLLOWER,
+      .log = CreateLogEntries({}, /*usedForLogPatch=*/true),
+  });
+  follower.SetSnapshotLastIndexAndTerm(20, 5, /*writeMetadata=*/false);
+ 
+  EXPECT_CALL(leader_election_manager, OnHeartBeat()).Times(AnyNumber());
+ 
+  // Capture the response sent back to the leader.
+  InstallSnapshotResponse captured;
+  EXPECT_CALL(send_message,
+              Call(MessageType::InstallSnapshotResponseMsg, _, _))
+      .WillOnce(Invoke([&](int, const google::protobuf::Message& msg, int) {
+        captured = dynamic_cast<const InstallSnapshotResponse&>(msg);
+        return 0;
+      }));
+
+  // Stale snapshot for index == 15, older than the follower's commitIndex.
+  auto stale = MakeChunk(5, 1, 15, 4, 0, std::string(128, 'S'), /*done=*/true);
+  follower.ReceiveInstallSnapshot(std::make_unique<InstallSnapshot>(stale));
+ 
+  EXPECT_EQ(follower.GetSnapshotLastIndex(), 20u)
+      << "Follower snapshot_last_index_ must not regress on a stale snapshot";
+  EXPECT_EQ(follower.GetCommitIndex(), 20u)
+      << "commitIndex must not regress";
+  EXPECT_FALSE(captured.need_snapshot());
+  EXPECT_FALSE(captured.transfer_complete());
+}
+
+// Test 7: Snapshot completes but we already contain all entries it covers.
+TEST_F(RaftSnapshotFileTest, LogAlreadyContainsSnapshotEntries) {
+  ResDBConfig cfg = MakeConfig(follower_log_, /*self_id=*/2);
+  auto storage = resdb::storage::NewMemoryDB();
+  RaftRecovery recovery(cfg, nullptr, storage.get(),
+                                 nullptr);
+ 
+  MockSignatureVerifier verifier;
+  MockLeaderElectionManager leader_election_manager(cfg);
+  MockReplicaCommunicator replica_communicator;
+  MockSendMessageFunction send_message;
+  MockCommitFunction commit;
+ 
+  Raft follower(2, 1, 4, &verifier, &leader_election_manager, &replica_communicator, &recovery);
+  follower.SetSingleCallFunc(
+      [&](int type, const google::protobuf::Message& msg, int node_id) {
+        return send_message.Call(type, msg, node_id);
+      });
+  follower.SetCommitFunc([&](const google::protobuf::Message& msg) {
+    return commit.Commit(msg);
+  });
+ 
+  // Follower has snapshotted up to index 10.
+  follower.SetSnapshotLastIndexAndTerm(10, 4, /*writeMetadata=*/false);
+  follower.SetStateForTest({
+      .currentTerm = 4,
+      .commitIndex = 10,
+      .lastCommitted = 10,
+      .role = Role::FOLLOWER,
+      .log = CreateLogEntries(
+                              {
+                                  {4, "Transaction 11"},
+                                  {4, "Transaction 12"},
+                                  {4, "Transaction 13"},
+                                  {4, "Transaction 14"},
+                                  {4, "Transaction 15"}
+                              },
+                              true),
+  });
+ 
+  EXPECT_CALL(leader_election_manager, OnHeartBeat()).Times(AnyNumber());
+ 
+  // Capture the response sent back to the leader.
+  InstallSnapshotResponse captured;
+  EXPECT_CALL(send_message,
+              Call(MessageType::InstallSnapshotResponseMsg, _, _))
+      .WillOnce(Invoke([&](int, const google::protobuf::Message& msg, int) {
+        captured = dynamic_cast<const InstallSnapshotResponse&>(msg);
+        return 0;
+      }));
+ 
+  // Snapshot containing entries we already have.
+  auto stale = MakeChunk(5, 1, 15, 4, 0, std::string(128, 'S'), /*done=*/true);
+  follower.ReceiveInstallSnapshot(std::make_unique<InstallSnapshot>(stale));
+ 
+  // Must not have changed state.
+  EXPECT_EQ(follower.GetSnapshotLastIndex(), 10u)
+      << "Follower snapshot_last_index_ must not change when snapshot is covered.";
+  EXPECT_EQ(follower.GetCommitIndex(), 10u)
+      << "commitIndex must not regress";
+  // The response must NOT signal transfer_complete=true for a state-machine
+  // reset, and need_snapshot must be false.
+  EXPECT_FALSE(captured.need_snapshot());
+  EXPECT_FALSE(captured.transfer_complete());
+}
+
+// Test 8: Successfully transfer a snapshot that is multiple chunks.
+TEST_F(RaftSnapshotFileTest, MultiChunkSnapshot) {
+  ResDBConfig cfg = MakeConfig(follower_log_, /*self_id=*/2);
+  auto storage = resdb::storage::NewMemoryDB();
+  RaftRecovery recovery(cfg, nullptr, storage.get(),
+                                 nullptr);
+ 
+  MockSignatureVerifier verifier;
+  MockLeaderElectionManager leader_election_manager(cfg);
+  MockReplicaCommunicator replica_communicator;
+  MockSendMessageFunction send_message;
+  MockCommitFunction commit;
+ 
+  Raft follower(2, 1, 4, &verifier, &leader_election_manager, &replica_communicator, &recovery);
+  follower.SetSingleCallFunc(
+      [&](int type, const google::protobuf::Message& msg, int node_id) {
+        return send_message.Call(type, msg, node_id);
+      });
+  follower.SetCommitFunc([&](const google::protobuf::Message& msg) {
+    return commit.Commit(msg);
+  });
+ 
+  follower.SetStateForTest({
+      .currentTerm = 4,
+      .role = Role::FOLLOWER,
+  });
+
+  EXPECT_CALL(leader_election_manager, OnHeartBeat()).Times(AnyNumber());
+  EXPECT_CALL(leader_election_manager, OnRoleChange()).Times(AnyNumber());
+ 
+  // Capture the response sent back to the leader.
+  std::vector<InstallSnapshotResponse> responses;
+  EXPECT_CALL(send_message, Call(_, _, _)).WillRepeatedly(::testing::Return(0));
+  EXPECT_CALL(send_message,
+              Call(MessageType::InstallSnapshotResponseMsg, _, _))
+      .WillRepeatedly(Invoke([&](int, const google::protobuf::Message& msg, int) {
+        responses.push_back(
+            dynamic_cast<const InstallSnapshotResponse&>(msg));
+        return 0;
+      }));
+
+ 
+  // Build a 300-byte payload.
+  const size_t chunk_size = 100;
+  std::string full_payload;
+  full_payload += std::string(chunk_size, 'A');  // chunk 0
+  full_payload += std::string(chunk_size, 'B');  // chunk 1
+  full_payload += std::string(chunk_size, 'C');  // chunk 2
+ 
+  // Deliver chunks one at a time.
+  for (size_t i = 0; i < 3; ++i) {
+    bool done = (i == 2);
+    std::string data = full_payload.substr(i * chunk_size, chunk_size);
+    auto chunk =
+        MakeChunk(4, 1, 30, 4, i * chunk_size, data, done);
+    follower.ReceiveInstallSnapshot(std::make_unique<InstallSnapshot>(chunk));
+  }
+ 
+  ASSERT_EQ(responses.size(), 3u);
+  EXPECT_TRUE(responses.back().transfer_complete());
+  EXPECT_EQ(responses.back().bytes_stored(), full_payload.size());
+ 
+  // The committed file must be byte-for-byte identical to full_payload.
+  const std::string on_disk =
+      ReadFileContents(follower.GetSnapshotFilePath());
+  EXPECT_EQ(on_disk, full_payload)
+      << "Multi-chunk snapshot must reconstruct identically to the original "
+         "payload";
+
 }
 
 }  // namespace raft
