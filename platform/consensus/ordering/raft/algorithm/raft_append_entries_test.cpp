@@ -924,6 +924,7 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(3);
   EXPECT_CALL(mock_commit, Commit(_)).Times(1);
 
+  // An entry that has been committed must be persisted, so while normally we truncate and just use whatever is in the AppendEntries, this is unnecessary for entries that have been committed. This 
   auto aefields = CreateAeFields(
       /*term=*/3,
       /*leaderId=*/2,
@@ -1088,6 +1089,102 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
   EXPECT_DEATH(
       raft_->TruncatePrefix(5),
       "Tried to prefix truncate an element that has not been committed");
+}
+
+// Test 22: A follower receives an AppendEntries containing entries that had already been truncated from its log.
+TEST_F(RaftTest, FollowerReceivesAppendEntriesWithOnlySnapshottedEntries) {
+  EXPECT_CALL(*recovery_, WriteMetadata(_, _, _, _)).Times(AnyNumber());
+  EXPECT_CALL(*recovery_, AddLogEntry(::testing::An<const Entry*>()))
+      .Times(AnyNumber());
+  EXPECT_CALL(*recovery_, AddLogEntry(::testing::An<std::vector<Entry>&>()))
+      .Times(AnyNumber());
+  EXPECT_CALL(*recovery_, TruncateLog(_)).Times(AnyNumber());
+ 
+  raft_->SetStateForTest({
+      .currentTerm = 2,
+      .role = Role::FOLLOWER,
+      .log = CreateLogEntries({}, true),
+  });
+  // Follower has snapshot up to index 3
+  raft_->SetSnapshotLastIndexAndTerm(3, 2, false);
+ 
+  AppendEntriesResponse aer;
+  EXPECT_CALL(mock_call,
+              Call(MessageType::AppendEntriesResponseMsg, _, _))
+      .WillOnce(Invoke([&](int, const google::protobuf::Message& msg, int) {
+        aer = dynamic_cast<const AppendEntriesResponse&>(msg);
+        return 0;
+      }));
+  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(AnyNumber());
+ 
+  auto ae_fields = CreateAeFields(
+      /*term=*/2,
+      /*leaderId=*/2,
+      /*prevLogIndex=*/1,
+      /*prevLogTerm=*/2,
+      CreateLogEntries({
+            {2, "Entry2"},
+            {2, "Entry3"}
+        }),
+      /*leaderCommit=*/1,
+      /*followerId=*/1);
+  auto ae_msg = CreateAeMessage(ae_fields);
+ 
+  bool accepted_ae = raft_->ReceiveAppendEntries(
+      std::make_unique<AppendEntries>(std::move(ae_msg)));
+ 
+  EXPECT_TRUE(accepted_ae);
+  EXPECT_TRUE(aer.success());
+  EXPECT_EQ(aer.term(), 2);
+  EXPECT_EQ(aer.lastlogindex(), 3u);
+}
+
+// Test 23: A follower receives an AppendEntries continuing right after its last snapshot with an otherwise empty log
+TEST_F(RaftTest, FollowerReceivesAppendEntriesDirectlyAfterCheckpointTruncation) {
+  EXPECT_CALL(*recovery_, WriteMetadata(_, _, _, _)).Times(AnyNumber());
+  EXPECT_CALL(*recovery_, AddLogEntry(::testing::An<const Entry*>()))
+      .Times(AnyNumber());
+  EXPECT_CALL(*recovery_, AddLogEntry(::testing::An<std::vector<Entry>&>()))
+      .Times(AnyNumber());
+  EXPECT_CALL(*recovery_, TruncateLog(_)).Times(AnyNumber());
+ 
+  raft_->SetStateForTest({
+      .currentTerm = 2,
+      .role = Role::FOLLOWER,
+      .log = CreateLogEntries({}, true),
+  });
+  // Follower has snapshot up to index 3
+  raft_->SetSnapshotLastIndexAndTerm(3, 2, false);
+ 
+  AppendEntriesResponse aer;
+  EXPECT_CALL(mock_call,
+              Call(MessageType::AppendEntriesResponseMsg, _, _))
+      .WillOnce(Invoke([&](int, const google::protobuf::Message& msg, int) {
+        aer = dynamic_cast<const AppendEntriesResponse&>(msg);
+        return 0;
+      }));
+  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(AnyNumber());
+ 
+  auto ae_fields = CreateAeFields(
+      /*term=*/2,
+      /*leaderId=*/2,
+      /*prevLogIndex=*/3,
+      /*prevLogTerm=*/2,
+      CreateLogEntries({
+            {2, "Entry4"},
+            {2, "Entry5"}
+        }),
+      /*leaderCommit=*/1,
+      /*followerId=*/1);
+  auto ae_msg = CreateAeMessage(ae_fields);
+ 
+  bool accepted_ae = raft_->ReceiveAppendEntries(
+      std::make_unique<AppendEntries>(std::move(ae_msg)));
+ 
+  EXPECT_TRUE(accepted_ae);
+  EXPECT_TRUE(aer.success());
+  EXPECT_EQ(aer.term(), 2);
+  EXPECT_EQ(aer.lastlogindex(), 5u);
 }
 
 // Test 20: A leader sends a heartbeat to a follower even if that follower is

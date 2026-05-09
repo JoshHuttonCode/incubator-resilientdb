@@ -368,8 +368,8 @@ bool Raft::ReceiveAppendEntriesResponse(std::unique_ptr<AppendEntriesResponse> a
     }
     PruneExpiredInFlightMsgsLocked();
     PruneRedundantInFlightMsgsLocked(followerId, aer->lastlogindex());
-    nextIndex_[followerId] =
-        std::min(aer->lastlogindex() + 1, lastLogIndex_ + 1);
+    // nextIndex_ should never be greather than 1 + lastLogIndex_, or else the leader may try to send an entry it does not have. However, it must be greater than matchIndex_ for that follower, because we only update matchIndex_ when we know an entry has been durably stored on that follower.
+    nextIndex_[followerId] = std::max(std::min(aer->lastlogindex() + 1, lastLogIndex_ + 1), matchIndex_[followerId] + 1);
 
     // if successful, update matchIndex and try to commit more entries
     if (aer->success()) {
@@ -1282,10 +1282,12 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
     // If offset == 0 and the snapshot is older than what we already have, our
     // state is already further ahead.
     if (incomingOffset == 0) {
-      if (lastIncludedIndex <= commitIndex_) {
+      assert(commitIndex_ >= snapshot_last_index_);
+      // If the snapshot contains the prefix to our log (either directly or through snapshot), then reply rejecting the snapshot.
+      if (lastIncludedIndex <= commitIndex_ || (lastIncludedIndex <= lastLogIndex_ && GetLogTermAtIndex(lastIncludedIndex) == lastIncludedTerm)) {
         LOG(INFO) << "ReceiveInstallSnapshot: ignoring snapshot at index "
                   << lastIncludedIndex
-                  << ", already have committed entries up to " << commitIndex_;
+                  << ", already have matching entry at index " << lastIncludedIndex << " with term " << lastIncludedTerm;
         InstallSnapshotResponse isr;
         isr.set_term(ourTerm);
         isr.set_id(id_);
@@ -1477,36 +1479,6 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
     pending.fd = -1;
     tmp_path_to_rename = pending.tmpPath;
     pending_snapshot_chunks_.erase(it);
-
-    // If our log already contains lastIncludedIndex with matching term,
-    // the snapshot is redundant — we already have that state.
-    bool log_contains_index =
-        lastIncludedIndex >= snapshot_last_index_ &&
-        lastIncludedIndex <
-            snapshot_last_index_ + static_cast<uint64_t>(log_.size());
-    bool log_contains_matching_index_and_term =
-        log_contains_index &&
-        GetLogTermAtIndex(lastIncludedIndex) == lastIncludedTerm;
-
-    if (log_contains_matching_index_and_term) {
-      LOG(INFO) << "ReceiveInstallSnapshot: log matches at index="
-                << lastIncludedIndex << "; no state machine reset needed";
-      // Clean up the temp file — we won't use it.
-      unlink(tmp_path_to_rename.c_str());
-      tmp_path_to_rename.clear();
-      InstallSnapshotResponse isr;
-      isr.set_term(ourTerm);
-      isr.set_id(id_);
-      isr.set_need_snapshot(false);
-      isr.set_bytes_stored(bytes_stored);
-      isr.set_last_included_index(lastIncludedIndex);
-      isr.set_transfer_complete(true);
-      SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leaderId);
-      if (demoted) {
-        leader_election_manager_->OnRoleChange();
-      }
-      return true;
-    }
 
     // Discard the entire log and update the sentinel.
     log_.clear();
