@@ -1182,41 +1182,58 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesDirectlyAfterCheckpointTruncation)
   EXPECT_EQ(aer.last_log_index(), 5u);
 }
 
-// Test 20: A leader sends a heartbeat to a follower even if that follower is
-// over the in flight message size limit TEST_F(RaftTest,
-// LeaderSendsHeartbeatToFollowerOverInFlightLimit) {
-//   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
-//   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
+// Test 24: A leader sends a heartbeat to a follower even if that follower is
+// over the in flight message size limit.
+TEST_F(RaftTest, LeaderSendsHeartbeatToFollowerOverInFlightLimit) {
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .Times(3)
+      .WillRepeatedly(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }));
 
-//   auto ae_fields = CreateAeFields(
-//       /*term=*/0,
-//       /*leader_id=*/1,
-//       /*prev_log_index=*/1,
-//       /*prev_log_term=*/2,
-//       /*entries=*/
-//       CreateLogEntries({
-//           {2, "Term 2 Transaction 1"},
-//       }),
-//       /*leader_commit=*/0,
-//       /*follower_id=*/1);
+  auto now = std::chrono::steady_clock::now();
+  // Fill all in-flight slots for every follower
+  std::vector<std::vector<InFlightMsg>> in_flight_vecs(5);
+  for (int follower_id = 2; follower_id <= 4; ++follower_id) {
+    for (size_t i = 0; i < raft_->GetMaxInFlightVecs(); ++i) {
+      InFlightMsg msg;
+      msg.time_sent = now;
+      msg.prev_log_index_sent = i;
+      msg.last_index_of_segment_sent = i + 1;
+      in_flight_vecs[follower_id].push_back(msg);
+    }
+  }
 
-//   raft_->SetStateForTest({
-//       .current_term = 0,
-//       .role = Role::LEADER,
-//       .log = CreateLogEntries(
-//           {
-//               {2, "Term 2 Transaction 1"},
-//           },
-//           true),
-//   });
+  raft_->SetStateForTest({
+      .current_term = 1,
+      .role = Role::LEADER,
+      .log = CreateLogEntries(
+          {
+              {1, "Transaction 1"},
+              {1, "Transaction 2"},
+              {1, "Transaction 3"},
+          },
+          true),
+      .next_index = std::vector<uint64_t>{1, 4, 4, 4, 4},
+      .match_index = std::vector<uint64_t>{0, 3, 3, 3, 3},
+      .in_flight_vecs = in_flight_vecs,
+  });
 
-//     auto req = std::make_unique<Request>();
-//     req->set_seq(1);
+  for (int follower_id = 2; follower_id <= 4; ++follower_id) {
+    EXPECT_TRUE(raft_->InFlightPerFollowerLimitReachedLocked(follower_id));
+  }
 
-//   bool success = raft_->ReceiveTransaction(std::move(req));
+  raft_->SendHeartBeat();
 
-//   EXPECT_FALSE(success);
-// }
+  // In-flight vecs should be unchanged
+  auto result = raft_->GetInFlightVecs();
+  for (int follower_id = 2; follower_id <= 4; ++follower_id) {
+    EXPECT_EQ(result[follower_id].size(), raft_->GetMaxInFlightVecs());
+  }
+}
 
 }  // namespace raft
 }  // namespace resdb
