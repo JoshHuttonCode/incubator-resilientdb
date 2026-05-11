@@ -98,7 +98,7 @@ Raft::Raft(int id, int f, int total_num, SignatureVerifier* verifier,
   assert(recovery_);
   id_ = id;
   total_num_ = total_num;
-  f_ = (total_num-1)/2;
+  f_ = (total_num - 1) / 2;
 
   // Derive snapshot file paths from the same directory as the WAL/metadata.
   // recovery_->GetFilePath() returns e.g. "./wal_log/log", so we use its
@@ -108,8 +108,8 @@ Raft::Raft(int id, int f, int total_num, SignatureVerifier* verifier,
     snapshot_file_path_ = wal_dir + "/snapshot.dat";
     snapshot_tmp_path_ = wal_dir + "/snapshot.dat.tmp";
   }
-  //last_ae_time_ = std::chrono::steady_clock::now();
-  //last_heartbeat_time_ = std::chrono::steady_clock::now();
+  // last_ae_time_ = std::chrono::steady_clock::now();
+  // last_heartbeat_time_ = std::chrono::steady_clock::now();
 
   LogEntry sentinel;
   sentinel.entry.set_term(0);
@@ -126,13 +126,9 @@ Raft::Raft(int id, int f, int total_num, SignatureVerifier* verifier,
   snapshot_in_progress_.assign(total_num_ + 1, false);
 }
 
-Raft::~Raft() { 
-  is_stop_ = true;
-}
+Raft::~Raft() { is_stop_ = true; }
 
-bool Raft::IsStop() { 
-  return is_stop_; 
-}
+bool Raft::IsStop() { return is_stop_; }
 
 void Raft::SetRoleLocked(Role role) { role_ = role; }
 
@@ -148,10 +144,11 @@ bool Raft::ReceiveTransaction(std::unique_ptr<Request> req) {
     if (role_ != Role::LEADER) {
       // Inform client proxy of new leader?
       // Redirect transaction to a known leader?
-      LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Replica is not leader, returning early";
+      LOG(INFO) << "JIM -> " << __FUNCTION__
+                << ": Replica is not leader, returning early";
       return false;
     }
-      // append new transaction to log
+    // append new transaction to log
     LogEntry log_entry;
     log_entry.entry.set_term(current_term_);
 
@@ -182,7 +179,7 @@ bool Raft::ReceiveTransaction(std::unique_ptr<Request> req) {
     }
   }
   for (const auto& msg : messages) {
-      CreateAndSendAppendEntryMsg(msg);
+    CreateAndSendAppendEntryMsg(msg);
   }
   leader_election_manager_->OnAeBroadcast();
   return true;
@@ -211,11 +208,10 @@ bool Raft::ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae) {
     tr = TermCheckLocked(ae->term());
     if (tr == TermRelation::NEW) {
       demoted = DemoteSelfLocked(ae->term());
-    }
-    else if (role_ != Role::FOLLOWER && tr == TermRelation::CURRENT) {
+    } else if (role_ != Role::FOLLOWER && tr == TermRelation::CURRENT) {
       demoted = DemoteSelfLocked(ae->term());
     }
-    
+
     if (tr != TermRelation::STALE && role_ == Role::FOLLOWER) {
       uint64_t i = ae->prev_log_index();
 
@@ -316,7 +312,8 @@ bool Raft::ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae) {
   }
   */
 
-  // ---------- Outside mutex: inform leader_election_manager, apply committed entries, send response  ----------
+  // ---------- Outside mutex: inform leader_election_manager, apply committed
+  // entries, send response  ----------
   if (demoted) {
     leader_election_manager_->OnRoleChange();
     LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Demoted from "
@@ -352,7 +349,8 @@ bool Raft::ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae) {
   return true;
 }
 
-bool Raft::ReceiveAppendEntriesResponse(std::unique_ptr<AppendEntriesResponse> aer) {
+bool Raft::ReceiveAppendEntriesResponse(
+    std::unique_ptr<AppendEntriesResponse> aer) {
   uint64_t term;
   bool demoted = false;
   bool resending = false;
@@ -458,7 +456,7 @@ void Raft::ReceiveRequestVote(std::unique_ptr<RequestVote> rv) {
     return;
   }
 
-  //const char* parent_fn = __FUNCTION__;
+  // const char* parent_fn = __FUNCTION__;
   [&]() {
     std::lock_guard<std::mutex> lk(mutex_);
     initial_role = role_;
@@ -468,8 +466,7 @@ void Raft::ReceiveRequestVote(std::unique_ptr<RequestVote> rv) {
     if (tr == TermRelation::STALE) {
       term = current_term_;
       return;
-    }
-    else if (tr == TermRelation::NEW) {
+    } else if (tr == TermRelation::NEW) {
       demoted = DemoteSelfLocked(rv_term);
     }
     // Then we continue voting process
@@ -490,7 +487,7 @@ void Raft::ReceiveRequestVote(std::unique_ptr<RequestVote> rv) {
       vote_granted = true;
     }
   }();
-  if (demoted) { 
+  if (demoted) {
     leader_election_manager_->OnRoleChange();
     LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Demoted from "
               << (initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
@@ -513,7 +510,8 @@ void Raft::ReceiveRequestVote(std::unique_ptr<RequestVote> rv) {
   SendMessage(MessageType::RequestVoteResponseMsg, rvr, rv_sender);
 }
 
-void Raft::ReceiveRequestVoteResponse(std::unique_ptr<RequestVoteResponse> rvr) {
+void Raft::ReceiveRequestVoteResponse(
+    std::unique_ptr<RequestVoteResponse> rvr) {
   uint64_t term = rvr->term();
   int voter_id = rvr->voterid();
   bool voted_yes = rvr->votegranted();
@@ -528,8 +526,7 @@ void Raft::ReceiveRequestVoteResponse(std::unique_ptr<RequestVoteResponse> rvr) 
     TermRelation tr = TermCheckLocked(term);
     if (tr == TermRelation::STALE) {
       return;
-    }
-    else if (tr == TermRelation::NEW) { 
+    } else if (tr == TermRelation::NEW) {
       demoted = DemoteSelfLocked(term);
       return;
     }
@@ -561,17 +558,17 @@ void Raft::ReceiveRequestVoteResponse(std::unique_ptr<RequestVoteResponse> rvr) 
                 << current_term_;
     }
   }();
-    if (demoted || elected) {
-      leader_election_manager_->OnRoleChange();
-    }
-    if (demoted) {
-      LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Demoted from "
-                << (initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
-                << "->FOLLOWER in term " << term;
-    }
-    if (elected) {
-      SendHeartBeat();
-    }
+  if (demoted || elected) {
+    leader_election_manager_->OnRoleChange();
+  }
+  if (demoted) {
+    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Demoted from "
+              << (initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
+              << "->FOLLOWER in term " << term;
+  }
+  if (elected) {
+    SendHeartBeat();
+  }
 }
 
 Role Raft::GetRoleSnapshot() const {
@@ -674,7 +671,8 @@ void Raft::SendHeartBeat() {
   for (const auto& client : replica_communicator_->GetClientReplicas()) {
     int id = client.id();
     SendMessage(DirectToLeaderMsg, dtl, id);
-    //LOG(INFO) << "JIM -> " << __FUNCTION__ << ": DirectToLeader " << id_ << " sent to proxy " << id;
+    // LOG(INFO) << "JIM -> " << __FUNCTION__ << ": DirectToLeader " << id_ << "
+    // sent to proxy " << id;
   }
 
   auto redirect_end = std::chrono::steady_clock::now();
@@ -705,7 +703,7 @@ bool Raft::DemoteSelfLocked(uint64_t term) {
   }
   if (role_ != Role::FOLLOWER) {
     SetRoleLocked(Role::FOLLOWER);
-    //LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Demoted to FOLLOWER";
+    // LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Demoted to FOLLOWER";
     return true;
   }
   return false;
@@ -746,7 +744,8 @@ std::vector<std::unique_ptr<Request>> Raft::PrepareCommitLocked() {
       LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Failed to parse command";
       continue;
     }
-    // assign seq number as log index for the request or executing transactions fails.
+    // assign seq number as log index for the request or executing transactions
+    // fails.
     command->set_seq(last_committed_);
     commit_vec.push_back(std::move(command));
     applying = true;
@@ -867,12 +866,13 @@ void Raft::PruneExpiredInFlightMsgsLocked() {
       continue;
     }
     auto it = vec.begin();
-    while(it != vec.end()) {
+    while (it != vec.end()) {
       auto time_elapsed = now - it->time_sent;
       if (time_elapsed >= ae_response_deadline_) {
         it = vec.erase(it);
         if (replication_logging_flag_) {
-          LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Pruned expired inflight AE for follower " << i;
+          LOG(INFO) << "JIM -> " << __FUNCTION__
+                    << ": Pruned expired inflight AE for follower " << i;
         }
       } else {
         ++it;
@@ -908,7 +908,8 @@ void Raft::PruneRedundantInFlightMsgsLocked(int follower_id,
   }
 }
 
-void Raft::RecordNewInFlightMsgLocked(const AeFields& msg, std::chrono::steady_clock::time_point timestamp) {
+void Raft::RecordNewInFlightMsgLocked(
+    const AeFields& msg, std::chrono::steady_clock::time_point timestamp) {
   if (msg.entries.empty()) {
     return;
   }
@@ -1326,7 +1327,8 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
     // state is already further ahead.
     if (incoming_offset == 0) {
       assert(commit_index_ >= snapshot_last_index_);
-      // If the snapshot contains the prefix to our log (either directly or through snapshot), then reply rejecting the snapshot.
+      // If the snapshot contains the prefix to our log (either directly or
+      // through snapshot), then reply rejecting the snapshot.
       if (last_included_index <= commit_index_ ||
           (last_included_index <= last_log_index_ &&
            GetLogTermAtIndex(last_included_index) == last_included_term)) {

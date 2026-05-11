@@ -20,13 +20,14 @@
 #pragma once
 
 #include <sys/types.h>
+
+#include <chrono>
 #include <cstdint>
 #include <deque>
 #include <map>
 #include <memory>
 #include <queue>
 #include <thread>
-#include <chrono>
 #ifdef RAFT_TEST_MODE
 #include <ostream>
 #endif
@@ -47,14 +48,14 @@ enum class Role { FOLLOWER, CANDIDATE, LEADER };
 enum class TermRelation { STALE, CURRENT, NEW };
 
 class LogEntry {
-  public:
+ public:
   Entry entry;
 
   uint32_t GetSerializedSize() const;
   uint32_t ComputeSerializedEntrySize() const;
-  
-  private:
-   mutable uint32_t serialized_size = 0;
+
+ private:
+  mutable uint32_t serialized_size = 0;
 };
 
 struct AeFields {
@@ -152,12 +153,14 @@ class Raft : public common::ProtocolBase {
   virtual bool DemoteSelfLocked(uint64_t term);   // Must be called under mutex
   virtual uint64_t GetLastLogTermLocked() const;  // Must be called under mutex
   virtual bool IsStop();
-  //bool IsDuplicateLogEntry(const std::string& hash) const; // Must be called under mutex
+  // bool IsDuplicateLogEntry(const std::string& hash) const; // Must be called
+  // under mutex
   virtual std::vector<std::unique_ptr<Request>>
   PrepareCommitLocked();  // Must be called under mutex
   virtual AeFields GatherAeFieldsLocked(int follower_id, bool heartBeat = false)
       const;  // Must be called under mutex
-  std::vector<AeFields> GatherAeFieldsForBroadcastLocked(bool heartBeat = false) const; // Must be called under mutex
+  std::vector<AeFields> GatherAeFieldsForBroadcastLocked(
+      bool heartBeat = false) const;  // Must be called under mutex
   virtual void CreateAndSendAppendEntryMsg(const AeFields& fields);
   virtual LogEntry CreateLogEntry(const Entry& entry) const;
   virtual void ClearInFlightsLocked();
@@ -183,9 +186,9 @@ class Raft : public common::ProtocolBase {
   void SetRoleLocked(Role role);
 
   // Persistent state on all servers:
-  uint64_t current_term_;     // Protected by mutex_
-  int voted_for_;             // Protected by mutex_
-  std::vector<LogEntry> log_; // Protected by mutex_
+  uint64_t current_term_;      // Protected by mutex_
+  int voted_for_;              // Protected by mutex_
+  std::vector<LogEntry> log_;  // Protected by mutex_
 
   // Volatile state on leaders:
   std::vector<uint64_t> next_index_;    // Protected by mutex_
@@ -198,12 +201,13 @@ class Raft : public common::ProtocolBase {
   // last_committed stores the last entry that has been passed to commit_, but
   // it may not yet have been executed. Raft's Consensus file holds lastApplied_
   uint64_t last_committed_;  // Protected by mutex_
-  Role role_; // Protected by mutex_
+  Role role_;                // Protected by mutex_
   // int leader_id_; // Protected by mutex_
-  std::vector<int> votes_; // Protected by mutex_
+  std::vector<int> votes_;                                // Protected by mutex_
   std::vector<std::vector<InFlightMsg>> in_flight_vecs_;  // Protected by mutex_
-  //std::chrono::steady_clock::time_point last_ae_time_;
-  //std::chrono::steady_clock::time_point last_heartbeat_time_; // Protected by mutex_
+  // std::chrono::steady_clock::time_point last_ae_time_;
+  // std::chrono::steady_clock::time_point last_heartbeat_time_; // Protected by
+  // mutex_
   int64_t snapshot_last_index_;
   int64_t snapshot_last_term_;
   std::vector<bool> snapshot_in_progress_;  // Protected by mutex_
@@ -245,7 +249,7 @@ class Raft : public common::ProtocolBase {
 
   SignatureVerifier* verifier_;
   LeaderElectionManager* leader_election_manager_;
-  //Stats* global_stats_;
+  // Stats* global_stats_;
   ReplicaCommunicator* replica_communicator_;
   RaftRecovery* recovery_;
 
@@ -353,9 +357,7 @@ class Raft : public common::ProtocolBase {
     return in_flight_vecs_;
   }
 
-  size_t GetMaxInFlightVecs() const {
-    return max_in_flight_per_follower_;
-  }
+  size_t GetMaxInFlightVecs() const { return max_in_flight_per_follower_; }
 
 #endif
 };

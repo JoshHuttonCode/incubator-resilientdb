@@ -21,9 +21,9 @@
 
 #include <gmock/gmock.h>
 
-#include "platform/consensus/recovery/raft_recovery.h"
-#include "platform/consensus/checkpoint/mock_checkpoint.h"
 #include "chain/storage/mock_storage.h"
+#include "platform/consensus/checkpoint/mock_checkpoint.h"
+#include "platform/consensus/recovery/raft_recovery.h"
 
 namespace resdb {
 namespace raft {
@@ -39,7 +39,7 @@ class MockRaftRecovery : public RaftRecovery {
               (int64_t current_term, int32_t voted_for,
                uint64_t snapshot_last_index, uint64_t snapshot_last_term),
               ());
-  MOCK_METHOD(void, AddLogEntry, (std::vector<Entry>& entries_to_add), ());
+  MOCK_METHOD(void, AddLogEntry, (std::vector<Entry> & entries_to_add), ());
   MOCK_METHOD(void, TruncateLog, (TruncationRecord truncate_beginning_at), ());
 
   std::unique_ptr<MockCheckPoint> mock_checkpoint_;

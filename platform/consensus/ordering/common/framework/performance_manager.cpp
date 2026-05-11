@@ -73,10 +73,10 @@ void PerformanceManager::SetPrimary(int id) {
   int curr_primary = primary_.load();
   while (id != curr_primary) {
     if (primary_.compare_exchange_strong(curr_primary, id)) {
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": primary updated to " << id;
-    return;
+      LOG(INFO) << "JIM -> " << __FUNCTION__ << ": primary updated to " << id;
+      return;
     }
-  }  
+  }
 }
 
 int PerformanceManager::NeedResponse() {
@@ -98,7 +98,7 @@ int PerformanceManager::StartEval() {
     return 0;
   }
   eval_started_ = true;
-  std::thread([&](){
+  std::thread([&]() {
     for (int i = 0; i < 100000000; ++i) {
       std::unique_ptr<QueueItem> queue_item = std::make_unique<QueueItem>();
       queue_item->context = nullptr;
@@ -108,7 +108,7 @@ int PerformanceManager::StartEval() {
         eval_ready_promise_.set_value(true);
       }
     }
-}).detach();
+  }).detach();
   return 0;
 }
 
@@ -187,8 +187,8 @@ void PerformanceManager::SendResponseToClient(
   if (create_time > 0) {
     uint64_t run_time = GetCurrentTime() - create_time;
     LOG(ERROR) << "receive current:" << GetCurrentTime()
-              << " create time:" << create_time << " run time:" << run_time
-              << " local id:" << batch_response.local_id();
+               << " create time:" << create_time << " run time:" << run_time
+               << " local id:" << batch_response.local_id();
     global_stats_->AddLatency(run_time);
   }
   send_num_--;
@@ -197,8 +197,8 @@ void PerformanceManager::SendResponseToClient(
 // =================== request ========================
 int PerformanceManager::BatchProposeMsg() {
   LOG(WARNING) << "batch wait time:" << config_.ClientBatchWaitTimeMS()
-              << " batch num:" << config_.ClientBatchNum()
-              << " max txn:" << config_.GetMaxProcessTxn();
+               << " batch num:" << config_.ClientBatchNum()
+               << " max txn:" << config_.GetMaxProcessTxn();
   std::vector<std::unique_ptr<QueueItem>> batch_req;
   eval_ready_future_.get();
   bool start = false;

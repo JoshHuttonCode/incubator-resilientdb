@@ -1113,7 +1113,8 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
       "Tried to prefix truncate an element that has not been committed");
 }
 
-// Test 22: A follower receives an AppendEntries containing entries that had already been truncated from its log.
+// Test 22: A follower receives an AppendEntries containing entries that had
+// already been truncated from its log.
 TEST_F(RaftTest, FollowerReceivesAppendEntriesWithOnlySnapshottedEntries) {
   EXPECT_CALL(*recovery_, WriteMetadata(_, _, _, _)).Times(AnyNumber());
   EXPECT_CALL(*recovery_, AddLogEntry(::testing::An<const Entry*>()))
@@ -1129,10 +1130,9 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesWithOnlySnapshottedEntries) {
   });
   // Follower has snapshot up to index 3
   raft_->SetSnapshotLastIndexAndTerm(3, 2, false);
- 
+
   AppendEntriesResponse aer;
-  EXPECT_CALL(mock_call,
-              Call(MessageType::AppendEntriesResponseMsg, _, _))
+  EXPECT_CALL(mock_call, Call(MessageType::AppendEntriesResponseMsg, _, _))
       .WillOnce(Invoke([&](int, const google::protobuf::Message& msg, int) {
         aer = dynamic_cast<const AppendEntriesResponse&>(msg);
         return 0;
@@ -1147,18 +1147,20 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesWithOnlySnapshottedEntries) {
       /*leader_commit=*/1,
       /*follower_id=*/1);
   auto ae_msg = CreateAeMessage(ae_fields);
- 
+
   bool accepted_ae = raft_->ReceiveAppendEntries(
       std::make_unique<AppendEntries>(std::move(ae_msg)));
- 
+
   EXPECT_TRUE(accepted_ae);
   EXPECT_TRUE(aer.success());
   EXPECT_EQ(aer.term(), 2);
   EXPECT_EQ(aer.last_log_index(), 3u);
 }
 
-// Test 23: A follower receives an AppendEntries continuing right after its last snapshot with an otherwise empty log
-TEST_F(RaftTest, FollowerReceivesAppendEntriesDirectlyAfterCheckpointTruncation) {
+// Test 23: A follower receives an AppendEntries continuing right after its last
+// snapshot with an otherwise empty log
+TEST_F(RaftTest,
+       FollowerReceivesAppendEntriesDirectlyAfterCheckpointTruncation) {
   EXPECT_CALL(*recovery_, WriteMetadata(_, _, _, _)).Times(AnyNumber());
   EXPECT_CALL(*recovery_, AddLogEntry(::testing::An<const Entry*>()))
       .Times(AnyNumber());
@@ -1173,10 +1175,9 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesDirectlyAfterCheckpointTruncation)
   });
   // Follower has snapshot up to index 3
   raft_->SetSnapshotLastIndexAndTerm(3, 2, false);
- 
+
   AppendEntriesResponse aer;
-  EXPECT_CALL(mock_call,
-              Call(MessageType::AppendEntriesResponseMsg, _, _))
+  EXPECT_CALL(mock_call, Call(MessageType::AppendEntriesResponseMsg, _, _))
       .WillOnce(Invoke([&](int, const google::protobuf::Message& msg, int) {
         aer = dynamic_cast<const AppendEntriesResponse&>(msg);
         return 0;
@@ -1191,10 +1192,10 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesDirectlyAfterCheckpointTruncation)
       /*leader_commit=*/1,
       /*follower_id=*/1);
   auto ae_msg = CreateAeMessage(ae_fields);
- 
+
   bool accepted_ae = raft_->ReceiveAppendEntries(
       std::make_unique<AppendEntries>(std::move(ae_msg)));
- 
+
   EXPECT_TRUE(accepted_ae);
   EXPECT_TRUE(aer.success());
   EXPECT_EQ(aer.term(), 2);
