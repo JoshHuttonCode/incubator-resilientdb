@@ -22,11 +22,11 @@ cc_library(
     name = "raft",
     srcs = [
         "raft.cpp",
-        "leaderelection_manager.cpp",
+        "leader_election_manager.cpp",
     ],
     hdrs = [
         "raft.h",
-        "leaderelection_manager.h",
+        "leader_election_manager.h",
     ],
     deps = [
         "//common:comm",

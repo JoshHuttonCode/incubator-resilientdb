@@ -27,14 +27,14 @@ using ::testing::Invoke;
 
 namespace {
 
-InstallSnapshot MakeChunk(uint64_t term, int leaderId, uint64_t lastIndex,
-                          uint64_t lastTerm, uint64_t offset,
+InstallSnapshot MakeChunk(uint64_t term, int leader_id, uint64_t last_index,
+                          uint64_t last_term, uint64_t offset,
                           const std::string& data, bool done) {
   InstallSnapshot msg;
   msg.set_term(term);
-  msg.set_leaderid(leaderId);
-  msg.set_lastincludedindex(lastIndex);
-  msg.set_lastincludedterm(lastTerm);
+  msg.set_leader_id(leader_id);
+  msg.set_last_included_index(last_index);
+  msg.set_last_included_term(last_term);
   msg.set_offset(offset);
   msg.set_data(data);
   msg.set_done(done);
@@ -71,56 +71,56 @@ ResDBConfig MakeConfig(const std::string& wal_path, int self_id = 1) {
 // Drive the full leader to follower snapshot transfer loop in-process.
 // Stops when the last response seen by the leader has transfer_complete=true,
 // or after 1,000 iterations (which would indicate a bug).
-void RunTransfer(Raft& leader, Raft& follower, int followerId, int leaderId,
+void RunTransfer(Raft& leader, Raft& follower, int follower_id, int leader_id,
                  MockSendMessageFunction& leader_send_message,
                  MockSendMessageFunction& follower_send_message) {
-  std::vector<InstallSnapshot> toFollower;
-  std::vector<InstallSnapshotResponse> toLeader;
+  std::vector<InstallSnapshot> to_follower;
+  std::vector<InstallSnapshotResponse> to_leader;
 
   // To simulate sending messages, just push to them to a vector.
   EXPECT_CALL(leader_send_message, Call(_, _, _))
       .WillRepeatedly(::testing::Return(0));
   EXPECT_CALL(leader_send_message,
-              Call(MessageType::InstallSnapshotMsg, _, followerId))
+              Call(MessageType::InstallSnapshotMsg, _, follower_id))
       .WillRepeatedly(
           Invoke([&](int, const google::protobuf::Message& msg, int) {
             LOG(INFO) << "Test sending install snapshot message";
-            toFollower.push_back(dynamic_cast<const InstallSnapshot&>(msg));
+            to_follower.push_back(dynamic_cast<const InstallSnapshot&>(msg));
             return 0;
           }));
 
   EXPECT_CALL(follower_send_message, Call(_, _, _))
       .WillRepeatedly(::testing::Return(0));
   EXPECT_CALL(follower_send_message,
-              Call(MessageType::InstallSnapshotResponseMsg, _, leaderId))
+              Call(MessageType::InstallSnapshotResponseMsg, _, leader_id))
       .WillRepeatedly(Invoke([&](int, const google::protobuf::Message& msg,
                                  int) {
         LOG(INFO) << "Test sending install snapshot response message";
-        toLeader.push_back(dynamic_cast<const InstallSnapshotResponse&>(msg));
+        to_leader.push_back(dynamic_cast<const InstallSnapshotResponse&>(msg));
         return 0;
       }));
 
   // Send the first snapshot chunk
   EXPECT_FALSE(leader.IsSendSnapshotInProgress());
-  leader.SendInstallSnapshot(followerId, /*byte_offset=*/0);
-  EXPECT_EQ(toFollower.size(), 1);
+  leader.SendInstallSnapshot(follower_id, /*byte_offset=*/0);
+  EXPECT_EQ(to_follower.size(), 1);
   EXPECT_TRUE(leader.IsSendSnapshotInProgress());
 
   size_t fi = 0, li = 0;
   for (int iter = 0; iter < 1000; ++iter) {
-    while (fi < toFollower.size()) {
+    while (fi < to_follower.size()) {
       LOG(INFO) << "Follower is going to install snapshot";
       follower.ReceiveInstallSnapshot(
-          std::make_unique<InstallSnapshot>(toFollower[fi++]));
+          std::make_unique<InstallSnapshot>(to_follower[fi++]));
       EXPECT_TRUE(leader.IsSendSnapshotInProgress());
     }
-    while (li < toLeader.size()) {
+    while (li < to_leader.size()) {
       LOG(INFO) << "Leader is going to receive snapshot response";
       leader.ReceiveInstallSnapshotResponse(
-          std::make_unique<InstallSnapshotResponse>(toLeader[li++]));
+          std::make_unique<InstallSnapshotResponse>(to_leader[li++]));
     }
     // Once the follower has responded to the leader with transfer_complete, the snapshot has completed.
-    if (!toLeader.empty() && toLeader.back().transfer_complete()) {
+    if (!to_leader.empty() && to_leader.back().transfer_complete()) {
       EXPECT_FALSE(leader.IsSendSnapshotInProgress());
       return;
     }
@@ -137,23 +137,23 @@ void RecoverFromLogs(RaftRecovery& recovery, Raft& raft) {
           case WALRecord::kEntry: {
             LogEntry le;
             le.entry = record->entry();
-            raft.AddToLog(le, /*writeMetadata=*/false);
+            raft.AddToLog(le, /*write_metadata=*/false);
             break;
           }
           case WALRecord::kTruncation:
             raft.TruncateLog(record->truncation().truncate_from_index(),
-                             /*writeMetadata=*/false);
+                             /*write_metadata=*/false);
             break;
           case WALRecord::PAYLOAD_NOT_SET:
             break;
         }
       },
       [&](const RaftMetadata& m) {
-        raft.SetCurrentTerm(m.current_term, /*writeMetadata=*/false);
-        raft.SetVotedFor(m.voted_for, /*writeMetadata=*/false);
+        raft.SetCurrentTerm(m.current_term, /*write_metadata=*/false);
+        raft.SetVotedFor(m.voted_for, /*write_metadata=*/false);
         raft.SetSnapshotLastIndexAndTerm(m.snapshot_last_index,
                                          m.snapshot_last_term,
-                                         /*writeMetadata=*/false);
+                                         /*write_metadata=*/false);
       });
 }
 
@@ -208,13 +208,13 @@ TEST_F(RaftSnapshotFileTest, SnapshotFileWrittenToFollowerDisk) {
   Raft leader(1, 1, 4, &leader_verifier, &leader_leader_election_manager,
               &leader_replica_communicator, &leader_recovery);
   leader.SetStateForTest({
-      .currentTerm = 3,
+      .current_term = 3,
       .role = Role::LEADER,
       .log = CreateLogEntries({}, true),
-      .nextIndex = std::vector<uint64_t>{1, 1, 1, 1, 1},
-      .matchIndex = std::vector<uint64_t>{0, 0, 0, 0, 0},
+      .next_index = std::vector<uint64_t>{1, 1, 1, 1, 1},
+      .match_index = std::vector<uint64_t>{0, 0, 0, 0, 0},
   });
-  leader.SetSnapshotLastIndexAndTerm(2, 3, /*writeMetadata=*/false);
+  leader.SetSnapshotLastIndexAndTerm(2, 3, /*write_metadata=*/false);
   leader.SetSingleCallFunc(
       [&](int type, const google::protobuf::Message& msg, int node_id) {
         return leader_send_message.Call(type, msg, node_id);
@@ -232,7 +232,7 @@ TEST_F(RaftSnapshotFileTest, SnapshotFileWrittenToFollowerDisk) {
 
   Raft follower(2, 1, 4, &follower_verifier, &follower_leader_election_manager,
                 &follower_replica_communicator, &follower_recovery);
-  follower.SetStateForTest({.currentTerm = 3, .role = Role::FOLLOWER});
+  follower.SetStateForTest({.current_term = 3, .role = Role::FOLLOWER});
   follower.SetSingleCallFunc(
       [&](int type, const google::protobuf::Message& msg, int node_id) {
         return follower_send_message.Call(type, msg, node_id);
@@ -287,13 +287,13 @@ TEST_F(RaftSnapshotFileTest, PartialTransferDoesNotCorruptSubsequentTransfer) {
   Raft leader(1, 1, 4, &leader_verifier, &leader_leader_election_manager,
               &leader_replica_communicator, &leader_recovery);
   leader.SetStateForTest({
-      .currentTerm = 4,
+      .current_term = 4,
       .role = Role::LEADER,
       .log = CreateLogEntries({}, true),
-      .nextIndex = std::vector<uint64_t>{1, 1, 1, 1, 1},
-      .matchIndex = std::vector<uint64_t>{0, 0, 0, 0, 0},
+      .next_index = std::vector<uint64_t>{1, 1, 1, 1, 1},
+      .match_index = std::vector<uint64_t>{0, 0, 0, 0, 0},
   });
-  leader.SetSnapshotLastIndexAndTerm(5, 4, /*writeMetadata=*/false);
+  leader.SetSnapshotLastIndexAndTerm(5, 4, /*write_metadata=*/false);
 
   ResDBConfig follower_cfg = MakeConfig(follower_log_, 2);
   auto follower_storage = resdb::storage::NewMemoryDB();
@@ -307,7 +307,7 @@ TEST_F(RaftSnapshotFileTest, PartialTransferDoesNotCorruptSubsequentTransfer) {
 
   Raft follower(2, 1, 4, &follower_verifier, &follower_leader_election_manager,
                 &follower_replica_communicator, &follower_recovery);
-  follower.SetStateForTest({.currentTerm = 4, .role = Role::FOLLOWER});
+  follower.SetStateForTest({.current_term = 4, .role = Role::FOLLOWER});
   follower.SetSingleCallFunc(
       [&](int type, const google::protobuf::Message& msg, int node_id) {
         return follower_send_message.Call(type, msg, node_id);
@@ -343,8 +343,8 @@ TEST_F(RaftSnapshotFileTest, PartialTransferDoesNotCorruptSubsequentTransfer) {
     // Inject a fake first chunk with done == false. Since the real leader
     // serializes to a file, we use a raw chunk to avoid needing the leader's
     // file path.
-    auto partial = MakeChunk(4, /*leaderId=*/1, /*lastIndex=*/5,
-                             /*lastTerm=*/4, /*offset=*/0,
+    auto partial = MakeChunk(4, /*leader_id=*/1, /*last_index=*/5,
+                             /*last_term=*/4, /*offset=*/0,
                              std::string(256, 'P'), /*done=*/false);
     follower.ReceiveInstallSnapshot(
         std::make_unique<InstallSnapshot>(std::move(partial)));
@@ -394,13 +394,13 @@ TEST_F(RaftSnapshotFileTest, LeaderReserializesWhenSnapshotIndexAdvances) {
   Raft leader(1, 1, 4, &leader_verifier, &leader_leader_election_manager,
               &leader_replica_communicator, &leader_recovery);
   leader.SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::LEADER,
       .log = CreateLogEntries({}, true),
-      .nextIndex = std::vector<uint64_t>{1, 1, 1, 1, 1},
-      .matchIndex = std::vector<uint64_t>{0, 0, 0, 0, 0},
+      .next_index = std::vector<uint64_t>{1, 1, 1, 1, 1},
+      .match_index = std::vector<uint64_t>{0, 0, 0, 0, 0},
   });
-  leader.SetSnapshotLastIndexAndTerm(3, 2, /*writeMetadata=*/false);
+  leader.SetSnapshotLastIndexAndTerm(3, 2, /*write_metadata=*/false);
   leader.SetSingleCallFunc(
       [&](int type, const google::protobuf::Message& msg, int node_id) {
         return leader_send_message.Call(type, msg, node_id);
@@ -424,7 +424,7 @@ TEST_F(RaftSnapshotFileTest, LeaderReserializesWhenSnapshotIndexAdvances) {
   Raft follower_a(2, 1, 4, &follower_a_verifier,
                   &follower_a_leader_election_manager,
                   &follower_a_replica_communicator, &follower_a_recovery);
-  follower_a.SetStateForTest({.currentTerm = 2, .role = Role::FOLLOWER});
+  follower_a.SetStateForTest({.current_term = 2, .role = Role::FOLLOWER});
   follower_a.SetSingleCallFunc(
       [&](int type, const google::protobuf::Message& msg, int node_id) {
         return follower_a_send_message.Call(type, msg, node_id);
@@ -452,7 +452,7 @@ TEST_F(RaftSnapshotFileTest, LeaderReserializesWhenSnapshotIndexAdvances) {
 
   // Advance the leader's snapshot point and update storage.
   leader_storage->SetValueWithVersion("v2_key", "v2_val", 0);
-  leader.SetSnapshotLastIndexAndTerm(7, 2, /*writeMetadata=*/false);
+  leader.SetSnapshotLastIndexAndTerm(7, 2, /*write_metadata=*/false);
 
   // After a new snapshot has been taken, send the first snapshot chunk to
   // follower B.
@@ -474,7 +474,7 @@ TEST_F(RaftSnapshotFileTest, LeaderReserializesWhenSnapshotIndexAdvances) {
   Raft follower_b(3, 1, 4, &follower_b_verifier,
                   &follower_b_leader_election_manager,
                   &follower_b_replica_communicator, &follower_b_recovery);
-  follower_b.SetStateForTest({.currentTerm = 2, .role = Role::FOLLOWER});
+  follower_b.SetStateForTest({.current_term = 2, .role = Role::FOLLOWER});
   follower_b.SetSingleCallFunc(
       [&](int type, const google::protobuf::Message& msg, int node_id) {
         return follower_b_send_message.Call(type, msg, node_id);
@@ -526,13 +526,13 @@ TEST_F(RaftSnapshotFileTest, FollowerMetadataSurvivesRestartAfterSnapshot) {
 
   Raft leader(1, 1, 4, &leader_verifier, &leader_leader_election_manager, &leader_replica_communicator, &leader_recovery);
   leader.SetStateForTest({
-      .currentTerm = 6,
+      .current_term = 6,
       .role = Role::LEADER,
       .log = CreateLogEntries({}, true),
-      .nextIndex = std::vector<uint64_t>{1, 1, 1, 1, 1},
-      .matchIndex = std::vector<uint64_t>{0, 0, 0, 0, 0},
+      .next_index = std::vector<uint64_t>{1, 1, 1, 1, 1},
+      .match_index = std::vector<uint64_t>{0, 0, 0, 0, 0},
   });
-  leader.SetSnapshotLastIndexAndTerm(10, 6, /*writeMetadata=*/false);
+  leader.SetSnapshotLastIndexAndTerm(10, 6, /*write_metadata=*/false);
   leader.SetSingleCallFunc(
       [&](int type, const google::protobuf::Message& msg, int node_id) {
         return leader_send_message.Call(type, msg, node_id);
@@ -555,7 +555,7 @@ TEST_F(RaftSnapshotFileTest, FollowerMetadataSurvivesRestartAfterSnapshot) {
     MockCommitFunction follower_commit;
 
     Raft follower(2, 1, 4, &follower_verifier, &follower_leader_election_manager, &follower_replica_communicator, &follower_recovery);
-    follower.SetStateForTest({.currentTerm = 6, .role = Role::FOLLOWER});
+    follower.SetStateForTest({.current_term = 6, .role = Role::FOLLOWER});
     follower.SetSingleCallFunc(
         [&](int type, const google::protobuf::Message& msg, int node_id) {
           return follower_send_message.Call(type, msg, node_id);
@@ -591,7 +591,7 @@ TEST_F(RaftSnapshotFileTest, FollowerMetadataSurvivesRestartAfterSnapshot) {
     EXPECT_EQ(follower2.GetSnapshotLastIndex(), 10u)
         << "snapshot_last_index must survive process restart";
     EXPECT_EQ(follower2.GetCurrentTerm(), 6u)
-        << "currentTerm must survive process restart";
+        << "current_term must survive process restart";
 
     // The storage data is still in-memory (same object), but this verifies the
     // stale key is gone.
@@ -617,7 +617,7 @@ TEST_F(RaftSnapshotFileTest, FollowerDiscardsOldTempFileOnNewOffsetZeroChunk) {
   MockCommitFunction follower_commit;
 
   Raft follower(2, 1, 4, &follower_verifier, &follower_leader_election_manager, &follower_replica_communicator, &follower_recovery);
-  follower.SetStateForTest({.currentTerm = 5, .role = Role::FOLLOWER});
+  follower.SetStateForTest({.current_term = 5, .role = Role::FOLLOWER});
   follower.SetSingleCallFunc(
       [&](int type, const google::protobuf::Message& msg, int node_id) {
         return follower_send_message.Call(type, msg, node_id);
@@ -694,14 +694,14 @@ TEST_F(RaftSnapshotFileTest, StaleSnapshotRejected) {
  
   // Follower already has committed up to index 20.
   follower.SetStateForTest({
-      .currentTerm = 5,
-      .commitIndex = 20,
-      .lastCommitted = 20,
+      .current_term = 5,
+      .commit_index = 20,
+      .last_committed = 20,
       .role = Role::FOLLOWER,
-      .log = CreateLogEntries({}, /*usedForLogPatch=*/true),
+      .log = CreateLogEntries({}, /*used_for_log_patch=*/true),
   });
-  follower.SetSnapshotLastIndexAndTerm(20, 5, /*writeMetadata=*/false);
- 
+  follower.SetSnapshotLastIndexAndTerm(20, 5, /*write_metadata=*/false);
+
   EXPECT_CALL(leader_election_manager, OnHeartBeat()).Times(AnyNumber());
  
   // Capture the response sent back to the leader.
@@ -713,14 +713,13 @@ TEST_F(RaftSnapshotFileTest, StaleSnapshotRejected) {
         return 0;
       }));
 
-  // Stale snapshot for index == 15, older than the follower's commitIndex.
+  // Stale snapshot for index == 15, older than the follower's commit_index.
   auto stale = MakeChunk(5, 1, 15, 4, 0, std::string(128, 'S'), /*done=*/true);
   follower.ReceiveInstallSnapshot(std::make_unique<InstallSnapshot>(stale));
  
   EXPECT_EQ(follower.GetSnapshotLastIndex(), 20u)
       << "Follower snapshot_last_index_ must not regress on a stale snapshot";
-  EXPECT_EQ(follower.GetCommitIndex(), 20u)
-      << "commitIndex must not regress";
+  EXPECT_EQ(follower.GetCommitIndex(), 20u) << "commit_index must not regress";
   EXPECT_FALSE(captured.need_snapshot());
   EXPECT_FALSE(captured.transfer_complete());
 }
@@ -748,23 +747,20 @@ TEST_F(RaftSnapshotFileTest, LogAlreadyContainsSnapshotEntries) {
   });
  
   // Follower has snapshotted up to index 10.
-  follower.SetSnapshotLastIndexAndTerm(10, 4, /*writeMetadata=*/false);
+  follower.SetSnapshotLastIndexAndTerm(10, 4, /*write_metadata=*/false);
   follower.SetStateForTest({
-      .currentTerm = 4,
-      .commitIndex = 10,
-      .lastCommitted = 10,
+      .current_term = 4,
+      .commit_index = 10,
+      .last_committed = 10,
       .role = Role::FOLLOWER,
-      .log = CreateLogEntries(
-                              {
-                                  {4, "Transaction 11"},
-                                  {4, "Transaction 12"},
-                                  {4, "Transaction 13"},
-                                  {4, "Transaction 14"},
-                                  {4, "Transaction 15"}
-                              },
+      .log = CreateLogEntries({{4, "Transaction 11"},
+                               {4, "Transaction 12"},
+                               {4, "Transaction 13"},
+                               {4, "Transaction 14"},
+                               {4, "Transaction 15"}},
                               true),
   });
- 
+
   EXPECT_CALL(leader_election_manager, OnHeartBeat()).Times(AnyNumber());
  
   // Capture the response sent back to the leader.
@@ -783,8 +779,7 @@ TEST_F(RaftSnapshotFileTest, LogAlreadyContainsSnapshotEntries) {
   // Must not have changed state.
   EXPECT_EQ(follower.GetSnapshotLastIndex(), 10u)
       << "Follower snapshot_last_index_ must not change when snapshot is covered.";
-  EXPECT_EQ(follower.GetCommitIndex(), 10u)
-      << "commitIndex must not regress";
+  EXPECT_EQ(follower.GetCommitIndex(), 10u) << "commit_index must not regress";
   // The response must NOT signal transfer_complete=true for a state-machine
   // reset, and need_snapshot must be false.
   EXPECT_FALSE(captured.need_snapshot());
@@ -812,9 +807,9 @@ TEST_F(RaftSnapshotFileTest, MultiChunkSnapshot) {
   follower.SetCommitFunc([&](const google::protobuf::Message& msg) {
     return commit.Commit(msg);
   });
- 
+
   follower.SetStateForTest({
-      .currentTerm = 4,
+      .current_term = 4,
       .role = Role::FOLLOWER,
   });
 

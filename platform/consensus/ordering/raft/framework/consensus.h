@@ -21,7 +21,7 @@
 
 #include "executor/common/transaction_manager.h"
 #include "platform/consensus/ordering/common/framework/consensus.h"
-#include "platform/consensus/ordering/raft/algorithm/leaderelection_manager.h"
+#include "platform/consensus/ordering/raft/algorithm/leader_election_manager.h"
 #include "platform/consensus/ordering/raft/algorithm/raft.h"
 #include "platform/consensus/ordering/raft/framework/raft_checkpoint_manager.h"
 #include "platform/consensus/recovery/raft_recovery.h"

@@ -506,8 +506,8 @@ void RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::
   decltype(ParseData(std::string{})) request_list;
 
   while (Read(fd, sizeof(data_len), reinterpret_cast<char*>(&data_len))) {
-    constexpr size_t kMaxRecordSize = 64 * 1024 * 1024;  // 64 MB
-    if (data_len == 0 || data_len > kMaxRecordSize) {
+    constexpr size_t max_record_size = 64 * 1024 * 1024;  // 64 MB
+    if (data_len == 0 || data_len > max_record_size) {
       LOG(ERROR) << "Corrupt record: invalid data_len=" << data_len;
       break;
     }

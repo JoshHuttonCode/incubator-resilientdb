@@ -29,9 +29,9 @@ namespace raft {
 class MockRaft : public Raft {
  public:
   MockRaft(int id, int f, int total_num, SignatureVerifier* verifier,
-           LeaderElectionManager* leaderelection_manager,
+           LeaderElectionManager* leader_election_manager,
            ReplicaCommunicator* replica_communicator, RaftRecovery* recovery)
-      : Raft(id, f, total_num, verifier, leaderelection_manager,
+      : Raft(id, f, total_num, verifier, leader_election_manager,
              replica_communicator, recovery) {}
 
   MOCK_METHOD(void, SendHeartBeat, (), ());

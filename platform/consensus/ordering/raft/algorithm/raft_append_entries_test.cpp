@@ -11,7 +11,7 @@ TEST_F(RaftTest, FollowerRejectsClientTransaction) {
   auto req = std::make_unique<Request>();
   req->set_seq(1);
   raft_->SetStateForTest({
-      .currentTerm = 0,
+      .current_term = 0,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries({}, true),
   });
@@ -29,7 +29,7 @@ TEST_F(RaftTest, LeaderSendsAppendEntriesUponClientTransaction) {
   auto req = std::make_unique<Request>();
   req->set_seq(1);
   raft_->SetStateForTest({
-      .currentTerm = 0,
+      .current_term = 0,
       .role = Role::LEADER,
       .log = CreateLogEntries({}, true),
   });
@@ -38,14 +38,14 @@ TEST_F(RaftTest, LeaderSendsAppendEntriesUponClientTransaction) {
   EXPECT_TRUE(success);
 }
 
-// Test 3: Sent AppendEntries should be based on the follower's nextIndex.
-TEST_F(RaftTest, LeaderSendsAppendEntriesBasedOnNextIndex) {
+// Test 3: Sent AppendEntries should be based on the follower's next_index.
+TEST_F(RaftTest, LeaderSendsAppendEntriesBasedOnnext_index) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& ae = dynamic_cast<const AppendEntries&>(msg);
             EXPECT_EQ(node_id, 2);
-            EXPECT_EQ(ae.prevlogindex(), 2);
+            EXPECT_EQ(ae.prev_log_index(), 2);
             EXPECT_EQ(ae.entries().size(), 3);
             return 0;
           }))
@@ -53,7 +53,7 @@ TEST_F(RaftTest, LeaderSendsAppendEntriesBasedOnNextIndex) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& ae = dynamic_cast<const AppendEntries&>(msg);
             EXPECT_EQ(node_id, 3);
-            EXPECT_EQ(ae.prevlogindex(), 1);
+            EXPECT_EQ(ae.prev_log_index(), 1);
             EXPECT_EQ(ae.entries().size(), 4);
             return 0;
           }))
@@ -61,13 +61,13 @@ TEST_F(RaftTest, LeaderSendsAppendEntriesBasedOnNextIndex) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& ae = dynamic_cast<const AppendEntries&>(msg);
             EXPECT_EQ(node_id, 4);
-            EXPECT_EQ(ae.prevlogindex(), 0);
+            EXPECT_EQ(ae.prev_log_index(), 0);
             EXPECT_EQ(ae.entries().size(), 5);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnAeBroadcast()).Times(1);
 
-  raft_->SetStateForTest({.currentTerm = 0,
+  raft_->SetStateForTest({.current_term = 0,
                           .role = Role::LEADER,
                           .log = CreateLogEntries(
                               {
@@ -77,7 +77,7 @@ TEST_F(RaftTest, LeaderSendsAppendEntriesBasedOnNextIndex) {
                                   {0, "Term 0 Transaction 4"},
                               },
                               true),
-                          .nextIndex = std::vector<uint64_t>{1, 4, 3, 2, 1}});
+                          .next_index = std::vector<uint64_t>{1, 4, 3, 2, 1}});
 
   auto req = std::make_unique<Request>();
   req->set_seq(5);
@@ -94,34 +94,34 @@ TEST_F(RaftTest, FollowerAddsAppendEntriesWithMultipleEntries) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_TRUE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 3);
+            EXPECT_EQ(aer.last_log_index(), 3);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/0,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/0,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/2,
+      /*prev_log_index=*/0,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({
           {0, "Transaction 1"},
           {0, "Transaction 2"},
           {0, "Transaction 3"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
 
-  auto aemessage = CreateAeMessage(aefields);
+  auto ae_message = CreateAeMessage(ae_fields);
   raft_->SetStateForTest({
-      .currentTerm = 0,
+      .current_term = 0,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries({}, true),
   });
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
 }
 
@@ -132,111 +132,111 @@ TEST_F(RaftTest, FollowerAddsMultipleAppendEntries) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_TRUE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 1);
+            EXPECT_EQ(aer.last_log_index(), 1);
             return 0;
           }))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_TRUE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 2);
+            EXPECT_EQ(aer.last_log_index(), 2);
             return 0;
           }))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_TRUE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 3);
+            EXPECT_EQ(aer.last_log_index(), 3);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(3);
 
-  auto aefields1 = CreateAeFields(
+  auto ae_fields1 = CreateAeFields(
       /*term=*/0,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/0,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/2,
+      /*prev_log_index=*/0,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({
           {0, "Transaction 1"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
 
-  auto aefields2 = CreateAeFields(
+  auto ae_fields2 = CreateAeFields(
       /*term=*/0,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/1,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/2,
+      /*prev_log_index=*/1,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({
           {0, "Transaction 2"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
 
-  auto aefields3 = CreateAeFields(
+  auto ae_fields3 = CreateAeFields(
       /*term=*/0,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/2,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/2,
+      /*prev_log_index=*/2,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({
           {0, "Transaction 3"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
 
-  auto aemessage1 = CreateAeMessage(aefields1);
-  auto aemessage2 = CreateAeMessage(aefields2);
-  auto aemessage3 = CreateAeMessage(aefields3);
+  auto ae_message1 = CreateAeMessage(ae_fields1);
+  auto ae_message2 = CreateAeMessage(ae_fields2);
+  auto ae_message3 = CreateAeMessage(ae_fields3);
 
   raft_->SetStateForTest({
-      .currentTerm = 0,
+      .current_term = 0,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries({}, true),
   });
 
   bool success1 = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage1)));
+      std::make_unique<AppendEntries>(std::move(ae_message1)));
   EXPECT_TRUE(success1);
 
   bool success2 = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage2)));
+      std::make_unique<AppendEntries>(std::move(ae_message2)));
   EXPECT_TRUE(success2);
 
   bool success3 = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage3)));
+      std::make_unique<AppendEntries>(std::move(ae_message3)));
   EXPECT_TRUE(success3);
 }
 
 // Test 6: A follower rejects Append Entries because its own entry at
-// prevLogIndex does not have the same term.
+// prev_log_index does not have the same term.
 TEST_F(RaftTest, FollowerRejectsMismatchedTermAtPrevLogIndex) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_FALSE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 1);
+            EXPECT_EQ(aer.last_log_index(), 1);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/2,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/1,
-      /*prevLogTerm=*/2,
+      /*leader_id=*/2,
+      /*prev_log_index=*/1,
+      /*prev_log_term=*/2,
       /*entries=*/
       CreateLogEntries({
           {2, "Term 2 Transaction 1"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
 
   raft_->SetStateForTest({
-      .currentTerm = 0,
+      .current_term = 0,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -245,48 +245,48 @@ TEST_F(RaftTest, FollowerRejectsMismatchedTermAtPrevLogIndex) {
           true),
   });
 
-  auto aemessage = CreateAeMessage(aefields);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
 }
 
-// Test 7: A follower rejects Append Entries because it does not have an entry at
-// prevLogIndex.
+// Test 7: A follower rejects Append Entries because it does not have an entry
+// at prev_log_index.
 TEST_F(RaftTest, FollowerRejectsMissingIndex) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_FALSE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 0);
+            EXPECT_EQ(aer.last_log_index(), 0);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/0,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/1,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/2,
+      /*prev_log_index=*/1,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({
           {0, "Transaction 2"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
 
-  auto aemessage = CreateAeMessage(aefields);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   raft_->SetStateForTest({
-      .currentTerm = 0,
+      .current_term = 0,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries({}, true),
   });
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
 }
 
@@ -298,27 +298,27 @@ TEST_F(RaftTest, FollowerAddsAppendEntriesAndTruncatesLog) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_TRUE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 3);
+            EXPECT_EQ(aer.last_log_index(), 3);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/1,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/1,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/2,
+      /*prev_log_index=*/1,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({
           {1, "Term 1 Transaction 1"},
           {1, "Term 1 Transaction 2"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
-  auto aemessage = CreateAeMessage(aefields);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   raft_->SetStateForTest({
-      .currentTerm = 0,
+      .current_term = 0,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -329,7 +329,7 @@ TEST_F(RaftTest, FollowerAddsAppendEntriesAndTruncatesLog) {
   });
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
 
   const auto& raft_log = raft_->GetLog();
   EXPECT_EQ(raft_log[0].entry.term(), 0);
@@ -344,33 +344,33 @@ TEST_F(RaftTest, FollowerAddsAppendEntriesAndTruncatesLog) {
   EXPECT_TRUE(success);
 }
 
-// Test 9: A follower increases its commitIndex.
+// Test 9: A follower increases its commit_index.
 TEST_F(RaftTest, FollowerIncreasesCommitIndex) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_TRUE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 5);
+            EXPECT_EQ(aer.last_log_index(), 5);
             return 0;
           }));
   EXPECT_CALL(mock_commit, Commit(_)).Times(2);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/1,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/5,
-      /*prevLogTerm=*/1,
+      /*leader_id=*/2,
+      /*prev_log_index=*/5,
+      /*prev_log_term=*/1,
       /*entries=*/CreateLogEntries({}),
-      /*leaderCommit=*/3,
-      /*followerId=*/1);
-  auto aemessage = CreateAeMessage(aefields);
+      /*leader_commit=*/3,
+      /*follower_id=*/1);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   raft_->SetStateForTest({
-      .currentTerm = 1,
-      .commitIndex = 1,
-      .lastCommitted = 1,
+      .current_term = 1,
+      .commit_index = 1,
+      .last_committed = 1,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -384,39 +384,40 @@ TEST_F(RaftTest, FollowerIncreasesCommitIndex) {
   });
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
 
   EXPECT_TRUE(success);
   EXPECT_EQ(raft_->GetCommitIndex(), 3);
 }
 
-// Test 10: A follower increases its commitIndex, but not past its own log size.
+// Test 10: A follower increases its commit_index, but not past its own log
+// size.
 TEST_F(RaftTest, FollowerIncreasesCommitIndexCappedAtLogSize) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_TRUE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 5);
+            EXPECT_EQ(aer.last_log_index(), 5);
             return 0;
           }));
   EXPECT_CALL(mock_commit, Commit(_)).Times(4);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/1,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/5,
-      /*prevLogTerm=*/1,
+      /*leader_id=*/2,
+      /*prev_log_index=*/5,
+      /*prev_log_term=*/1,
       /*entries=*/CreateLogEntries({}),
-      /*leaderCommit=*/7,
-      /*followerId=*/1);
-  auto aemessage = CreateAeMessage(aefields);
+      /*leader_commit=*/7,
+      /*follower_id=*/1);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   raft_->SetStateForTest({
-      .currentTerm = 1,
-      .commitIndex = 1,
-      .lastCommitted = 1,
+      .current_term = 1,
+      .commit_index = 1,
+      .last_committed = 1,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -430,7 +431,7 @@ TEST_F(RaftTest, FollowerIncreasesCommitIndexCappedAtLogSize) {
   });
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
 
   EXPECT_TRUE(success);
   EXPECT_EQ(raft_->GetCommitIndex(), 5);
@@ -444,35 +445,35 @@ TEST_F(RaftTest, CandidateRejectsAppendEntriesFromOutdatedTerm) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_FALSE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 0);
+            EXPECT_EQ(aer.last_log_index(), 0);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/1,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/0,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/2,
+      /*prev_log_index=*/0,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({
           {1, "Transaction 1"},
           {1, "Transaction 2"},
           {1, "Transaction 3"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
-  auto aemessage = CreateAeMessage(aefields);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::CANDIDATE,
       .log = CreateLogEntries({}, true),
   });
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
 }
 
@@ -484,35 +485,35 @@ TEST_F(RaftTest, CandidateRejectsAppendEntriesFromSameTerm) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_FALSE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 1);
+            EXPECT_EQ(aer.last_log_index(), 1);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/2,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/2,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/2,
+      /*prev_log_index=*/2,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({
           {2, "Transaction 1"},
           {2, "Transaction 2"},
           {2, "Transaction 3"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
-  auto aemessage = CreateAeMessage(aefields);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::CANDIDATE,
       .log = CreateLogEntries({{1, "Old Transaction 1"}}, true),
   });
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
 }
 
@@ -524,28 +525,28 @@ TEST_F(RaftTest, CandidateReceivesNewerTermWithAppendEntriesItCanAccept) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_TRUE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 3);
+            EXPECT_EQ(aer.last_log_index(), 3);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/2,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/2,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/2,
+      /*prev_log_index=*/2,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({
           {2, "Transaction 1"},
       }),
-      /*leaderCommit=*/2,
-      /*followerId=*/1);
-  auto aemessage = CreateAeMessage(aefields);
+      /*leader_commit=*/2,
+      /*follower_id=*/1);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   raft_->SetStateForTest({
-      .currentTerm = 1,
-      .lastCommitted = 2,
+      .current_term = 1,
+      .last_committed = 2,
       .role = Role::CANDIDATE,
       .log = CreateLogEntries(
           {
@@ -556,7 +557,7 @@ TEST_F(RaftTest, CandidateReceivesNewerTermWithAppendEntriesItCanAccept) {
   });
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::FOLLOWER);
 }
@@ -569,28 +570,28 @@ TEST_F(RaftTest, CandidateReceivesSameTermWithAppendEntriesItCanAccept) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_TRUE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 3);
+            EXPECT_EQ(aer.last_log_index(), 3);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/2,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/2,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/2,
+      /*prev_log_index=*/2,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({
           {2, "Transaction 1"},
       }),
-      /*leaderCommit=*/2,
-      /*followerId=*/1);
-  auto aemessage = CreateAeMessage(aefields);
+      /*leader_commit=*/2,
+      /*follower_id=*/1);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
-      .lastCommitted = 2,
+      .current_term = 2,
+      .last_committed = 2,
       .role = Role::CANDIDATE,
       .log = CreateLogEntries(
           {
@@ -601,13 +602,13 @@ TEST_F(RaftTest, CandidateReceivesSameTermWithAppendEntriesItCanAccept) {
   });
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::FOLLOWER);
 }
 
-// Test 15: A follower receiving a leaderCommit whose index is less than its own
-// commitIndex does not lower its commitIndex.
+// Test 15: A follower receiving a leader_commit whose index is less than its
+// own commit_index does not lower its commit_index.
 TEST_F(RaftTest, FollowerWillNotLowerCommitIndex) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(
@@ -616,21 +617,21 @@ TEST_F(RaftTest, FollowerWillNotLowerCommitIndex) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/1,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/0,
-      /*prevLogTerm=*/2,
+      /*leader_id=*/2,
+      /*prev_log_index=*/0,
+      /*prev_log_term=*/2,
       /*entries=*/
       CreateLogEntries({}),
-      /*leaderCommit=*/2,
-      /*followerId=*/1);
-  auto aemessage = CreateAeMessage(aefields);
+      /*leader_commit=*/2,
+      /*follower_id=*/1);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   raft_->SetStateForTest({
-      .currentTerm = 0,
-      .commitIndex = 4,
-      .lastCommitted = 0,
+      .current_term = 0,
+      .commit_index = 4,
+      .last_committed = 0,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -643,7 +644,7 @@ TEST_F(RaftTest, FollowerWillNotLowerCommitIndex) {
   raft_->PrintDebugStateLocked();
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
 }
 
@@ -653,28 +654,28 @@ TEST_F(RaftTest, LeaderIgnoresAppendEntriesFromSelf) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/0,
-      /*leaderId=*/1,
-      /*prevLogIndex=*/0,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/1,
+      /*prev_log_index=*/0,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({
           {0, "Transaction 1"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
-  auto aemessage = CreateAeMessage(aefields);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   raft_->SetStateForTest({
-      .currentTerm = 0,
-      .lastCommitted = 0,
+      .current_term = 0,
+      .last_committed = 0,
       .role = Role::LEADER,
       .log = CreateLogEntries({}, true),
   });
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_FALSE(success);
 }
 
@@ -687,21 +688,21 @@ TEST_F(RaftTest, FollowerAdvancesCommitIndexOnHeartbeat) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/0,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/2,
-      /*prevLogTerm=*/0,
+      /*leader_id=*/2,
+      /*prev_log_index=*/2,
+      /*prev_log_term=*/0,
       /*entries=*/
       CreateLogEntries({}),
-      /*leaderCommit=*/2,
-      /*followerId=*/1);
-  auto aemessage = CreateAeMessage(aefields);
+      /*leader_commit=*/2,
+      /*follower_id=*/1);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   raft_->SetStateForTest({
-      .currentTerm = 0,
-      .commitIndex = 0,
-      .lastCommitted = 0,
+      .current_term = 0,
+      .commit_index = 0,
+      .last_committed = 0,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -714,7 +715,7 @@ TEST_F(RaftTest, FollowerAdvancesCommitIndexOnHeartbeat) {
   raft_->PrintDebugStateLocked();
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
   EXPECT_EQ(raft_->GetCommitIndex(), 2);
 }
@@ -726,7 +727,7 @@ TEST_F(RaftTest, LeaderCorrectlySendsHeartbeat) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& ae = dynamic_cast<const AppendEntries&>(msg);
             EXPECT_EQ(node_id, 2);
-            EXPECT_EQ(ae.prevlogindex(), 2);
+            EXPECT_EQ(ae.prev_log_index(), 2);
             EXPECT_EQ(ae.entries().size(), 0);
             return 0;
           }))
@@ -734,7 +735,7 @@ TEST_F(RaftTest, LeaderCorrectlySendsHeartbeat) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& ae = dynamic_cast<const AppendEntries&>(msg);
             EXPECT_EQ(node_id, 3);
-            EXPECT_EQ(ae.prevlogindex(), 1);
+            EXPECT_EQ(ae.prev_log_index(), 1);
             EXPECT_EQ(ae.entries().size(), 0);
             return 0;
           }))
@@ -742,17 +743,17 @@ TEST_F(RaftTest, LeaderCorrectlySendsHeartbeat) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& ae = dynamic_cast<const AppendEntries&>(msg);
             EXPECT_EQ(node_id, 4);
-            EXPECT_EQ(ae.prevlogindex(), 0);
+            EXPECT_EQ(ae.prev_log_index(), 0);
             EXPECT_EQ(ae.entries().size(), 0);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
-  raft_->SetStateForTest({.currentTerm = 1,
-                          .votedFor = 1,
-                          .commitIndex = 0,
-                          .lastCommitted = 0,
+  raft_->SetStateForTest({.current_term = 1,
+                          .voted_for = 1,
+                          .commit_index = 0,
+                          .last_committed = 0,
                           .role = Role::LEADER,
                           .log = CreateLogEntries(
                               {
@@ -760,8 +761,8 @@ TEST_F(RaftTest, LeaderCorrectlySendsHeartbeat) {
                                   {1, "Transaction 2"},
                               },
                               true),
-                          .nextIndex = std::vector<uint64_t>{1, 4, 3, 2, 1},
-                          .matchIndex = std::vector<uint64_t>{0, 2, 0, 1, 0},
+                          .next_index = std::vector<uint64_t>{1, 4, 3, 2, 1},
+                          .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0},
                           .votes = std::vector<int>{1, 3, 2}});
 
   raft_->SendHeartBeat();
@@ -787,25 +788,25 @@ TEST_F(RaftTest, FollowerReceivesDuplicateAppendEntries) {
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_TRUE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 2);
+            EXPECT_EQ(aer.last_log_index(), 2);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/2,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/1,
-      /*prevLogTerm=*/2,
+      /*leader_id=*/2,
+      /*prev_log_index=*/1,
+      /*prev_log_term=*/2,
       /*entries=*/
       CreateLogEntries({
           {2, "Term 2 Transaction 1"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -814,10 +815,10 @@ TEST_F(RaftTest, FollowerReceivesDuplicateAppendEntries) {
           true),
   });
 
-  auto aemessage = CreateAeMessage(aefields);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
 }
 
@@ -826,20 +827,20 @@ TEST_F(RaftTest, LeaderIgnoresItsOwnAppendEntries) {
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/2,
-      /*leaderId=*/1,
-      /*prevLogIndex=*/1,
-      /*prevLogTerm=*/2,
+      /*leader_id=*/1,
+      /*prev_log_index=*/1,
+      /*prev_log_term=*/2,
       /*entries=*/
       CreateLogEntries({
           {2, "Term 2 Transaction 1"},
       }),
-      /*leaderCommit=*/0,
-      /*followerId=*/1);
+      /*leader_commit=*/0,
+      /*follower_id=*/1);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::LEADER,
       .log = CreateLogEntries(
           {
@@ -848,10 +849,10 @@ TEST_F(RaftTest, LeaderIgnoresItsOwnAppendEntries) {
           true),
   });
 
-  auto aemessage = CreateAeMessage(aefields);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_FALSE(success);
 }
 
@@ -862,11 +863,11 @@ TEST_F(RaftTest, FollowerReceivingAppendEntriesCoveringCommittedTransactions) {
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
   EXPECT_CALL(mock_commit, Commit(_)).Times(0);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/3,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/1,
-      /*prevLogTerm=*/2,
+      /*leader_id=*/2,
+      /*prev_log_index=*/1,
+      /*prev_log_term=*/2,
       /*entries=*/
       CreateLogEntries({
           {2, "DO NOT ADD Term 2 Transaction 2"},
@@ -874,13 +875,13 @@ TEST_F(RaftTest, FollowerReceivingAppendEntriesCoveringCommittedTransactions) {
           {3, "Term 3 Transaction 1"},
           {3, "Term 3 Transaction 2"},
       }),
-      /*leaderCommit=*/3,
-      /*followerId=*/1);
+      /*leader_commit=*/3,
+      /*follower_id=*/1);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
-      .commitIndex = 3,
-      .lastCommitted = 3,
+      .current_term = 2,
+      .commit_index = 3,
+      .last_committed = 3,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -892,10 +893,10 @@ TEST_F(RaftTest, FollowerReceivingAppendEntriesCoveringCommittedTransactions) {
           true),
   });
 
-  auto aemessage = CreateAeMessage(aefields);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
 
   const auto& le = raft_->GetLog()[0];
@@ -924,12 +925,14 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(3);
   EXPECT_CALL(mock_commit, Commit(_)).Times(1);
 
-  // An entry that has been committed must be persisted, so while normally we truncate and just use whatever is in the AppendEntries, this is unnecessary for entries that have been committed. This 
-  auto aefields = CreateAeFields(
+  // An entry that has been committed must be persisted, so while normally we
+  // truncate and just use whatever is in the AppendEntries, this is unnecessary
+  // for entries that have been committed. This
+  auto ae_fields = CreateAeFields(
       /*term=*/3,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/1,
-      /*prevLogTerm=*/2,
+      /*leader_id=*/2,
+      /*prev_log_index=*/1,
+      /*prev_log_term=*/2,
       /*entries=*/
       CreateLogEntries({
           {2, "DO NOT ADD Term 2 Transaction 2"},
@@ -937,13 +940,13 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
           {3, "Term 3 Transaction 1"},
           {3, "Term 3 Transaction 2"},
       }),
-      /*leaderCommit=*/3,
-      /*followerId=*/1);
+      /*leader_commit=*/3,
+      /*follower_id=*/1);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
-      .commitIndex = 3,
-      .lastCommitted = 3,
+      .current_term = 2,
+      .commit_index = 3,
+      .last_committed = 3,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -955,9 +958,9 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
           true),
   });
 
-  auto aemessage = CreateAeMessage(aefields);
+  auto ae_message = CreateAeMessage(ae_fields);
   bool success = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
 
   /**
@@ -979,20 +982,20 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
    * "Term 3 Transaction 2"
    **/
 
-  auto aefields2 = CreateAeFields(
+  auto ae_fields2 = CreateAeFields(
       /*term=*/3,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/4,
-      /*prevLogTerm=*/3,
+      /*leader_id=*/2,
+      /*prev_log_index=*/4,
+      /*prev_log_term=*/3,
       /*entries=*/
       CreateLogEntries({
           {3, "Term 3 Transaction 2"},
           {3, "Term 3 Transaction 3"},
           {3, "Term 3 Transaction 4"},
       }),
-      /*leaderCommit=*/4,
-      /*followerId=*/1);
-  auto aemessage2 = CreateAeMessage(aefields2);
+      /*leader_commit=*/4,
+      /*follower_id=*/1);
+  auto ae_message2 = CreateAeMessage(ae_fields2);
   /**
    * Log is now:
    * Sentinel
@@ -1003,7 +1006,7 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
    **/
 
   bool success2 = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage2)));
+      std::make_unique<AppendEntries>(std::move(ae_message2)));
   EXPECT_TRUE(success2);
 
   const auto& le_sentinel = raft_->GetLog()[0];
@@ -1030,18 +1033,18 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
    * "Term 3 Transaction 4"
    **/
 
-  auto aefields3 = CreateAeFields(
+  auto ae_fields3 = CreateAeFields(
       /*term=*/4,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/7,
-      /*prevLogTerm=*/3,
+      /*leader_id=*/2,
+      /*prev_log_index=*/7,
+      /*prev_log_term=*/3,
       /*entries=*/
       CreateLogEntries({
           {4, "Term 4 Transaction 1"},
       }),
-      /*leaderCommit=*/4,
-      /*followerId=*/1);
-  auto aemessage3 = CreateAeMessage(aefields3);
+      /*leader_commit=*/4,
+      /*follower_id=*/1);
+  auto ae_message3 = CreateAeMessage(ae_fields3);
   /**
    * Log is now:
    * Sentinel
@@ -1052,7 +1055,7 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
    **/
 
   bool success3 = raft_->ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage3)));
+      std::make_unique<AppendEntries>(std::move(ae_message3)));
   EXPECT_TRUE(success3);
 
   EXPECT_EQ(le_sentinel.entry.term(), 3);
@@ -1099,9 +1102,9 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesWithOnlySnapshottedEntries) {
   EXPECT_CALL(*recovery_, AddLogEntry(::testing::An<std::vector<Entry>&>()))
       .Times(AnyNumber());
   EXPECT_CALL(*recovery_, TruncateLog(_)).Times(AnyNumber());
- 
+
   raft_->SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries({}, true),
   });
@@ -1116,18 +1119,14 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesWithOnlySnapshottedEntries) {
         return 0;
       }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(AnyNumber());
- 
+
   auto ae_fields = CreateAeFields(
       /*term=*/2,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/1,
-      /*prevLogTerm=*/2,
-      CreateLogEntries({
-            {2, "Entry2"},
-            {2, "Entry3"}
-        }),
-      /*leaderCommit=*/1,
-      /*followerId=*/1);
+      /*leader_id=*/2,
+      /*prev_log_index=*/1,
+      /*prev_log_term=*/2, CreateLogEntries({{2, "Entry2"}, {2, "Entry3"}}),
+      /*leader_commit=*/1,
+      /*follower_id=*/1);
   auto ae_msg = CreateAeMessage(ae_fields);
  
   bool accepted_ae = raft_->ReceiveAppendEntries(
@@ -1136,7 +1135,7 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesWithOnlySnapshottedEntries) {
   EXPECT_TRUE(accepted_ae);
   EXPECT_TRUE(aer.success());
   EXPECT_EQ(aer.term(), 2);
-  EXPECT_EQ(aer.lastlogindex(), 3u);
+  EXPECT_EQ(aer.last_log_index(), 3u);
 }
 
 // Test 23: A follower receives an AppendEntries continuing right after its last snapshot with an otherwise empty log
@@ -1147,9 +1146,9 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesDirectlyAfterCheckpointTruncation)
   EXPECT_CALL(*recovery_, AddLogEntry(::testing::An<std::vector<Entry>&>()))
       .Times(AnyNumber());
   EXPECT_CALL(*recovery_, TruncateLog(_)).Times(AnyNumber());
- 
+
   raft_->SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries({}, true),
   });
@@ -1164,18 +1163,14 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesDirectlyAfterCheckpointTruncation)
         return 0;
       }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(AnyNumber());
- 
+
   auto ae_fields = CreateAeFields(
       /*term=*/2,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/3,
-      /*prevLogTerm=*/2,
-      CreateLogEntries({
-            {2, "Entry4"},
-            {2, "Entry5"}
-        }),
-      /*leaderCommit=*/1,
-      /*followerId=*/1);
+      /*leader_id=*/2,
+      /*prev_log_index=*/3,
+      /*prev_log_term=*/2, CreateLogEntries({{2, "Entry4"}, {2, "Entry5"}}),
+      /*leader_commit=*/1,
+      /*follower_id=*/1);
   auto ae_msg = CreateAeMessage(ae_fields);
  
   bool accepted_ae = raft_->ReceiveAppendEntries(
@@ -1184,7 +1179,7 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesDirectlyAfterCheckpointTruncation)
   EXPECT_TRUE(accepted_ae);
   EXPECT_TRUE(aer.success());
   EXPECT_EQ(aer.term(), 2);
-  EXPECT_EQ(aer.lastlogindex(), 5u);
+  EXPECT_EQ(aer.last_log_index(), 5u);
 }
 
 // Test 20: A leader sends a heartbeat to a follower even if that follower is
@@ -1193,20 +1188,20 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesDirectlyAfterCheckpointTruncation)
 //   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
 //   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
-//   auto aefields = CreateAeFields(
+//   auto ae_fields = CreateAeFields(
 //       /*term=*/0,
-//       /*leaderId=*/1,
-//       /*prevLogIndex=*/1,
-//       /*prevLogTerm=*/2,
+//       /*leader_id=*/1,
+//       /*prev_log_index=*/1,
+//       /*prev_log_term=*/2,
 //       /*entries=*/
 //       CreateLogEntries({
 //           {2, "Term 2 Transaction 1"},
 //       }),
-//       /*leaderCommit=*/0,
-//       /*followerId=*/1);
+//       /*leader_commit=*/0,
+//       /*follower_id=*/1);
 
 //   raft_->SetStateForTest({
-//       .currentTerm = 0,
+//       .current_term = 0,
 //       .role = Role::LEADER,
 //       .log = CreateLogEntries(
 //           {

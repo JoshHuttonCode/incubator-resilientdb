@@ -21,7 +21,7 @@
 
 #include <gmock/gmock.h>
 
-#include "platform/consensus/ordering/raft/algorithm/leaderelection_manager.h"
+#include "platform/consensus/ordering/raft/algorithm/leader_election_manager.h"
 
 namespace resdb {
 namespace raft {

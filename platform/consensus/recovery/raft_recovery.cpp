@@ -152,7 +152,7 @@ void RaftRecovery::WriteMetadata(int64_t current_term, int32_t voted_for,
   metadata_ = new_metadata;
 
   LOG(INFO) << "Wrote metadata: term: " << current_term
-            << " votedFor: " << voted_for
+            << " voted_for: " << voted_for
             << " snapshot last index: " << snapshot_last_index
             << " snapshot last term: " << snapshot_last_term;
   LOG(INFO) << "METADATA location: " << meta_file_path_;
@@ -178,7 +178,7 @@ RaftMetadata RaftRecovery::ReadMetadata() {
   }
 
   LOG(INFO) << "Read metadata file: term: " << metadata.current_term
-            << " votedFor: " << metadata.voted_for
+            << " voted_for: " << metadata.voted_for
             << " snapshot_last_index: " << metadata.snapshot_last_index
             << " snapshot_last_term: " << metadata.snapshot_last_term;
   return metadata;

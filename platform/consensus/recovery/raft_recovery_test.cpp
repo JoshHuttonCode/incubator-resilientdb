@@ -44,20 +44,20 @@ std::vector<std::string> Listlogs(const std::string &path) {
 }
 
 static Entry CreateTestEntry(RaftRecovery &recovery, int term, int seq) {
-  Entry logEntry;
-  logEntry.set_term(term);
+  Entry log_entry;
+  log_entry.set_term(term);
   auto req = std::make_unique<Request>();
   req->set_seq(seq);
   req->set_data("Request " + std::to_string(seq));
   std::string serialized;
   EXPECT_TRUE(req->SerializeToString(&serialized));
-  logEntry.set_command(std::move(serialized));
-  return logEntry;
+  log_entry.set_command(std::move(serialized));
+  return log_entry;
 }
 
 static void AddTestEntry(RaftRecovery &recovery, int term, int seq) {
-  Entry logEntry = CreateTestEntry(recovery, term, seq);
-  recovery.AddLogEntry(&logEntry, seq);
+  Entry log_entry = CreateTestEntry(recovery, term, seq);
+  recovery.AddLogEntry(&log_entry, seq);
 }
 
 class RaftRecoveryTest : public Test {
@@ -933,10 +933,10 @@ TEST_F(RaftRecoveryTest, CorruptFirstRecordReturnsEmpty) {
 // (simulates a crash mid-write). All complete records before the truncation
 // point must be returned; the partial tail must be silently ignored.
 TEST_F(RaftRecoveryTest, TruncatedTailRecordIsIgnored) {
-  constexpr int kEntries = 5;
+  constexpr int entries = 5;
   {
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
-    for (int i = 1; i <= kEntries; ++i) AddTestEntry(recovery, i, i);
+    for (int i = 1; i <= entries; ++i) AddTestEntry(recovery, i, i);
   }
 
   std::vector<std::string> logs = GetLogFiles(log_path);
@@ -955,11 +955,11 @@ TEST_F(RaftRecoveryTest, TruncatedTailRecordIsIgnored) {
                       [&](std::unique_ptr<WALRecord> r) { list.push_back(*r); },
                       [&](const RaftMetadata &) {});
 
-    // At minimum the first kEntries-1 intact records should come back.
-    EXPECT_GE(list.size(), static_cast<size_t>(kEntries - 1))
+    // At minimum the first entries-1 intact records should come back.
+    EXPECT_GE(list.size(), static_cast<size_t>(entries - 1))
         << "Too many records dropped — intact prefix not fully replayed";
     // The partial last record must not appear.
-    EXPECT_LE(list.size(), static_cast<size_t>(kEntries))
+    EXPECT_LE(list.size(), static_cast<size_t>(entries))
         << "Partial tail record should not be returned";
 
     // Verify the records that did come back are intact.

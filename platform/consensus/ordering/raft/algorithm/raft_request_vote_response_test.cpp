@@ -13,10 +13,10 @@ TEST_F(RaftTest, CandidateGetsElected) {
                 dynamic_cast<const AppendEntries&>(msg);
             EXPECT_EQ(node_id, 2);
             EXPECT_EQ(AppendEntriesMessage.entries_size(), 0);
-            EXPECT_EQ(AppendEntriesMessage.prevlogterm(), 1);
-            EXPECT_EQ(AppendEntriesMessage.prevlogindex(), 2);
-            EXPECT_EQ(AppendEntriesMessage.leaderid(), 1);
-            EXPECT_EQ(AppendEntriesMessage.leadercommitindex(), 1);
+            EXPECT_EQ(AppendEntriesMessage.prev_log_term(), 1);
+            EXPECT_EQ(AppendEntriesMessage.prev_log_index(), 2);
+            EXPECT_EQ(AppendEntriesMessage.leader_id(), 1);
+            EXPECT_EQ(AppendEntriesMessage.leader_commit_index(), 1);
             return 0;
           }))
       .WillOnce(::testing::Invoke(
@@ -25,10 +25,10 @@ TEST_F(RaftTest, CandidateGetsElected) {
                 dynamic_cast<const AppendEntries&>(msg);
             EXPECT_EQ(node_id, 3);
             EXPECT_EQ(AppendEntriesMessage.entries_size(), 0);
-            EXPECT_EQ(AppendEntriesMessage.prevlogterm(), 1);
-            EXPECT_EQ(AppendEntriesMessage.prevlogindex(), 2);
-            EXPECT_EQ(AppendEntriesMessage.leaderid(), 1);
-            EXPECT_EQ(AppendEntriesMessage.leadercommitindex(), 1);
+            EXPECT_EQ(AppendEntriesMessage.prev_log_term(), 1);
+            EXPECT_EQ(AppendEntriesMessage.prev_log_index(), 2);
+            EXPECT_EQ(AppendEntriesMessage.leader_id(), 1);
+            EXPECT_EQ(AppendEntriesMessage.leader_commit_index(), 1);
             return 0;
           }))
       .WillOnce(::testing::Invoke(
@@ -37,16 +37,16 @@ TEST_F(RaftTest, CandidateGetsElected) {
                 dynamic_cast<const AppendEntries&>(msg);
             EXPECT_EQ(node_id, 4);
             EXPECT_EQ(AppendEntriesMessage.entries_size(), 0);
-            EXPECT_EQ(AppendEntriesMessage.prevlogterm(), 1);
-            EXPECT_EQ(AppendEntriesMessage.prevlogindex(), 2);
-            EXPECT_EQ(AppendEntriesMessage.leaderid(), 1);
-            EXPECT_EQ(AppendEntriesMessage.leadercommitindex(), 1);
+            EXPECT_EQ(AppendEntriesMessage.prev_log_term(), 1);
+            EXPECT_EQ(AppendEntriesMessage.prev_log_index(), 2);
+            EXPECT_EQ(AppendEntriesMessage.leader_id(), 1);
+            EXPECT_EQ(AppendEntriesMessage.leader_commit_index(), 1);
             return 0;
           }));
 
-  raft_->SetStateForTest({.currentTerm = 2,
-                          .commitIndex = 1,
-                          .lastCommitted = 1,
+  raft_->SetStateForTest({.current_term = 2,
+                          .commit_index = 1,
+                          .last_committed = 1,
                           .role = Role::CANDIDATE,
                           .log = CreateLogEntries(
                               {
@@ -77,7 +77,7 @@ TEST_F(RaftTest, CandidateIgnoresResponseFromOldTerm) {
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::CANDIDATE,
       .log = CreateLogEntries(
           {
@@ -103,7 +103,7 @@ TEST_F(RaftTest, CandidateDemotesAfterRequestVoteResponseFromNewerTerm) {
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::CANDIDATE,
       .log = CreateLogEntries(
           {
@@ -130,7 +130,7 @@ TEST_F(RaftTest, FollowerIgnoresRequestVoteResponse) {
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -155,7 +155,7 @@ TEST_F(RaftTest, CandidateIgnoresNoVote) {
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::CANDIDATE,
       .log = CreateLogEntries(
           {
@@ -179,9 +179,9 @@ TEST_F(RaftTest, CandidateIgnoresDuplicateVote) {
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
-  raft_->SetStateForTest({.currentTerm = 2,
-                          .commitIndex = 1,
-                          .lastCommitted = 1,
+  raft_->SetStateForTest({.current_term = 2,
+                          .commit_index = 1,
+                          .last_committed = 1,
                           .role = Role::CANDIDATE,
                           .log = CreateLogEntries(
                               {

@@ -28,12 +28,12 @@ using ::testing::Invoke;
 
 namespace {
 
-const std::string kLogPath = "./log/raft_integration_test_log";
+const std::string log_path = "./log/raft_integration_test_log";
 
 ResDBConfig MakeConfig() {
   ResConfigData data;
   data.set_recovery_enabled(true);
-  data.set_recovery_path(kLogPath);
+  data.set_recovery_path(log_path);
   data.set_recovery_buffer_size(1024);
   data.set_recovery_ckpt_time_s(3);
   return ResDBConfig({GenerateReplicaInfo(1, "127.0.0.1", 1234),
@@ -51,15 +51,15 @@ void RecoverFromLogs(RaftRecovery& recovery, Raft& raft) {
         LOG(INFO) << "Replaying record with seq: " << record->seq();
         switch (record->payload_case()) {
           case WALRecord::kEntry: {
-            LogEntry logEntry;
-            logEntry.entry = record->entry();
-            LOG(INFO) << "Adding entry from term: " << logEntry.entry.term();
-            raft.AddToLog(logEntry, /*writeMetadata=*/false);
+            LogEntry log_entry;
+            log_entry.entry = record->entry();
+            LOG(INFO) << "Adding entry from term: " << log_entry.entry.term();
+            raft.AddToLog(log_entry, /*write_metadata=*/false);
             break;
           }
           case WALRecord::kTruncation:
             raft.TruncateLog(record->truncation().truncate_from_index(),
-                             /*writeMetadata=*/false);
+                             /*write_metadata=*/false);
             break;
           case WALRecord::PAYLOAD_NOT_SET:
             FAIL() << "Unexpected PAYLOAD_NOT_SET record";
@@ -68,14 +68,14 @@ void RecoverFromLogs(RaftRecovery& recovery, Raft& raft) {
       },
       [&](const RaftMetadata& metadata) {
         LOG(INFO) << "loading metadata file: term: " << metadata.current_term
-                  << " votedFor: " << metadata.voted_for
+                  << " voted_for: " << metadata.voted_for
                   << " snapshot_last_index: " << metadata.snapshot_last_index
                   << " snapshot_last_term: " << metadata.snapshot_last_term;
-        raft.SetCurrentTerm(metadata.current_term, /*writeMetadata=*/false);
-        raft.SetVotedFor(metadata.voted_for, /*writeMetadata=*/false);
+        raft.SetCurrentTerm(metadata.current_term, /*write_metadata=*/false);
+        raft.SetVotedFor(metadata.voted_for, /*write_metadata=*/false);
         raft.SetSnapshotLastIndexAndTerm(metadata.snapshot_last_index,
                                          metadata.snapshot_last_term,
-                                         /*writeMetadata=*/false);
+                                         /*write_metadata=*/false);
       });
 }
 
@@ -90,7 +90,7 @@ class RaftRecoveryIntegrationTest : public ::testing::Test {
 
  protected:
   void SetUp() override {
-    std::filesystem::remove_all(std::filesystem::path(kLogPath).parent_path());
+    std::filesystem::remove_all(std::filesystem::path(log_path).parent_path());
   }
 
   ResDBConfig config_ = MakeConfig();
@@ -156,7 +156,7 @@ TEST_F(RaftRecoveryIntegrationTest,
           [](int type, const google::protobuf::Message& msg, int node_id) {
             const auto& aer = dynamic_cast<const AppendEntriesResponse&>(msg);
             EXPECT_TRUE(aer.success());
-            EXPECT_EQ(aer.lastlogindex(), 13);
+            EXPECT_EQ(aer.last_log_index(), 13);
             return 0;
           }));
 
@@ -227,24 +227,24 @@ TEST_F(RaftRecoveryIntegrationTest,
   EXPECT_EQ(raft.GetVotedFor(), 2);
   EXPECT_EQ(raft.GetSnapshotLastIndex(), 5u);
 
-  auto aefields = CreateAeFields(
+  auto ae_fields = CreateAeFields(
       /*term=*/11,
-      /*leaderId=*/2,
-      /*prevLogIndex=*/10,
-      /*prevLogTerm=*/10,
+      /*leader_id=*/2,
+      /*prev_log_index=*/10,
+      /*prev_log_term=*/10,
       /*entries=*/
       CreateLogEntries({
           {11, "Transaction 11"},
           {11, "Transaction 12"},
           {11, "Transaction 13"},
       }),
-      /*leaderCommit=*/7,
-      /*followerId=*/1);
+      /*leader_commit=*/7,
+      /*follower_id=*/1);
 
-  auto aemessage = CreateAeMessage(aefields);
+  auto ae_message = CreateAeMessage(ae_fields);
 
   bool success = raft.ReceiveAppendEntries(
-      std::make_unique<AppendEntries>(std::move(aemessage)));
+      std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
 
   EXPECT_EQ(raft.GetCurrentTerm(), 11u);
@@ -307,7 +307,7 @@ TEST_F(RaftRecoveryIntegrationTest, DemotionTriggersWriteMetadata) {
     }
 
     raft.SetStateForTest({
-        .currentTerm = 6,
+        .current_term = 6,
         .role = Role::LEADER,
         .log = CreateLogEntries({}, true),
     });
@@ -318,19 +318,19 @@ TEST_F(RaftRecoveryIntegrationTest, DemotionTriggersWriteMetadata) {
         });
 
     // Receive an AppendEntries from node 2 at a higher term.
-    auto aefields = CreateAeFields(
+    auto ae_fields = CreateAeFields(
         /*term=*/7,
-        /*leaderId=*/2,
-        /*prevLogIndex=*/0,
-        /*prevLogTerm=*/0,
+        /*leader_id=*/2,
+        /*prev_log_index=*/0,
+        /*prev_log_term=*/0,
         /*entries=*/{},
-        /*leaderCommit=*/0,
-        /*followerId=*/1);
-    auto aemessage = CreateAeMessage(aefields);
+        /*leader_commit=*/0,
+        /*follower_id=*/1);
+    auto ae_message = CreateAeMessage(ae_fields);
 
     raft.PrintDebugState();
     bool success = raft.ReceiveAppendEntries(
-        std::make_unique<AppendEntries>(std::move(aemessage)));
+        std::make_unique<AppendEntries>(std::move(ae_message)));
     EXPECT_TRUE(success);
 
     EXPECT_EQ(raft.GetCurrentTerm(), 7u);

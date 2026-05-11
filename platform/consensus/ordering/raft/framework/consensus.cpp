@@ -113,7 +113,7 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
       assert(1 == 0);
       return -1;
     }
-    performance_manager_->SetPrimary(dtl->leaderid());
+    performance_manager_->SetPrimary(dtl->leader_id());
     return 0;
   } else if (request->user_type() == MessageType::InstallSnapshotMsg) {
     std::unique_ptr<InstallSnapshot> is =
@@ -146,9 +146,9 @@ void Consensus::RecoverFromLogs() {
       [&](std::unique_ptr<WALRecord> record) {
         switch (record->payload_case()) {
           case WALRecord::kEntry: {
-            LogEntry logEntry;
-            logEntry.entry = record->entry();
-            raft_->AddToLog(logEntry, false);
+            LogEntry log_entry;
+            log_entry.entry = record->entry();
+            raft_->AddToLog(log_entry, false);
             break;
           }
           case WALRecord::kTruncation:
@@ -180,8 +180,8 @@ int Consensus::CommitMsg(const google::protobuf::Message& msg) {
     LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Failed to cast Message to Request";
     return -1;
   }
-  auto execReq = std::make_unique<Request>(*req);
-  transaction_executor_->Commit(std::move(execReq));
+  auto exec_req = std::make_unique<Request>(*req);
+  transaction_executor_->Commit(std::move(exec_req));
   return 0;
 }
 
