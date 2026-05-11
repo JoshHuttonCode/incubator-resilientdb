@@ -4,18 +4,18 @@ namespace resdb {
 namespace raft {
 
 // Test 1: A leader receiving an AppendEntriesResponse success and updating the
-// follower's matchIndex.
+// follower's match_index.
 TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccess) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_success(true);
-  aeResponse.set_term(1);
-  aeResponse.set_id(2);
-  aeResponse.set_lastlogindex(2);
+  AppendEntriesResponse ae_response;
+  ae_response.set_success(true);
+  ae_response.set_term(1);
+  ae_response.set_id(2);
+  ae_response.set_last_log_index(2);
 
-  raft_->SetStateForTest({.currentTerm = 1,
-                          .commitIndex = 0,
+  raft_->SetStateForTest({.current_term = 1,
+                          .commit_index = 0,
                           .role = Role::LEADER,
                           .log = CreateLogEntries(
                               {
@@ -23,10 +23,10 @@ TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccess) {
                                   {0, "Transaction 2"},
                               },
                               true),
-                          .matchIndex = std::vector<uint64_t>{0, 2, 0, 0, 0}});
+                          .match_index = std::vector<uint64_t>{0, 2, 0, 0, 0}});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
   EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 2, 0, 0));
 }
@@ -37,35 +37,35 @@ TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseFromNewerTerm) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
 
   raft_->SetStateForTest({
-      .currentTerm = 1,
+      .current_term = 1,
       .role = Role::LEADER,
   });
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_success(false);
-  aeResponse.set_term(2);
+  AppendEntriesResponse ae_response;
+  ae_response.set_success(false);
+  ae_response.set_term(2);
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_FALSE(success);
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::FOLLOWER);
 }
 
 // Test 3: A leader receiving an AppendEntriesResponse success, updating the
-// follower's matchIndex, and committing a new entry.
+// follower's match_index, and committing a new entry.
 TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccessAndCommits) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_commit, Commit(_)).Times(1);
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_success(true);
-  aeResponse.set_term(1);
-  aeResponse.set_id(2);
-  aeResponse.set_lastlogindex(2);
+  AppendEntriesResponse ae_response;
+  ae_response.set_success(true);
+  ae_response.set_term(1);
+  ae_response.set_id(2);
+  ae_response.set_last_log_index(2);
 
-  raft_->SetStateForTest({.currentTerm = 1,
-                          .commitIndex = 0,
-                          .lastCommitted = 0,
+  raft_->SetStateForTest({.current_term = 1,
+                          .commit_index = 0,
+                          .last_committed = 0,
                           .role = Role::LEADER,
                           .log = CreateLogEntries(
                               {
@@ -73,11 +73,11 @@ TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccessAndCommits) {
                                   {1, "Transaction 2"},
                               },
                               true),
-                          .nextIndex = std::vector<uint64_t>{1, 2, 2, 2, 2},
-                          .matchIndex = std::vector<uint64_t>{0, 2, 0, 1, 0}});
+                          .next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
+                          .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0}});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
   EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 2, 1, 0));
   EXPECT_EQ(raft_->GetCommitIndex(), 1);
@@ -98,16 +98,16 @@ TEST_F(RaftTest, LeaderCatchesUpFollowerThatIsBehind) {
             return 0;
           }));
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_success(true);
-  aeResponse.set_term(1);
-  aeResponse.set_id(2);
-  aeResponse.set_lastlogindex(1);
+  AppendEntriesResponse ae_response;
+  ae_response.set_success(true);
+  ae_response.set_term(1);
+  ae_response.set_id(2);
+  ae_response.set_last_log_index(1);
 
   raft_->SetStateForTest({
-      .currentTerm = 1,
-      .commitIndex = 0,
-      .lastCommitted = 0,
+      .current_term = 1,
+      .commit_index = 0,
+      .last_committed = 0,
       .role = Role::LEADER,
       .log = CreateLogEntries(
           {
@@ -118,7 +118,7 @@ TEST_F(RaftTest, LeaderCatchesUpFollowerThatIsBehind) {
   });
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
 }
 
@@ -138,16 +138,16 @@ TEST_F(RaftTest, LeaderCatchesUpFollowerThatIsBehindFailure) {
             return 0;
           }));
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_success(false);
-  aeResponse.set_term(1);
-  aeResponse.set_id(2);
-  aeResponse.set_lastlogindex(0);
+  AppendEntriesResponse ae_response;
+  ae_response.set_success(false);
+  ae_response.set_term(1);
+  ae_response.set_id(2);
+  ae_response.set_last_log_index(0);
 
   raft_->SetStateForTest({
-      .currentTerm = 1,
-      .commitIndex = 0,
-      .lastCommitted = 0,
+      .current_term = 1,
+      .commit_index = 0,
+      .last_committed = 0,
       .role = Role::LEADER,
       .log = CreateLogEntries(
           {
@@ -158,7 +158,7 @@ TEST_F(RaftTest, LeaderCatchesUpFollowerThatIsBehindFailure) {
   });
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
 }
 
@@ -167,16 +167,16 @@ TEST_F(RaftTest, FollowerIgnoresAppendEntriesResponse) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_term(1);
+  AppendEntriesResponse ae_response;
+  ae_response.set_term(1);
 
   raft_->SetStateForTest({
-      .currentTerm = 1,
+      .current_term = 1,
       .role = Role::FOLLOWER,
   });
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
 }
 
@@ -185,16 +185,16 @@ TEST_F(RaftTest, LeaderIgnoresAppendEntriesResponseFromOutdatedTerm) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_term(1);
+  AppendEntriesResponse ae_response;
+  ae_response.set_term(1);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
+      .current_term = 2,
       .role = Role::LEADER,
   });
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
 }
 
@@ -205,15 +205,15 @@ TEST_F(RaftTest,
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_commit, Commit(_)).Times(0);
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_success(true);
-  aeResponse.set_term(1);
-  aeResponse.set_id(2);
-  aeResponse.set_lastlogindex(2);
+  AppendEntriesResponse ae_response;
+  ae_response.set_success(true);
+  ae_response.set_term(1);
+  ae_response.set_id(2);
+  ae_response.set_last_log_index(2);
 
-  raft_->SetStateForTest({.currentTerm = 1,
-                          .commitIndex = 0,
-                          .lastCommitted = 0,
+  raft_->SetStateForTest({.current_term = 1,
+                          .commit_index = 0,
+                          .last_committed = 0,
                           .role = Role::LEADER,
                           .log = CreateLogEntries(
                               {
@@ -221,31 +221,31 @@ TEST_F(RaftTest,
                                   {0, "Transaction 2"},
                               },
                               true),
-                          .nextIndex = std::vector<uint64_t>{0, 2, 2, 2, 2},
-                          .matchIndex = std::vector<uint64_t>{0, 2, 0, 1, 0}});
+                          .next_index = std::vector<uint64_t>{0, 2, 2, 2, 2},
+                          .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0}});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
   EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 2, 1, 0));
   EXPECT_EQ(raft_->GetCommitIndex(), 0);
 }
 
 // Test 9: A leader receiving an AppendEntriesResponse success, updating the
-// follower's matchIndex, and not committing
+// follower's match_index, and not committing
 TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccessAndDoesNotCommit) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_commit, Commit(_)).Times(0);
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_success(true);
-  aeResponse.set_term(1);
-  aeResponse.set_id(2);
-  aeResponse.set_lastlogindex(2);
+  AppendEntriesResponse ae_response;
+  ae_response.set_success(true);
+  ae_response.set_term(1);
+  ae_response.set_id(2);
+  ae_response.set_last_log_index(2);
 
-  raft_->SetStateForTest({.currentTerm = 1,
-                          .commitIndex = 0,
-                          .lastCommitted = 0,
+  raft_->SetStateForTest({.current_term = 1,
+                          .commit_index = 0,
+                          .last_committed = 0,
                           .role = Role::LEADER,
                           .log = CreateLogEntries(
                               {
@@ -253,32 +253,32 @@ TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccessAndDoesNotCommit) {
                                   {1, "Transaction 2"},
                               },
                               true),
-                          .nextIndex = std::vector<uint64_t>{1, 2, 2, 2, 2},
-                          .matchIndex = std::vector<uint64_t>{0, 0, 0, 1, 0}});
+                          .next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
+                          .match_index = std::vector<uint64_t>{0, 0, 0, 1, 0}});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
   EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 0, 2, 1, 0));
   EXPECT_EQ(raft_->GetCommitIndex(), 0);
 }
 
 // Test 10: A leader receiving an AppendEntriesResponse success with a lower
-// lastLogIndex than the matchIndex corresponding to that follower does not
-// lower that matchIndex.
+// last_log_index than the match_index corresponding to that follower does not
+// lower that match_index.
 TEST_F(RaftTest, LeaderReceivingOutOfDateAERDoesNotLowerMatchIndex) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_commit, Commit(_)).Times(0);
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_success(true);
-  aeResponse.set_term(1);
-  aeResponse.set_id(2);
-  aeResponse.set_lastlogindex(1);
+  AppendEntriesResponse ae_response;
+  ae_response.set_success(true);
+  ae_response.set_term(1);
+  ae_response.set_id(2);
+  ae_response.set_last_log_index(1);
 
-  raft_->SetStateForTest({.currentTerm = 1,
-                          .commitIndex = 0,
-                          .lastCommitted = 0,
+  raft_->SetStateForTest({.current_term = 1,
+                          .commit_index = 0,
+                          .last_committed = 0,
                           .role = Role::LEADER,
                           .log = CreateLogEntries(
                               {
@@ -286,11 +286,11 @@ TEST_F(RaftTest, LeaderReceivingOutOfDateAERDoesNotLowerMatchIndex) {
                                   {1, "Transaction 2"},
                               },
                               true),
-                          .nextIndex = std::vector<uint64_t>{1, 2, 2, 2, 2},
-                          .matchIndex = std::vector<uint64_t>{0, 0, 2, 1, 0}});
+                          .next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
+                          .match_index = std::vector<uint64_t>{0, 0, 2, 1, 0}});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
   EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 0, 2, 1, 0));
   EXPECT_EQ(raft_->GetCommitIndex(), 0);
@@ -303,15 +303,15 @@ TEST_F(RaftTest, LeaderReceivingAERDoesNotCommitFromPreviousTerm) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_commit, Commit(_)).Times(0);
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_success(true);
-  aeResponse.set_term(2);
-  aeResponse.set_id(2);
-  aeResponse.set_lastlogindex(1);
+  AppendEntriesResponse ae_response;
+  ae_response.set_success(true);
+  ae_response.set_term(2);
+  ae_response.set_id(2);
+  ae_response.set_last_log_index(1);
 
-  raft_->SetStateForTest({.currentTerm = 2,
-                          .commitIndex = 0,
-                          .lastCommitted = 0,
+  raft_->SetStateForTest({.current_term = 2,
+                          .commit_index = 0,
+                          .last_committed = 0,
                           .role = Role::LEADER,
                           .log = CreateLogEntries(
                               {
@@ -319,11 +319,11 @@ TEST_F(RaftTest, LeaderReceivingAERDoesNotCommitFromPreviousTerm) {
                                   {1, "Transaction 2"},
                               },
                               true),
-                          .nextIndex = std::vector<uint64_t>{1, 2, 2, 2, 2},
-                          .matchIndex = std::vector<uint64_t>{0, 2, 0, 1, 0}});
+                          .next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
+                          .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0}});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
   EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 1, 1, 0));
   EXPECT_EQ(raft_->GetCommitIndex(), 0);
@@ -334,14 +334,14 @@ TEST_F(RaftTest, LeaderReceivingAERDoesNotCommitFromPreviousTerm) {
 TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseFromLongerLog) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
 
-  AppendEntriesResponse aeResponse;
-  aeResponse.set_success(false);
-  aeResponse.set_term(1);
-  aeResponse.set_id(2);
-  aeResponse.set_lastlogindex(8);
+  AppendEntriesResponse ae_response;
+  ae_response.set_success(false);
+  ae_response.set_term(1);
+  ae_response.set_id(2);
+  ae_response.set_last_log_index(8);
 
-  raft_->SetStateForTest({.currentTerm = 1,
-                          .commitIndex = 0,
+  raft_->SetStateForTest({.current_term = 1,
+                          .commit_index = 0,
                           .role = Role::LEADER,
                           .log = CreateLogEntries(
                               {
@@ -349,54 +349,52 @@ TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseFromLongerLog) {
                                   {0, "Transaction 2"},
                               },
                               true),
-                          .nextIndex = std::vector<uint64_t>{0, 2, 0, 0, 0},
-                          .matchIndex = std::vector<uint64_t>{0, 2, 0, 0, 0}});
+                          .next_index = std::vector<uint64_t>{0, 2, 0, 0, 0},
+                          .match_index = std::vector<uint64_t>{0, 2, 0, 0, 0}});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(aeResponse));
+      std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
   EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 0, 0, 0));
   EXPECT_THAT(raft_->GetNextIndex(), ::testing::ElementsAre(0, 2, 3, 0, 0));
 }
 
-// Test 13: A leader receiving an out of order AppendEntriesResponse does not decrease a follower's nextIndex below 1 + matchIndex.
+// Test 13: A leader receiving an out of order AppendEntriesResponse does not
+// decrease a follower's next_index below 1 + match_index.
 TEST_F(RaftTest, AppendEntriesResponseDoesNotDecreaseNextIndexBelowMatchIndex) {
   raft_->SetStateForTest({
-      .currentTerm = 2,
-      .commitIndex = 0,
-      .lastCommitted = 0,
+      .current_term = 2,
+      .commit_index = 0,
+      .last_committed = 0,
       .role = Role::LEADER,
-      .log = CreateLogEntries(
-          {
-            {2, "Transaction 1"},
-            {2, "Transaction 2"},
-            {2, "Transaction 3"},
-            {2, "Transaction 4"}
-          },
-          true),
-      .nextIndex = std::vector<uint64_t>{1, 5, 5, 5, 5},
-      .matchIndex = std::vector<uint64_t>{0, 3, 3, 3, 3},
+      .log = CreateLogEntries({{2, "Transaction 1"},
+                               {2, "Transaction 2"},
+                               {2, "Transaction 3"},
+                               {2, "Transaction 4"}},
+                              true),
+      .next_index = std::vector<uint64_t>{1, 5, 5, 5, 5},
+      .match_index = std::vector<uint64_t>{0, 3, 3, 3, 3},
   });
- 
+
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   // The leader will send out an AppendEntries containing elements 4 and 5.
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(1);
- 
-  // Stale success AER from follower 2 reporting lastLogIndex=2
-  // (older than the already-acknowledged matchIndex of 3).
+
+  // Stale success AER from follower 2 reporting last_log_index=2
+  // (older than the already-acknowledged match_index of 3).
   AppendEntriesResponse aer;
   aer.set_success(true);
   aer.set_term(2);
   aer.set_id(2);
-  aer.set_lastlogindex(2);
- 
+  aer.set_last_log_index(2);
+
   raft_->ReceiveAppendEntriesResponse(
       std::make_unique<AppendEntriesResponse>(aer));
- 
-  EXPECT_EQ(raft_->GetMatchIndex()[2], 3u)
-      << "matchIndex must never decrease";
+
+  EXPECT_EQ(raft_->GetMatchIndex()[2], 3u) << "match_index must never decrease";
   EXPECT_EQ(raft_->GetNextIndex()[2], 4u)
-      << "nextIndex for a follower must never decrease below 1 + its matchIndex";
+      << "next_index for a follower must never decrease below 1 + its "
+         "match_index";
 }
 
 

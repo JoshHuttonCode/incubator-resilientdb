@@ -29,15 +29,9 @@
 namespace resdb {
 namespace raft {
 
-class Raft; // forward declaration
+class Raft;  // forward declaration
 
-enum class Waited {
-  HEARTBEAT,
-  STOPPED,
-  TIMEOUT,
-  ROLE_CHANGE,
-  BROADCASTED
-};
+enum class Waited { HEARTBEAT, STOPPED, TIMEOUT, ROLE_CHANGE, BROADCASTED };
 
 class LeaderElectionManager {
  public:
@@ -70,15 +64,14 @@ class LeaderElectionManager {
   uint64_t timeout_min_ms;
   uint64_t timeout_max_ms;
   uint64_t heartbeat_timer_;
-  uint64_t heartbeat_count_; // Protected by cv_mutex_
-  uint64_t broadcast_count_; // Protected by cv_mutex_
-  //std::chrono::steady_clock::time_point last_heartbeat_time_;
-  uint64_t role_epoch_; // Protected by cv_mutex_
-  uint64_t known_role_epoch_; // Protected by cv_mutex_
+  uint64_t heartbeat_count_;  // Protected by cv_mutex_
+  uint64_t broadcast_count_;  // Protected by cv_mutex_
+  // std::chrono::steady_clock::time_point last_heartbeat_time_;
+  uint64_t role_epoch_;        // Protected by cv_mutex_
+  uint64_t known_role_epoch_;  // Protected by cv_mutex_
   std::mutex cv_mutex_;
   std::condition_variable cv_;
 };
 
 }  // namespace raft
 }  // namespace resdb
-

@@ -33,7 +33,7 @@
 
 #include "platform/common/queue/lock_free_queue.h"
 #include "platform/consensus/ordering/common/algorithm/protocol_base.h"
-#include "platform/consensus/ordering/raft/algorithm/leaderelection_manager.h"
+#include "platform/consensus/ordering/raft/algorithm/leader_election_manager.h"
 #include "platform/consensus/ordering/raft/proto/proposal.pb.h"
 #include "platform/consensus/recovery/raft_recovery.h"
 #include "platform/networkstrate/replica_communicator.h"
@@ -54,53 +54,51 @@ class LogEntry {
   uint32_t ComputeSerializedEntrySize() const;
   
   private:
-  mutable uint32_t serializedSize = 0;
+   mutable uint32_t serialized_size = 0;
 };
 
 struct AeFields {
   uint64_t term = 0;
-  int leaderId = -1;
-  uint64_t prevLogIndex = 0;
-  uint64_t prevLogTerm = 0;
+  int leader_id = -1;
+  uint64_t prev_log_index = 0;
+  uint64_t prev_log_term = 0;
   std::vector<LogEntry> entries{};
-  uint64_t leaderCommit = 0;
-  int followerId = -1; // not part of AE message itself, but needed to determine recipient
+  uint64_t leader_commit = 0;
+  int follower_id =
+      -1;  // not part of AE message itself, but needed to determine recipient
 };
 
 struct InFlightMsg {
-  std::chrono::steady_clock::time_point timeSent;
-  uint64_t prevLogIndexSent;
-  uint64_t lastIndexOfSegmentSent;
+  std::chrono::steady_clock::time_point time_sent;
+  uint64_t prev_log_index_sent;
+  uint64_t last_index_of_segment_sent;
 };
 
 #ifdef RAFT_TEST_MODE
 struct RaftStatePatch {
-  std::optional<uint64_t> currentTerm;
-  std::optional<int> votedFor;
-  std::optional<uint64_t> commitIndex;
-  std::optional<uint64_t> lastCommitted;
+  std::optional<uint64_t> current_term;
+  std::optional<int> voted_for;
+  std::optional<uint64_t> commit_index;
+  std::optional<uint64_t> last_committed;
   std::optional<Role> role;
 
   std::optional<std::vector<LogEntry>> log;
-  std::optional<std::vector<uint64_t>> nextIndex;
-  std::optional<std::vector<uint64_t>> matchIndex;
+  std::optional<std::vector<uint64_t>> next_index;
+  std::optional<std::vector<uint64_t>> match_index;
   std::optional<std::vector<int>> votes;
-  std::optional<std::vector<std::vector<InFlightMsg>>> inflightVecs;
+  std::optional<std::vector<std::vector<InFlightMsg>>> in_flight_vecs;
 };
 #endif
 
 class Raft : public common::ProtocolBase {
  public:
-  Raft(int id, int f, int total_num,
-    SignatureVerifier* verifier,
-    LeaderElectionManager* leaderelection_manager,
-    ReplicaCommunicator* replica_communicator,
-    RaftRecovery* recovery
-  );
+  Raft(int id, int f, int total_num, SignatureVerifier* verifier,
+       LeaderElectionManager* leader_election_manager,
+       ReplicaCommunicator* replica_communicator, RaftRecovery* recovery);
   ~Raft();
 
-  const bool replicationLoggingFlag_ = true;
-  const bool livenessLoggingFlag_ = false;
+  const bool replication_logging_flag_ = true;
+  const bool liveness_logging_flag_ = false;
 
   virtual bool ReceiveTransaction(std::unique_ptr<Request> req);
   virtual bool ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae);
@@ -121,20 +119,21 @@ class Raft : public common::ProtocolBase {
   void WriteMetadata();
   uint64_t GetSnapshotLastIndex();
 
-  // These functions with writeMetadata are also used to replay information upon
-  // recovery. So, they are called with false during recovery, and true
+  // These functions with write_metadata are also used to replay information
+  // upon recovery. So, they are called with false during recovery, and true
   // everywhere else.
-  virtual void SetCurrentTerm(uint64_t currentTerm, bool writeMetadata = true);
-  virtual void SetVotedFor(int votedFor, bool writeMetadata = true);
-  virtual void SetCurrentTermAndVotedFor(uint64_t currentTerm, int votedFor,
-                                         bool writeMetadata = true);
+  virtual void SetCurrentTerm(uint64_t current_term,
+                              bool write_metadata = true);
+  virtual void SetVotedFor(int votedFor, bool write_metadata = true);
+  virtual void SetCurrentTermAndVotedFor(uint64_t current_term, int voted_for,
+                                         bool write_metadata = true);
   void SetSnapshotLastIndexAndTerm(uint64_t snapshot_last_index,
                                    uint64_t snapshot_last_term,
-                                   bool writeMetadata = true);
-  void AddToLog(LogEntry &logEntry, bool writeMetadata = true);
+                                   bool write_metadata = true);
+  void AddToLog(LogEntry& log_entry, bool write_metadata = true);
   void AddToLog(std::vector<LogEntry> logEntriesToAdd,
-                bool writeMetadata = true);
-  void TruncateLog(uint64_t first, bool writeMetadata = true);
+                bool write_metadata = true);
+  void TruncateLog(uint64_t first, bool write_metadata = true);
   void TruncatePrefix(uint64_t index);
   bool IsSendSnapshotInProgress() {
     for (auto in_progress : snapshot_in_progress_) {
@@ -151,23 +150,23 @@ class Raft : public common::ProtocolBase {
   virtual TermRelation TermCheckLocked(
       uint64_t term) const;                       // Must be called under mutex
   virtual bool DemoteSelfLocked(uint64_t term);   // Must be called under mutex
-  virtual uint64_t getLastLogTermLocked() const;  // Must be called under mutex
+  virtual uint64_t GetLastLogTermLocked() const;  // Must be called under mutex
   virtual bool IsStop();
   //bool IsDuplicateLogEntry(const std::string& hash) const; // Must be called under mutex
   virtual std::vector<std::unique_ptr<Request>>
   PrepareCommitLocked();  // Must be called under mutex
-  virtual AeFields GatherAeFieldsLocked(int followerId, bool heartBeat = false)
+  virtual AeFields GatherAeFieldsLocked(int follower_id, bool heartBeat = false)
       const;  // Must be called under mutex
   std::vector<AeFields> GatherAeFieldsForBroadcastLocked(bool heartBeat = false) const; // Must be called under mutex
   virtual void CreateAndSendAppendEntryMsg(const AeFields& fields);
   virtual LogEntry CreateLogEntry(const Entry& entry) const;
   virtual void ClearInFlightsLocked();
   virtual void PruneExpiredInFlightMsgsLocked();
-  virtual void PruneRedundantInFlightMsgsLocked(int followerId,
-                                                uint64_t followerLastLogIndex);
+  virtual void PruneRedundantInFlightMsgsLocked(
+      int follower_id, uint64_t followerlast_log_index);
   virtual void RecordNewInFlightMsgLocked(
       const AeFields& msg, std::chrono::steady_clock::time_point timestamp);
-  virtual bool InFlightPerFollowerLimitReachedLocked(int followerId) const;
+  virtual bool InFlightPerFollowerLimitReachedLocked(int follower_id) const;
 #ifdef RAFT_TEST_MODE
  public:
   std::string GetSnapshotFilePath() const { return snapshot_file_path_; }
@@ -175,7 +174,7 @@ class Raft : public common::ProtocolBase {
   int GetLogicalLogSize() const;
   const LogEntry& GetLogEntryAtIndex(uint64_t index) const;
   const uint64_t GetLogTermAtIndex(uint64_t index) const;
-  void SendInstallSnapshot(int followerId, size_t byte_offset);
+  void SendInstallSnapshot(int follower_id, size_t byte_offset);
 #ifdef RAFT_TEST_MODE
  private:
 #endif
@@ -183,25 +182,25 @@ class Raft : public common::ProtocolBase {
   void SetRoleLocked(Role role);
 
   // Persistent state on all servers:
-  uint64_t currentTerm_; // Protected by mutex_
-  int votedFor_; // Protected by mutex_
+  uint64_t current_term_;     // Protected by mutex_
+  int voted_for_;             // Protected by mutex_
   std::vector<LogEntry> log_; // Protected by mutex_
 
   // Volatile state on leaders:
-  std::vector<uint64_t> nextIndex_; // Protected by mutex_
-  std::vector<uint64_t> matchIndex_; // Protected by mutex_
-  uint64_t heartBeatsSentThisTerm_; // Protected by mutex_
-  uint64_t lastLogIndex_; // Protected by mutex_
+  std::vector<uint64_t> next_index_;    // Protected by mutex_
+  std::vector<uint64_t> match_index_;   // Protected by mutex_
+  uint64_t heartbeats_sent_this_term_;  // Protected by mutex_
+  uint64_t last_log_index_;             // Protected by mutex_
 
   // Volatile state on all servers:
-  uint64_t commitIndex_; // Protected by mutex_
-  // lastCommitted stores the last entry that has been passed to commit_, but it
-  // may not yet have been executed. Raft's Consensus file holds lastApplied_
-  uint64_t lastCommitted_;  // Protected by mutex_
+  uint64_t commit_index_;  // Protected by mutex_
+  // last_committed stores the last entry that has been passed to commit_, but
+  // it may not yet have been executed. Raft's Consensus file holds lastApplied_
+  uint64_t last_committed_;  // Protected by mutex_
   Role role_; // Protected by mutex_
-  //int leaderId_; // Protected by mutex_
+  // int leader_id_; // Protected by mutex_
   std::vector<int> votes_; // Protected by mutex_
-  std::vector<std::vector<InFlightMsg>> inflightVecs_; // Protected by mutex_
+  std::vector<std::vector<InFlightMsg>> in_flight_vecs_;  // Protected by mutex_
   //std::chrono::steady_clock::time_point last_ae_time_;
   //std::chrono::steady_clock::time_point last_heartbeat_time_; // Protected by mutex_
   int64_t snapshot_last_index_;
@@ -209,18 +208,18 @@ class Raft : public common::ProtocolBase {
   std::vector<bool> snapshot_in_progress_;  // Protected by mutex_
 
   // Reassembly state for incoming chunked InstallSnapshot RPCs (follower side).
-  // Key: leaderId. Cleared when snapshot finishes or a new one starts.
+  // Key: leader_id. Cleared when snapshot finishes or a new one starts.
   // Chunks are written to a temp file as they arrive. On completion the temp
   // file is renamed to the final snapshot path and applied to the state
   // machine.
   struct PendingSnapshot {
-    uint64_t lastIncludedIndex = 0;
-    uint64_t lastIncludedTerm = 0;
+    uint64_t last_included_index = 0;
+    uint64_t last_included_term = 0;
     // next byte offset we expect from the leader
-    uint64_t expectedOffset = 0;
+    uint64_t expected_offset = 0;
     // open fd to the temp file, or -1 if not open
     int fd = -1;
-    std::string tmpPath;
+    std::string tmp_path;
   };
   std::map<int, PendingSnapshot>
       pending_snapshot_chunks_;  // Protected by mutex_
@@ -236,12 +235,13 @@ class Raft : public common::ProtocolBase {
   const uint64_t quorum_;
 
   // for limiting AppendEntries batch sizing
-  static constexpr size_t maxHeaderBytes = 64;
-  static constexpr size_t maxBytes = 64 * 1024;
-  static constexpr size_t maxEntries = 16;
-  static constexpr size_t maxInFlightPerFollower = 4;
-  static constexpr std::chrono::milliseconds AEResponseDeadline{300}; // in milliseconds
-  
+  static constexpr size_t max_header_bytes_ = 64;
+  static constexpr size_t max_bytes_ = 64 * 1024;
+  static constexpr size_t max_entries_ = 16;
+  static constexpr size_t max_in_flight_per_follower_ = 4;
+  static constexpr std::chrono::milliseconds ae_response_deadline_{
+      300};  // in milliseconds
+
   SignatureVerifier* verifier_;
   LeaderElectionManager* leader_election_manager_;
   //Stats* global_stats_;
@@ -252,31 +252,31 @@ class Raft : public common::ProtocolBase {
  public:
   void SetStateForTest(RaftStatePatch patch) {
     std::lock_guard lk(mutex_);
-    if (patch.currentTerm) currentTerm_ = *patch.currentTerm;
-    if (patch.votedFor) votedFor_ = *patch.votedFor;
-    if (patch.commitIndex) commitIndex_ = *patch.commitIndex;
-    if (patch.lastCommitted) lastCommitted_ = *patch.lastCommitted;
+    if (patch.current_term) current_term_ = *patch.current_term;
+    if (patch.voted_for) voted_for_ = *patch.voted_for;
+    if (patch.commit_index) commit_index_ = *patch.commit_index;
+    if (patch.last_committed) last_committed_ = *patch.last_committed;
     if (patch.role) role_ = *patch.role;
 
     if (patch.log) {
       log_ = *patch.log;
-      lastLogIndex_ = log_.size() - 1 + snapshot_last_index_;
+      last_log_index_ = log_.size() - 1 + snapshot_last_index_;
     }
 
-    if (patch.nextIndex) nextIndex_ = *patch.nextIndex;
-    if (patch.matchIndex) matchIndex_ = *patch.matchIndex;
+    if (patch.next_index) next_index_ = *patch.next_index;
+    if (patch.match_index) match_index_ = *patch.match_index;
     if (patch.votes) votes_ = *patch.votes;
-    if (patch.inflightVecs) inflightVecs_ = *patch.inflightVecs;
+    if (patch.in_flight_vecs) in_flight_vecs_ = *patch.in_flight_vecs;
   }
 
   uint64_t GetCurrentTerm() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return currentTerm_;
+    return current_term_;
   }
 
   int GetVotedFor() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return votedFor_;
+    return voted_for_;
   }
 
   const std::vector<LogEntry>& GetLog() const {
@@ -293,7 +293,7 @@ class Raft : public common::ProtocolBase {
       os << "  [" << i << "] "
          << "term=" << entry.entry.term() << ", command=\""
          << entry.entry.command() << "\""
-         << ", serializedSize=" << entry.GetSerializedSize() << "\n";
+         << ", serialized_size=" << entry.GetSerializedSize() << "\n";
     }
   }
 
@@ -309,32 +309,32 @@ class Raft : public common::ProtocolBase {
 
   std::vector<uint64_t> GetNextIndex() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return nextIndex_;
+    return next_index_;
   }
 
   std::vector<uint64_t> GetMatchIndex() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return matchIndex_;
+    return match_index_;
   }
 
   uint64_t GetHeartBeatsSentThisTerm() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return heartBeatsSentThisTerm_;
+    return heartbeats_sent_this_term_;
   }
 
   uint64_t GetLastLogIndex() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return lastLogIndex_;
+    return last_log_index_;
   }
 
   uint64_t GetCommitIndex() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return commitIndex_;
+    return commit_index_;
   }
 
   uint64_t GetLastCommitted() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return lastCommitted_;
+    return last_committed_;
   }
 
   Role GetRole() const {
@@ -349,7 +349,7 @@ class Raft : public common::ProtocolBase {
 
   std::vector<std::vector<InFlightMsg>> GetInFlightVecs() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return inflightVecs_;
+    return in_flight_vecs_;
   }
 
 #endif

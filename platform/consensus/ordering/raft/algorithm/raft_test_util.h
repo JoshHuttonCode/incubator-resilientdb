@@ -37,22 +37,22 @@ class MockCommitFunction {
   MOCK_METHOD(int, Commit, (const google::protobuf::Message&));
 };
 
-inline AeFields CreateAeFields(uint64_t term, int leaderId,
-                               uint64_t prevLogIndex, uint64_t prevLogTerm,
+inline AeFields CreateAeFields(uint64_t term, int leader_id,
+                               uint64_t prev_log_index, uint64_t prev_log_term,
                                const std::vector<LogEntry>& entries,
-                               uint64_t leaderCommit, int followerId) {
+                               uint64_t leader_commit, int follower_id) {
   AeFields fields{};
   fields.term = term;
-  fields.leaderId = leaderId;
-  fields.leaderCommit = leaderCommit;
-  fields.prevLogIndex = prevLogIndex;
-  fields.prevLogTerm = prevLogTerm;
-  fields.followerId = followerId;
+  fields.leader_id = leader_id;
+  fields.leader_commit = leader_commit;
+  fields.prev_log_index = prev_log_index;
+  fields.prev_log_term = prev_log_term;
+  fields.follower_id = follower_id;
 
-  for (const auto& logEntry : entries) {
+  for (const auto& entry : entries) {
     LogEntry log_entry;
-    log_entry.entry.set_term(logEntry.entry.term());
-    log_entry.entry.set_command(logEntry.entry.command());
+    log_entry.entry.set_term(entry.entry.term());
+    log_entry.entry.set_command(entry.entry.command());
     fields.entries.push_back(std::move(log_entry));
   }
 
@@ -70,10 +70,10 @@ inline LogEntry CreateLogEntry(uint64_t term, const std::string& command_data) {
 // Helper to create a vector of log entries for testing.
 inline std::vector<LogEntry> CreateLogEntries(
     const std::vector<std::pair<uint64_t, std::string>>& term_and_cmds,
-    bool usedForLogPatch = false) {
+    bool used_for_log_patch = false) {
   std::vector<LogEntry> entries;
 
-  if (usedForLogPatch) {
+  if (used_for_log_patch) {
     LogEntry first_entry;
     first_entry.entry.set_term(0);
     first_entry.entry.set_command("COMMON_PREFIX");
@@ -100,14 +100,14 @@ inline std::vector<LogEntry> CreateLogEntries(
 inline AppendEntries CreateAeMessage(const AeFields& fields) {
   AppendEntries ae;
   ae.set_term(fields.term);
-  ae.set_leaderid(fields.leaderId);
-  ae.set_prevlogindex(fields.prevLogIndex);
-  ae.set_prevlogterm(fields.prevLogTerm);
-  ae.set_leadercommitindex(fields.leaderCommit);
+  ae.set_leader_id(fields.leader_id);
+  ae.set_prev_log_index(fields.prev_log_index);
+  ae.set_prev_log_term(fields.prev_log_term);
+  ae.set_leader_commit_index(fields.leader_commit);
   for (const auto& log_entry : fields.entries) {
-    auto* newEntry = ae.add_entries();
-    newEntry->set_term(log_entry.entry.term());
-    newEntry->set_command(log_entry.entry.command());
+    auto* new_entry = ae.add_entries();
+    new_entry->set_term(log_entry.entry.term());
+    new_entry->set_command(log_entry.entry.command());
   }
 
   return ae;

@@ -10,16 +10,16 @@ TEST_F(RaftTest, FollowerTransitionsToCandidateAndStartsElection) {
   EXPECT_CALL(mock_broadcast, Broadcast(_, _))
       .WillOnce(
           ::testing::Invoke([](int type, const google::protobuf::Message& msg) {
-            const auto& requestVote = dynamic_cast<const RequestVote&>(msg);
-            EXPECT_EQ(requestVote.term(), 1);
-            EXPECT_EQ(requestVote.candidateid(), 1);
-            EXPECT_EQ(requestVote.lastlogindex(), 1);
-            EXPECT_EQ(requestVote.lastlogterm(), 0);
+            const auto& request_vote = dynamic_cast<const RequestVote&>(msg);
+            EXPECT_EQ(request_vote.term(), 1);
+            EXPECT_EQ(request_vote.candidateid(), 1);
+            EXPECT_EQ(request_vote.last_log_index(), 1);
+            EXPECT_EQ(request_vote.lastlogterm(), 0);
             return 0;
           }));
 
   raft_->SetStateForTest({
-      .currentTerm = 0,
+      .current_term = 0,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -41,12 +41,12 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromNewTermAndDemotes) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
-            const auto& requestVoteResponse =
+            const auto& request_vote_response =
                 dynamic_cast<const RequestVoteResponse&>(msg);
             EXPECT_EQ(node_id, 2);
-            EXPECT_EQ(requestVoteResponse.term(), 1);
-            EXPECT_EQ(requestVoteResponse.voterid(), 1);
-            EXPECT_TRUE(requestVoteResponse.votegranted());
+            EXPECT_EQ(request_vote_response.term(), 1);
+            EXPECT_EQ(request_vote_response.voterid(), 1);
+            EXPECT_TRUE(request_vote_response.votegranted());
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
@@ -54,11 +54,11 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromNewTermAndDemotes) {
   RequestVote rv;
   rv.set_term(1);
   rv.set_candidateid(2);
-  rv.set_lastlogindex(1);
+  rv.set_last_log_index(1);
   rv.set_lastlogterm(0);
 
   raft_->SetStateForTest({
-      .currentTerm = 0,
+      .current_term = 0,
       .role = Role::LEADER,
       .log = CreateLogEntries(
           {
@@ -74,19 +74,19 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromNewTermAndDemotes) {
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::FOLLOWER);
 }
 
-// Test 3: A leader receives a RequestVote from a candidate whose lastLogTerm is
-// fewer and does not vote.
+// Test 3: A leader receives a RequestVote from a candidate whose last_log_term
+// is fewer and does not vote.
 TEST_F(RaftTest, LeaderReceivesRequestVoteFromOldTerm) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
-            const auto& requestVoteResponse =
+            const auto& request_vote_response =
                 dynamic_cast<const RequestVoteResponse&>(msg);
             EXPECT_EQ(node_id, 2);
-            EXPECT_EQ(requestVoteResponse.term(), 1);
-            EXPECT_EQ(requestVoteResponse.voterid(), 1);
-            EXPECT_FALSE(requestVoteResponse.votegranted());
+            EXPECT_EQ(request_vote_response.term(), 1);
+            EXPECT_EQ(request_vote_response.voterid(), 1);
+            EXPECT_FALSE(request_vote_response.votegranted());
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
@@ -94,11 +94,11 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromOldTerm) {
   RequestVote rv;
   rv.set_term(1);
   rv.set_candidateid(2);
-  rv.set_lastlogindex(0);
+  rv.set_last_log_index(0);
   rv.set_lastlogterm(0);
 
   raft_->SetStateForTest({
-      .currentTerm = 1,
+      .current_term = 1,
       .role = Role::LEADER,
       .log = CreateLogEntries(
           {
@@ -114,19 +114,19 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromOldTerm) {
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::LEADER);
 }
 
-// Test 4: A leader receives a RequestVote from a candidate whose lastLogTerm is
-// less recent.
+// Test 4: A leader receives a RequestVote from a candidate whose last_log_term
+// is less recent.
 TEST_F(RaftTest, LeaderReceivesRequestVoteFromOlderLastLogTerm) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
-            const auto& requestVoteResponse =
+            const auto& request_vote_response =
                 dynamic_cast<const RequestVoteResponse&>(msg);
             EXPECT_EQ(node_id, 2);
-            EXPECT_EQ(requestVoteResponse.term(), 1);
-            EXPECT_EQ(requestVoteResponse.voterid(), 1);
-            EXPECT_FALSE(requestVoteResponse.votegranted());
+            EXPECT_EQ(request_vote_response.term(), 1);
+            EXPECT_EQ(request_vote_response.voterid(), 1);
+            EXPECT_FALSE(request_vote_response.votegranted());
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
@@ -134,11 +134,11 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromOlderLastLogTerm) {
   RequestVote rv;
   rv.set_term(1);
   rv.set_candidateid(2);
-  rv.set_lastlogindex(0);
+  rv.set_last_log_index(0);
   rv.set_lastlogterm(0);
 
   raft_->SetStateForTest({
-      .currentTerm = 1,
+      .current_term = 1,
       .role = Role::LEADER,
       .log = CreateLogEntries(
           {
@@ -154,19 +154,19 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromOlderLastLogTerm) {
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::LEADER);
 }
 
-// Test 5: A leader receives a RequestVote from a candidate whose lastLogTerm is
-// the same, but whose lastLogIndex is further behind.
+// Test 5: A leader receives a RequestVote from a candidate whose last_log_term
+// is the same, but whose last_log_index is further behind.
 TEST_F(RaftTest, LeaderReceivesRequestVoteFromFurtherBehindLog) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
-            const auto& requestVoteResponse =
+            const auto& request_vote_response =
                 dynamic_cast<const RequestVoteResponse&>(msg);
             EXPECT_EQ(node_id, 2);
-            EXPECT_EQ(requestVoteResponse.term(), 2);
-            EXPECT_EQ(requestVoteResponse.voterid(), 1);
-            EXPECT_FALSE(requestVoteResponse.votegranted());
+            EXPECT_EQ(request_vote_response.term(), 2);
+            EXPECT_EQ(request_vote_response.voterid(), 1);
+            EXPECT_FALSE(request_vote_response.votegranted());
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
@@ -174,11 +174,11 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromFurtherBehindLog) {
   RequestVote rv;
   rv.set_term(2);
   rv.set_candidateid(2);
-  rv.set_lastlogindex(0);
+  rv.set_last_log_index(0);
   rv.set_lastlogterm(0);
 
   raft_->SetStateForTest({
-      .currentTerm = 1,
+      .current_term = 1,
       .role = Role::LEADER,
       .log = CreateLogEntries(
           {
@@ -201,12 +201,12 @@ TEST_F(RaftTest, FollowerRejectsRequestVoteBecauseAlreadyVoted) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
-            const auto& requestVoteResponse =
+            const auto& request_vote_response =
                 dynamic_cast<const RequestVoteResponse&>(msg);
             EXPECT_EQ(node_id, 2);
-            EXPECT_EQ(requestVoteResponse.term(), 2);
-            EXPECT_EQ(requestVoteResponse.voterid(), 1);
-            EXPECT_FALSE(requestVoteResponse.votegranted());
+            EXPECT_EQ(request_vote_response.term(), 2);
+            EXPECT_EQ(request_vote_response.voterid(), 1);
+            EXPECT_FALSE(request_vote_response.votegranted());
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
@@ -214,12 +214,12 @@ TEST_F(RaftTest, FollowerRejectsRequestVoteBecauseAlreadyVoted) {
   RequestVote rv;
   rv.set_term(2);
   rv.set_candidateid(2);
-  rv.set_lastlogindex(2);
+  rv.set_last_log_index(2);
   rv.set_lastlogterm(1);
 
   raft_->SetStateForTest({
-      .currentTerm = 2,
-      .votedFor = 3,
+      .current_term = 2,
+      .voted_for = 3,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -242,25 +242,25 @@ TEST_F(RaftTest, CandidateTimesOutAndStartsAnotherElection) {
   EXPECT_CALL(mock_broadcast, Broadcast(_, _))
       .WillOnce(
           ::testing::Invoke([](int type, const google::protobuf::Message& msg) {
-            const auto& requestVote = dynamic_cast<const RequestVote&>(msg);
-            EXPECT_EQ(requestVote.term(), 1);
-            EXPECT_EQ(requestVote.candidateid(), 1);
-            EXPECT_EQ(requestVote.lastlogindex(), 1);
-            EXPECT_EQ(requestVote.lastlogterm(), 0);
+            const auto& request_vote = dynamic_cast<const RequestVote&>(msg);
+            EXPECT_EQ(request_vote.term(), 1);
+            EXPECT_EQ(request_vote.candidateid(), 1);
+            EXPECT_EQ(request_vote.last_log_index(), 1);
+            EXPECT_EQ(request_vote.lastlogterm(), 0);
             return 0;
           }))
       .WillOnce(
           ::testing::Invoke([](int type, const google::protobuf::Message& msg) {
-            const auto& requestVote = dynamic_cast<const RequestVote&>(msg);
-            EXPECT_EQ(requestVote.term(), 2);
-            EXPECT_EQ(requestVote.candidateid(), 1);
-            EXPECT_EQ(requestVote.lastlogindex(), 1);
-            EXPECT_EQ(requestVote.lastlogterm(), 0);
+            const auto& request_vote = dynamic_cast<const RequestVote&>(msg);
+            EXPECT_EQ(request_vote.term(), 2);
+            EXPECT_EQ(request_vote.candidateid(), 1);
+            EXPECT_EQ(request_vote.last_log_index(), 1);
+            EXPECT_EQ(request_vote.lastlogterm(), 0);
             return 0;
           }));
 
   raft_->SetStateForTest({
-      .currentTerm = 0,
+      .current_term = 0,
       .role = Role::FOLLOWER,
       .log = CreateLogEntries(
           {
@@ -288,12 +288,12 @@ TEST_F(RaftTest, CandidateReceivesRequestVoteFromSameTermAndDoesNotDemote) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
-            const auto& requestVoteResponse =
+            const auto& request_vote_response =
                 dynamic_cast<const RequestVoteResponse&>(msg);
             EXPECT_EQ(node_id, 2);
-            EXPECT_EQ(requestVoteResponse.term(), 1);
-            EXPECT_EQ(requestVoteResponse.voterid(), 1);
-            EXPECT_FALSE(requestVoteResponse.votegranted());
+            EXPECT_EQ(request_vote_response.term(), 1);
+            EXPECT_EQ(request_vote_response.voterid(), 1);
+            EXPECT_FALSE(request_vote_response.votegranted());
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
@@ -301,12 +301,12 @@ TEST_F(RaftTest, CandidateReceivesRequestVoteFromSameTermAndDoesNotDemote) {
   RequestVote rv;
   rv.set_term(1);
   rv.set_candidateid(2);
-  rv.set_lastlogindex(1);
+  rv.set_last_log_index(1);
   rv.set_lastlogterm(0);
 
   raft_->SetStateForTest({
-      .currentTerm = 1,
-      .votedFor = 1,
+      .current_term = 1,
+      .voted_for = 1,
       .role = Role::CANDIDATE,
       .log = CreateLogEntries(
           {

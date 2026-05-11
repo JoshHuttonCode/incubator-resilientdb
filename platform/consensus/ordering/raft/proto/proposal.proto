@@ -42,24 +42,24 @@ message WALRecord {
 
 message AppendEntries{
   uint64 term = 1;
-  int32 leaderId = 2;
-  uint64 prevLogIndex = 3;
-  uint64 prevLogTerm = 4;
+  int32 leader_id = 2;
+  uint64 prev_log_index = 3;
+  uint64 prev_log_term = 4;
   repeated Entry entries = 5;
-  uint64 leaderCommitIndex = 6;
+  uint64 leader_commit_index = 6;
 }
 
 message AppendEntriesResponse {
   uint64 term = 1;
   bool success = 2;
   int32 id = 3;
-  uint64 lastLogIndex = 4;
+  uint64 last_log_index = 4;
 }
 
 message RequestVote {
   uint64 term = 1;
   int32 candidateId = 2;
-  uint64 lastLogIndex = 3;
+  uint64 last_log_index = 3;
   uint64 lastLogTerm = 4;
 }
 
@@ -71,14 +71,14 @@ message RequestVoteResponse {
 
 message DirectToLeader {
   uint64 term = 1;
-  int32 leaderId = 2;
+  int32 leader_id = 2;
 }
 
 message InstallSnapshot{
   uint64 term = 1;
-  int32 leaderId = 2;
-  uint64 lastIncludedIndex = 3;
-  uint64 lastIncludedTerm = 4;
+  int32 leader_id = 2;
+  uint64 last_included_index = 3;
+  uint64 last_included_term = 4;
   uint64 offset = 5;
   bytes data = 6;
   bool done = 7;

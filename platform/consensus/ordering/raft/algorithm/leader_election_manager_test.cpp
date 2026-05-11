@@ -1,3 +1,5 @@
+#include "platform/consensus/ordering/raft/algorithm/leader_election_manager.h"
+
 #include <gtest/gtest.h>
 
 #include <chrono>
@@ -5,7 +7,6 @@
 #include <thread>
 
 #include "platform/config/resdb_config_utils.h"
-#include "platform/consensus/ordering/raft/algorithm/leaderelection_manager.h"
 #include "platform/consensus/ordering/raft/algorithm/mock_raft.h"
 #include "platform/consensus/recovery/mock_raft_recovery.h"
 
