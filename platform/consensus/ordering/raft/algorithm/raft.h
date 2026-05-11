@@ -65,8 +65,8 @@ struct AeFields {
   uint64_t prev_log_term = 0;
   std::vector<LogEntry> entries{};
   uint64_t leader_commit = 0;
-  int follower_id =
-      -1;  // not part of AE message itself, but needed to determine recipient
+  // Not part of AE message itself, but needed to determine recipient
+  int follower_id = -1;
 };
 
 struct InFlightMsg {
@@ -115,7 +115,6 @@ class Raft : public common::ProtocolBase {
   virtual void SendHeartBeat();
   virtual Role GetRoleSnapshot() const;
   virtual void SetRole(Role role);
-  virtual void PrintDebugStateLocked() const;
   virtual void PrintDebugState() const;
   void WriteMetadata();
   uint64_t GetSnapshotLastIndex();
@@ -153,8 +152,6 @@ class Raft : public common::ProtocolBase {
   virtual bool DemoteSelfLocked(uint64_t term);   // Must be called under mutex
   virtual uint64_t GetLastLogTermLocked() const;  // Must be called under mutex
   virtual bool IsStop();
-  // bool IsDuplicateLogEntry(const std::string& hash) const; // Must be called
-  // under mutex
   virtual std::vector<std::unique_ptr<Request>>
   PrepareCommitLocked();  // Must be called under mutex
   virtual AeFields GatherAeFieldsLocked(int follower_id, bool heartBeat = false)
@@ -169,6 +166,7 @@ class Raft : public common::ProtocolBase {
       int follower_id, uint64_t followerlast_log_index);
   virtual void RecordNewInFlightMsgLocked(
       const AeFields& msg, std::chrono::steady_clock::time_point timestamp);
+  virtual void PrintDebugStateLocked() const;
 
 #ifdef RAFT_TEST_MODE
  public:
@@ -202,12 +200,8 @@ class Raft : public common::ProtocolBase {
   // it may not yet have been executed. Raft's Consensus file holds lastApplied_
   uint64_t last_committed_;  // Protected by mutex_
   Role role_;                // Protected by mutex_
-  // int leader_id_; // Protected by mutex_
   std::vector<int> votes_;                                // Protected by mutex_
   std::vector<std::vector<InFlightMsg>> in_flight_vecs_;  // Protected by mutex_
-  // std::chrono::steady_clock::time_point last_ae_time_;
-  // std::chrono::steady_clock::time_point last_heartbeat_time_; // Protected by
-  // mutex_
   int64_t snapshot_last_index_;
   int64_t snapshot_last_term_;
   std::vector<bool> snapshot_in_progress_;  // Protected by mutex_
@@ -220,9 +214,9 @@ class Raft : public common::ProtocolBase {
   struct PendingSnapshot {
     uint64_t last_included_index = 0;
     uint64_t last_included_term = 0;
-    // next byte offset we expect from the leader
+    // Next byte offset we expect from the leader.
     uint64_t expected_offset = 0;
-    // open fd to the temp file, or -1 if not open
+    // Open fd to the temp file, or -1 if not open.
     int fd = -1;
     std::string tmp_path;
   };
