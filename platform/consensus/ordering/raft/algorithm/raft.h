@@ -166,11 +166,12 @@ class Raft : public common::ProtocolBase {
       int follower_id, uint64_t followerlast_log_index);
   virtual void RecordNewInFlightMsgLocked(
       const AeFields& msg, std::chrono::steady_clock::time_point timestamp);
-  virtual bool InFlightPerFollowerLimitReachedLocked(int follower_id) const;
+
 #ifdef RAFT_TEST_MODE
  public:
   std::string GetSnapshotFilePath() const { return snapshot_file_path_; }
 #endif
+  virtual bool InFlightPerFollowerLimitReachedLocked(int follower_id) const;
   int GetLogicalLogSize() const;
   const LogEntry& GetLogEntryAtIndex(uint64_t index) const;
   const uint64_t GetLogTermAtIndex(uint64_t index) const;
@@ -350,6 +351,10 @@ class Raft : public common::ProtocolBase {
   std::vector<std::vector<InFlightMsg>> GetInFlightVecs() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return in_flight_vecs_;
+  }
+
+  size_t GetMaxInFlightVecs() const {
+    return max_in_flight_per_follower_;
   }
 
 #endif
