@@ -40,7 +40,7 @@ Consensus::Consensus(const ResDBConfig& config,
           config_, raft_checkpoint_manager_.get(),
           transaction_executor_->GetStorage(),
           [this](uint64_t seq) { OnCheckpointFinish(seq); })) {
-  //LOG(INFO) << "JIM -> " << __FUNCTION__ << ": In consensus constructor";
+  // LOG(INFO) << "JIM -> " << __FUNCTION__ << ": In consensus constructor";
   int total_replicas = config_.GetReplicaNum();
   int f = (total_replicas - 1) / 3;
 
@@ -50,9 +50,9 @@ Consensus::Consensus(const ResDBConfig& config,
           .public_key()
           .public_key_info()
           .type() != CertificateKeyInfo::CLIENT) {
-    raft_ = std::make_unique<Raft>(config_.GetSelfInfo().id(), f, total_replicas,
-                                 GetSignatureVerifier(), leader_election_manager_.get(),
-                                 replica_communicator_, recovery_.get());
+    raft_ = std::make_unique<Raft>(
+        config_.GetSelfInfo().id(), f, total_replicas, GetSignatureVerifier(),
+        leader_election_manager_.get(), replica_communicator_, recovery_.get());
 
     leader_election_manager_->SetRaft(raft_.get());
     leader_election_manager_->MayStart();
@@ -65,7 +65,7 @@ Consensus::Consensus(const ResDBConfig& config,
 
 int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
   if (request->user_type() == MessageType::AppendEntriesMsg) {
-    //LOG(ERROR) << "Received AppendEntriesMsg";
+    // LOG(ERROR) << "Received AppendEntriesMsg";
     std::unique_ptr<AppendEntries> txn = std::make_unique<AppendEntries>();
     if (!txn->ParseFromString(request->data())) {
       LOG(ERROR) << "parse proposal fail";
@@ -74,9 +74,9 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
     }
     raft_->ReceiveAppendEntries(std::move(txn));
     return 0;
-  }
-  else if (request->user_type() == MessageType::AppendEntriesResponseMsg) {
-    std::unique_ptr<AppendEntriesResponse> AppendEntriesResponse = std::make_unique<resdb::raft::AppendEntriesResponse>();
+  } else if (request->user_type() == MessageType::AppendEntriesResponseMsg) {
+    std::unique_ptr<AppendEntriesResponse> AppendEntriesResponse =
+        std::make_unique<resdb::raft::AppendEntriesResponse>();
     if (!AppendEntriesResponse->ParseFromString(request->data())) {
       LOG(ERROR) << "parse proposal fail";
       assert(1 == 0);
@@ -84,9 +84,9 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
     }
     raft_->ReceiveAppendEntriesResponse(std::move(AppendEntriesResponse));
     return 0;
-  }
-  else if (request->user_type() == MessageType::RequestVoteMsg) {
-    std::unique_ptr<RequestVote> rv = std::make_unique<resdb::raft::RequestVote>();
+  } else if (request->user_type() == MessageType::RequestVoteMsg) {
+    std::unique_ptr<RequestVote> rv =
+        std::make_unique<resdb::raft::RequestVote>();
     if (!rv->ParseFromString(request->data())) {
       LOG(ERROR) << "parse proposal fail";
       assert(1 == 0);
@@ -94,9 +94,9 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
     }
     raft_->ReceiveRequestVote(std::move(rv));
     return 0;
-  }
-  else if (request->user_type() == MessageType::RequestVoteResponseMsg) {
-    std::unique_ptr<RequestVoteResponse> rvr = std::make_unique<resdb::raft::RequestVoteResponse>();
+  } else if (request->user_type() == MessageType::RequestVoteResponseMsg) {
+    std::unique_ptr<RequestVoteResponse> rvr =
+        std::make_unique<resdb::raft::RequestVoteResponse>();
     if (!rvr->ParseFromString(request->data())) {
       LOG(ERROR) << "parse proposal fail";
       assert(1 == 0);
@@ -104,10 +104,10 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
     }
     raft_->ReceiveRequestVoteResponse(std::move(rvr));
     return 0;
-  }
-  else if (request->user_type() == MessageType::DirectToLeaderMsg) {
-    //LOG(INFO) << "JIM -> " << __FUNCTION__ << ": In DirectToLeader";
-    std::unique_ptr<DirectToLeader> dtl = std::make_unique<resdb::raft::DirectToLeader>();
+  } else if (request->user_type() == MessageType::DirectToLeaderMsg) {
+    // LOG(INFO) << "JIM -> " << __FUNCTION__ << ": In DirectToLeader";
+    std::unique_ptr<DirectToLeader> dtl =
+        std::make_unique<resdb::raft::DirectToLeader>();
     if (!dtl->ParseFromString(request->data())) {
       LOG(ERROR) << "parse proposal fail";
       assert(1 == 0);
@@ -171,13 +171,14 @@ void Consensus::RecoverFromLogs() {
 }
 
 int Consensus::ProcessNewTransaction(std::unique_ptr<Request> request) {
-    return raft_->ReceiveTransaction(std::move(request));
+  return raft_->ReceiveTransaction(std::move(request));
 }
 
 int Consensus::CommitMsg(const google::protobuf::Message& msg) {
   auto* req = dynamic_cast<const Request*>(&msg);
   if (!req) {
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Failed to cast Message to Request";
+    LOG(INFO) << "JIM -> " << __FUNCTION__
+              << ": Failed to cast Message to Request";
     return -1;
   }
   auto exec_req = std::make_unique<Request>(*req);

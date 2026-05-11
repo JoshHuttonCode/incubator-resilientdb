@@ -68,7 +68,7 @@ class RecoveryBase {
   void MayFlush();
 
   void Write(const char* data, size_t len);
-  
+
   std::string GenerateFile(int64_t seq, int64_t min_seq, int64_t max_seq);
 
   void FinishFile(int64_t seq);
@@ -82,7 +82,8 @@ class RecoveryBase {
 
   void AppendData(const std::string& data);
   bool Read(int fd, size_t len, char* data);
-  std::pair<std::vector<std::pair<int64_t, std::string>>, int64_t> GetRecoveryFiles(int64_t ckpt);
+  std::pair<std::vector<std::pair<int64_t, std::string>>, int64_t>
+  GetRecoveryFiles(int64_t ckpt);
 
   void SwitchFile(const std::string& path, TCallback call_back);
   void OpenFile(const std::string& path);

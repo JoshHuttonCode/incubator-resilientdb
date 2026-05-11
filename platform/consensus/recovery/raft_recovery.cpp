@@ -138,7 +138,8 @@ void RaftRecovery::WriteMetadata(int64_t current_term, int32_t voted_for,
   }
 
   // Only fsync and close the dir if it opens properly
-  std::string dir_path = std::filesystem::path(meta_file_path_).parent_path().string();
+  std::string dir_path =
+      std::filesystem::path(meta_file_path_).parent_path().string();
   int dir_fd = open(dir_path.c_str(), O_RDONLY);
   if (dir_fd < 0) {
     LOG(ERROR) << "Failed to open directory for fsync: " << strerror(errno);
@@ -232,15 +233,14 @@ void RaftRecovery::TruncateLog(TruncationRecord truncate_beginning_at) {
 
 void RaftRecovery::WriteLog(const WALRecord& record) {
   std::string data;
-  
+
   record.SerializeToString(&data);
-  
 
   switch (record.payload_case()) {
     case WALRecord::kEntry: {
       min_seq_ = min_seq_ == -1
-                  ? record.seq()
-                  : std::min(min_seq_, static_cast<int64_t>(record.seq()));
+                     ? record.seq()
+                     : std::min(min_seq_, static_cast<int64_t>(record.seq()));
       max_seq_ = std::max(max_seq_, static_cast<int64_t>(record.seq()));
       break;
     }
@@ -286,8 +286,8 @@ std::vector<std::unique_ptr<WALRecord>> RaftRecovery::ParseDataListItem(
 }
 
 void RaftRecovery::PerformCallback(
-    std::vector<std::unique_ptr<WALRecord>>& record_list, CallbackType call_back,
-    int64_t ckpt) {
+    std::vector<std::unique_ptr<WALRecord>>& record_list,
+    CallbackType call_back, int64_t ckpt) {
   uint64_t max_seq = 0;
   for (std::unique_ptr<WALRecord>& record : record_list) {
     // Only replay entries that are after the latest checkpoint.

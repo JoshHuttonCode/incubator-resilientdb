@@ -35,7 +35,6 @@ using ::testing::Invoke;
 using ::testing::Matcher;
 
 class RaftTest : public ::testing::Test {
-
  protected:
   void SetUp() override {
     verifier_ = std::make_unique<MockSignatureVerifier>();

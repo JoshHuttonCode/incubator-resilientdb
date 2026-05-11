@@ -416,6 +416,5 @@ TEST_F(RaftTest, AppendEntriesResponseDoesNotDecreaseNextIndexBelowMatchIndex) {
          "match_index";
 }
 
-
 }  // namespace raft
 }  // namespace resdb
