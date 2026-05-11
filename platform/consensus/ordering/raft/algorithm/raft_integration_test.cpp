@@ -1,7 +1,21 @@
-// raft_integration_test.cpp
-//
-// Integration test: Raft state correctly restored after RecoverFromLogs().
-// Uses a real RaftRecovery (seeded with WAL data) and a real Raft.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -112,7 +126,7 @@ TEST_F(RaftRecoveryIntegrationTest, RaftStateRestoredAfterRecovery) {
       Entry e;
       e.set_term(i);
       ClientTestRequest req;
-      req.set_value("cmd-" + std::to_string(i));
+      req.set_value("Transaction " + std::to_string(i));
       req.SerializeToString(e.mutable_command());
       recovery.AddLogEntry(&e, i);
     }
@@ -143,7 +157,7 @@ TEST_F(RaftRecoveryIntegrationTest, RaftStateRestoredAfterRecovery) {
     EXPECT_EQ(le.entry.term(), i);
     ClientTestRequest req;
     req.ParseFromString(le.entry.command());
-    EXPECT_EQ(req.value(), "cmd-" + std::to_string(i));
+    EXPECT_EQ(req.value(), "Transaction " + std::to_string(i));
   }
 }
 
@@ -301,7 +315,7 @@ TEST_F(RaftRecoveryIntegrationTest, DemotionTriggersWriteMetadata) {
       Entry e;
       e.set_term(3);
       ClientTestRequest req;
-      req.set_value("cmd-" + std::to_string(i));
+      req.set_value("Transaction " + std::to_string(i));
       req.SerializeToString(e.mutable_command());
       recovery.AddLogEntry(&e, i);
     }
@@ -360,7 +374,7 @@ TEST_F(RaftRecoveryIntegrationTest, DemotionTriggersWriteMetadata) {
       EXPECT_EQ(le.entry.term(), 3);
       ClientTestRequest req;
       req.ParseFromString(le.entry.command());
-      EXPECT_EQ(req.value(), "cmd-" + std::to_string(i));
+      EXPECT_EQ(req.value(), "Transaction " + std::to_string(i));
     }
   }
 }
@@ -483,15 +497,15 @@ TEST_F(RaftRecoveryIntegrationTest, RecoveryEmptyWALWithNonEmptyMetadata) {
     // Deliberately write no WAL entries — simulates a node that snapshotted
     // and then had its WAL cleaned up before the next restart.
   }
- 
+
   MockSignatureVerifier verifier;
   MockLeaderElectionManager lem(config_);
   MockReplicaCommunicator comm;
- 
+
   RaftRecovery recovery2(config_, nullptr, nullptr, nullptr);
   Raft raft(1, 1, 4, &verifier, &lem, &comm, &recovery2);
   RecoverFromLogs(recovery2, raft);
- 
+
   EXPECT_EQ(raft.GetCurrentTerm(), 7u);
   EXPECT_EQ(raft.GetVotedFor(), 2);
   EXPECT_EQ(raft.GetSnapshotLastIndex(), 50u);
