@@ -342,7 +342,6 @@ TEST_F(RaftRecoveryIntegrationTest, DemotionTriggersWriteMetadata) {
         /*follower_id=*/1);
     auto ae_message = CreateAeMessage(ae_fields);
 
-    raft.PrintDebugState();
     bool success = raft.ReceiveAppendEntries(
         std::make_unique<AppendEntries>(std::move(ae_message)));
     EXPECT_TRUE(success);

@@ -51,7 +51,7 @@ void RaftRecovery::Init() {
     return;
   }
 
-  LOG(ERROR) << " init";
+  LOG(INFO) << " init";
   GetLastFile();
 
   meta_file_path_ = std::filesystem::path(base_file_path_).parent_path() /
@@ -67,7 +67,7 @@ void RaftRecovery::Init() {
   };
 
   SwitchFile(file_path_, callback);
-  LOG(ERROR) << " init done";
+  LOG(INFO) << " init done";
 
   ckpt_thread_ = std::thread([this] { this->UpdateStableCheckPoint(); });
 }
@@ -302,7 +302,7 @@ void RaftRecovery::PerformCallback(
     }
   }
 
-  LOG(ERROR) << " recovery max seq:" << max_seq;
+  LOG(INFO) << " recovery max seq:" << max_seq;
 }
 
 void RaftRecovery::HandleSystemInfo(int /*fd*/,
@@ -311,8 +311,8 @@ void RaftRecovery::HandleSystemInfo(int /*fd*/,
 void RaftRecovery::HandleStartPoint(int64_t /*ckpt*/,
                                     StartPointType set_start_point) {
   metadata_ = ReadMetadata();
-  LOG(ERROR) << " metadata_.voted_for: " << metadata_.voted_for
-             << "\nmetadata_.current_term " << metadata_.current_term;
+  LOG(INFO) << " metadata_.voted_for: " << metadata_.voted_for
+            << "\nmetadata_.current_term " << metadata_.current_term;
   set_start_point(metadata_);
 }
 

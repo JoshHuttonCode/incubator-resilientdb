@@ -660,8 +660,6 @@ TEST_F(RaftTest, FollowerWillNotLowerCommitIndex) {
           true),
   });
 
-  raft_->PrintDebugStateLocked();
-
   bool success = raft_->ReceiveAppendEntries(
       std::make_unique<AppendEntries>(std::move(ae_message)));
   EXPECT_TRUE(success);
@@ -730,8 +728,6 @@ TEST_F(RaftTest, FollowerAdvancesCommitIndexOnHeartbeat) {
           },
           true),
   });
-
-  raft_->PrintDebugStateLocked();
 
   bool success = raft_->ReceiveAppendEntries(
       std::make_unique<AppendEntries>(std::move(ae_message)));

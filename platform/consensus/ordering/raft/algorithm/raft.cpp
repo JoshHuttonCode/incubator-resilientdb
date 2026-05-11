@@ -82,7 +82,7 @@ Raft::Raft(int id, int f, int total_num, SignatureVerifier* verifier,
       current_term_(0),
       voted_for_(-1),
       last_log_index_(-1),  // This value is unsigned, but after the sentinel is
-                            // added wraps back around to 0
+                            // added wraps back around to 0.
       commit_index_(0),
       last_committed_(0),
       role_(Role::FOLLOWER),
@@ -108,8 +108,6 @@ Raft::Raft(int id, int f, int total_num, SignatureVerifier* verifier,
     snapshot_file_path_ = wal_dir + "/snapshot.dat";
     snapshot_tmp_path_ = wal_dir + "/snapshot.dat.tmp";
   }
-  // last_ae_time_ = std::chrono::steady_clock::now();
-  // last_heartbeat_time_ = std::chrono::steady_clock::now();
 
   LogEntry sentinel;
   sentinel.entry.set_term(0);
@@ -142,19 +140,16 @@ bool Raft::ReceiveTransaction(std::unique_ptr<Request> req) {
   {
     std::lock_guard<std::mutex> lk(mutex_);
     if (role_ != Role::LEADER) {
-      // Inform client proxy of new leader?
-      // Redirect transaction to a known leader?
-      LOG(INFO) << "JIM -> " << __FUNCTION__
-                << ": Replica is not leader, returning early";
+      LOG(INFO) << __FUNCTION__ << ": Replica is not leader, returning early";
       return false;
     }
-    // append new transaction to log
+    // Append new transaction to log.
     LogEntry log_entry;
     log_entry.entry.set_term(current_term_);
 
     std::string serialized;
     if (!req->SerializeToString(&serialized)) {
-      LOG(INFO) << "JIM -> " << __FUNCTION__ << ": req could not be serialized";
+      LOG(INFO) << __FUNCTION__ << ": req could not be serialized";
       return false;
     }
 
@@ -166,11 +161,11 @@ bool Raft::ReceiveTransaction(std::unique_ptr<Request> req) {
     match_index_[id_] = last_log_index_;
 
     if (replication_logging_flag_) {
-      LOG(INFO) << "JIM -> " << __FUNCTION__
-                << ": Leader appended entry at index " << last_log_index_;
+      LOG(INFO) << __FUNCTION__ << ": Leader appended entry at index "
+                << last_log_index_;
     }
 
-    // Prepare fields for AppendEntries message
+    // Prepare fields for AppendEntries message.
     PruneExpiredInFlightMsgsLocked();
     messages = GatherAeFieldsForBroadcastLocked();
     auto now = std::chrono::steady_clock::now();
@@ -202,7 +197,6 @@ bool Raft::ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae) {
   const char* parent_fn = __FUNCTION__;
   [&]() {
     std::lock_guard<std::mutex> lk(mutex_);
-    // ---------- Checking term, role, prev_log_index, prev_log_term ----------
     initial_role = role_;
     last_log_index = last_log_index_;
     tr = TermCheckLocked(ae->term());
@@ -222,12 +216,12 @@ bool Raft::ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae) {
       }
     }
     term = current_term_;
-    // Early return if we should not append
+    // Early return if we should not append.
     if (!success) {
       return;
     }
 
-    // ---------- Appending entries ----------
+    // Append the entries to the log.
     uint64_t log_idx = ae->prev_log_index() + 1;
     uint64_t entries_idx = 0;
     // If we receive an entry that has already been committed, it must be
@@ -239,17 +233,17 @@ bool Raft::ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae) {
       log_idx = commit_index_ + 1;
     }
     uint64_t entries_size = static_cast<uint64_t>(ae->entries_size());
-    // check for conflicting entry terms in existing indices
-    // if conflict, delete suffix and short circuit out of loop
+    // Check for conflicting entry terms in existing indices.
+    // If there is a conflict, delete the suffix and short circuit out of the
+    // loop.
     while (log_idx < GetLogicalLogSize() && entries_idx < entries_size) {
       uint64_t term = ae->entries(entries_idx).term();
       if (term != GetLogTermAtIndex(log_idx)) {
         TruncateLog(log_idx);
 
         if (replication_logging_flag_) {
-          LOG(INFO) << "JIM -> " << parent_fn
-                    << ": follower saw term mismatch at index " << log_idx
-                    << ". Suffix erased from log";
+          LOG(INFO) << parent_fn << ": follower saw term mismatch at index "
+                    << log_idx << ". Suffix erased from log";
         }
 
         break;
@@ -258,7 +252,7 @@ bool Raft::ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae) {
       ++log_idx;
     }
 
-    // append remaining entries
+    // Append remaining entries.
     const auto append_size = entries_size - entries_idx;
     std::vector<LogEntry> log_entries_to_add;
     for (uint64_t i = entries_idx; i < entries_size; ++i) {
@@ -271,52 +265,33 @@ bool Raft::ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae) {
 
     if (replication_logging_flag_ && append_size > 0) {
       if (append_size > 1) {
-        LOG(INFO) << "JIM -> " << parent_fn
-                  << ": follower appended entries at indices "
+        LOG(INFO) << parent_fn << ": follower appended entries at indices "
                   << firstAppend_idx << " to " << last_log_index_;
       } else {
-        LOG(INFO) << "JIM -> " << parent_fn
-                  << ": follower appended entry at index " << last_log_index_;
+        LOG(INFO) << parent_fn << ": follower appended entry at index "
+                  << last_log_index_;
       }
     }
 
-    // ---------- Try to raise commit_index and commit entries ----------
+    // Try to raise commit_index and commit entries
     uint64_t prev_commit_index = commit_index_;
     if (leader_commit > commit_index_) {
       commit_index_ = std::min(leader_commit, last_log_index_);
 
       if (replication_logging_flag_ && commit_index_ > prev_commit_index) {
-        LOG(INFO) << "JIM -> " << parent_fn << ": Raised commit_index_ from "
+        LOG(INFO) << parent_fn << ": Raised commit_index_ from "
                   << prev_commit_index << " to " << commit_index_;
       }
     }
 
-    // build vector to apply committed entries outside mutex
+    // Build the vector to apply committed entries outside mutex.
     entries_to_apply = PrepareCommitLocked();
   }();
 
-  /*
-  auto now = std::chrono::steady_clock::now();
-  std::chrono::steady_clock::duration delta;
-  delta = now - last_ae_time_;
-  last_ae_time_ = now;
-
-
-  if (replication_logging_flag_) {
-
-    auto ms =
-  std::chrono::duration_cast<std::chrono::milliseconds>(delta).count();
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": AE received after " << ms <<
-  "ms";
-
-  }
-  */
-
-  // ---------- Outside mutex: inform leader_election_manager, apply committed
-  // entries, send response  ----------
+  // Inform leader_election_manager, apply committed entries, and send response.
   if (demoted) {
     leader_election_manager_->OnRoleChange();
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Demoted from "
+    LOG(INFO) << __FUNCTION__ << ": Demoted from "
               << (initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
               << "->FOLLOWER in term " << term;
   }
@@ -336,16 +311,6 @@ bool Raft::ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae) {
   aer.set_last_log_index(last_log_index);
   SendMessage(MessageType::AppendEntriesResponseMsg, aer, leader_id);
 
-  if (replication_logging_flag_) {
-    /*
-    if (success) {
-      LOG(INFO) << "JIM -> " << __FUNCTION__ << ": responded success";
-    }
-    else {
-      LOG(INFO) << "JIM -> " << __FUNCTION__ << ": responded failure";
-    }
-    */
-  }
   return true;
 }
 
@@ -383,29 +348,28 @@ bool Raft::ReceiveAppendEntriesResponse(
         std::max(std::min(aer->last_log_index() + 1, last_log_index_ + 1),
                  match_index_[follower_id] + 1);
 
-    // if successful, update match_index and try to commit more entries
+    // If successful, update match_index and try to commit more entries.
     if (aer->success()) {
-      // need to ensure match_index never decreases even if followers
-      // last_log_index decreases
+      // Need to ensure match_index never decreases even if any followers'
+      // last_log_index decreases.
       match_index_[follower_id] =
           std::max(match_index_[follower_id], aer->last_log_index());
-      // use updated match_index to find new entries eligible for commit
+      // Use the updated match_index to find new entries eligible for commit.
       std::vector<uint64_t> sorted = match_index_;
       std::sort(sorted.begin(), sorted.end(), std::greater<uint64_t>());
       uint64_t last_replicated_index = sorted[quorum_ - 1];
       // Need to check the last_replicated_index contains entry from current
-      // term
+      // term.
       if (last_replicated_index > commit_index_ &&
           GetLogTermAtIndex(last_replicated_index) == current_term_) {
-        LOG(INFO) << "JIM -> " << parent_fn << ": Raised commit_index_ from "
+        LOG(INFO) << parent_fn << ": Raised commit_index_ from "
                   << commit_index_ << " to " << last_replicated_index;
         commit_index_ = last_replicated_index;
       }
-      // apply any newly committed entries to state machine
+      // Apply any newly committed entries to state machine.
       entries_to_apply = PrepareCommitLocked();
     }
-    // if failure, or if next_index[i] < last_log_index + 1 (follower isnt
-    // caught up)
+
     if (!aer->success() || (next_index_[follower_id] < last_log_index_ + 1)) {
       if (!aer->success()) {
         LOG(INFO) << "AppendEntriesResponse indicates FAILURE from follower "
@@ -414,7 +378,6 @@ bool Raft::ReceiveAppendEntriesResponse(
                   << " their last_log_index is: " << aer->last_log_index();
       }
       if (aer->last_log_index() < snapshot_last_index_) {
-        LOG(INFO) << "snapshot_last_index_ is: " << snapshot_last_index_;
         SendInstallSnapshot(follower_id, 0);
       } else if (!InFlightPerFollowerLimitReachedLocked(follower_id)) {
         fields = GatherAeFieldsLocked(follower_id);
@@ -426,7 +389,7 @@ bool Raft::ReceiveAppendEntriesResponse(
   }();
   if (demoted) {
     leader_election_manager_->OnRoleChange();
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Demoted from "
+    LOG(INFO) << __FUNCTION__ << ": Demoted from "
               << (initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
               << "->FOLLOWER in term " << term;
     return false;
@@ -456,12 +419,11 @@ void Raft::ReceiveRequestVote(std::unique_ptr<RequestVote> rv) {
     return;
   }
 
-  // const char* parent_fn = __FUNCTION__;
   [&]() {
     std::lock_guard<std::mutex> lk(mutex_);
     initial_role = role_;
     // If their term is higher than ours, we accept new term, reset voted_for
-    // and convert to follower
+    // and convert to follower.
     TermRelation tr = TermCheckLocked(rv_term);
     if (tr == TermRelation::STALE) {
       term = current_term_;
@@ -469,7 +431,7 @@ void Raft::ReceiveRequestVote(std::unique_ptr<RequestVote> rv) {
     } else if (tr == TermRelation::NEW) {
       demoted = DemoteSelfLocked(rv_term);
     }
-    // Then we continue voting process
+    // Then we continue voting process.
     term = current_term_;
     voted_for = voted_for_;
 
@@ -489,16 +451,16 @@ void Raft::ReceiveRequestVote(std::unique_ptr<RequestVote> rv) {
   }();
   if (demoted) {
     leader_election_manager_->OnRoleChange();
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Demoted from "
+    LOG(INFO) << __FUNCTION__ << ": Demoted from "
               << (initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
               << "->FOLLOWER in term " << term;
   }
   if (vote_granted) {
     leader_election_manager_->OnHeartBeat();
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": voted for " << rv_sender
-              << " in term " << term;
+    LOG(INFO) << __FUNCTION__ << ": voted for " << rv_sender << " in term "
+              << term;
   } else if (valid_candidate) {
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": did not vote for " << rv_sender
+    LOG(INFO) << __FUNCTION__ << ": did not vote for " << rv_sender
               << " on term " << term << ". I already voted for " << voted_for
               << ((voted_for == id_) ? " (myself)" : "");
   }
@@ -542,7 +504,7 @@ void Raft::ReceiveRequestVoteResponse(
       return;
     }
     votes_.push_back(voter_id);
-    LOG(INFO) << "JIM -> " << parent_fn << ": Replica " << voter_id
+    LOG(INFO) << parent_fn << ": Replica " << voter_id
               << " voted for me. Votes: " << votes_.size() << "/" << quorum_
               << " in term " << current_term_;
     if (votes_.size() >= quorum_) {
@@ -551,18 +513,17 @@ void Raft::ReceiveRequestVoteResponse(
       ClearInFlightsLocked();
       next_index_.assign(total_num_ + 1, last_log_index_ + 1);
 
-      // make sure to set leaders own match_index entry to last_log_index
+      // Make sure to set the leader's own match_index entry to last_log_index.
       match_index_.assign(total_num_ + 1, 0);
       match_index_[id_] = last_log_index_;
-      LOG(INFO) << "JIM -> " << parent_fn << ": CANDIDATE->LEADER in term "
-                << current_term_;
+      LOG(INFO) << parent_fn << ": CANDIDATE->LEADER in term " << current_term_;
     }
   }();
   if (demoted || elected) {
     leader_election_manager_->OnRoleChange();
   }
   if (demoted) {
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Demoted from "
+    LOG(INFO) << __FUNCTION__ << ": Demoted from "
               << (initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
               << "->FOLLOWER in term " << term;
   }
@@ -576,7 +537,7 @@ Role Raft::GetRoleSnapshot() const {
   return role_;
 }
 
-// Called from LeaderElectionManager::StartElection when timeout
+// Called from LeaderElectionManager::StartElection when timeout.
 void Raft::StartElection() {
   uint64_t current_term;
   int candidate_id;
@@ -598,7 +559,7 @@ void Raft::StartElection() {
     SetCurrentTermAndVotedFor(current_term_ + 1, id_);
     votes_.clear();
     votes_.push_back(id_);
-    LOG(INFO) << "JIM -> " << __FUNCTION__
+    LOG(INFO) << __FUNCTION__
               << ": I voted for myself. Votes: " << votes_.size() << "/"
               << quorum_ << " in term " << current_term_;
 
@@ -655,24 +616,22 @@ void Raft::SendHeartBeat() {
       std::chrono::duration_cast<std::chrono::milliseconds>(msg_delta).count();
 
   if (liveness_logging_flag_) {
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": " << msg_ms
+    LOG(INFO) << __FUNCTION__ << ": " << msg_ms
               << " ms elapsed in CreateAndSend loop";
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Heartbeat " << heartBeat_num
-              << " for term " << current_term;
+    LOG(INFO) << __FUNCTION__ << ": Heartbeat " << heartBeat_num << " for term "
+              << current_term;
   }
 
   auto redirect_start = std::chrono::steady_clock::now();
   std::chrono::steady_clock::duration redirect_delta;
 
-  // Also ping client proxies that this is the leader
+  // Ping client proxies that this is the leader.
   DirectToLeader dtl;
   dtl.set_term(current_term);
   dtl.set_leader_id(id_);
   for (const auto& client : replica_communicator_->GetClientReplicas()) {
     int id = client.id();
     SendMessage(DirectToLeaderMsg, dtl, id);
-    // LOG(INFO) << "JIM -> " << __FUNCTION__ << ": DirectToLeader " << id_ << "
-    // sent to proxy " << id;
   }
 
   auto redirect_end = std::chrono::steady_clock::now();
@@ -688,28 +647,27 @@ void Raft::SendHeartBeat() {
           .count();
 
   if (liveness_logging_flag_) {
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": " << redirect_ms
+    LOG(INFO) << __FUNCTION__ << ": " << redirect_ms
               << " ms elapsed in redirect loop";
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": " << function_ms
+    LOG(INFO) << __FUNCTION__ << ": " << function_ms
               << " ms elapsed in function";
   }
 }
 
-// requires raft mutex to be held
-// returns true if demoted
+// Requires the raft mutex to be held.
+// Returns true if demoted.
 bool Raft::DemoteSelfLocked(uint64_t term) {
   if (term > current_term_) {
     SetCurrentTermAndVotedFor(term, -1);
   }
   if (role_ != Role::FOLLOWER) {
     SetRoleLocked(Role::FOLLOWER);
-    // LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Demoted to FOLLOWER";
     return true;
   }
   return false;
 }
 
-// requires raft mutex to be held
+// Requires the raft mutex to be held.
 TermRelation Raft::TermCheckLocked(uint64_t term) const {
   if (term < current_term_) {
     return TermRelation::STALE;
@@ -720,7 +678,7 @@ TermRelation Raft::TermCheckLocked(uint64_t term) const {
   }
 }
 
-// requires raft mutex to be held
+// Requires the raft mutex to be held.
 uint64_t Raft::GetLastLogTermLocked() const {
   if (last_log_index_ <= snapshot_last_index_) {
     return snapshot_last_term_;
@@ -729,7 +687,7 @@ uint64_t Raft::GetLastLogTermLocked() const {
   return GetLogTermAtIndex(last_log_index_);
 }
 
-// requires raft mutex to be held
+// Requires the raft mutex to be held.
 std::vector<std::unique_ptr<Request>> Raft::PrepareCommitLocked() {
   std::vector<std::unique_ptr<Request>> commit_vec;
   uint64_t begin = last_committed_ + 1;
@@ -741,10 +699,10 @@ std::vector<std::unique_ptr<Request>> Raft::PrepareCommitLocked() {
 
     if (!command->ParseFromString(
             GetLogEntryAtIndex(last_committed_).entry.command())) {
-      LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Failed to parse command";
+      LOG(INFO) << __FUNCTION__ << ": Failed to parse command";
       continue;
     }
-    // assign seq number as log index for the request or executing transactions
+    // seq must be the log index for the request or executing transactions
     // fails.
     command->set_seq(last_committed_);
     commit_vec.push_back(std::move(command));
@@ -753,17 +711,17 @@ std::vector<std::unique_ptr<Request>> Raft::PrepareCommitLocked() {
 
   if (applying && replication_logging_flag_) {
     if (last_committed_ > begin) {
-      LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Applying index entries "
-                << begin << " to " << last_committed_;
+      LOG(INFO) << __FUNCTION__ << ": Applying index entries " << begin
+                << " to " << last_committed_;
     } else {
-      LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Applying index entry "
-                << last_committed_;
+      LOG(INFO) << __FUNCTION__ << ": Applying index entry " << last_committed_;
     }
   }
 
   return commit_vec;
 }
 
+// Requires the raft mutex to be held.
 AeFields Raft::GatherAeFieldsLocked(int follower_id, bool heart_beat) const {
   AeFields fields{};
   LOG(INFO) << "snapshot_last_index_ is: " << snapshot_last_index_;
@@ -795,11 +753,11 @@ AeFields Raft::GatherAeFieldsLocked(int follower_id, bool heart_beat) const {
   return fields;
 }
 
-// returns vector of tuples <follower_id, AeFields>
-// If heart_beat == true, entries[] will be empty for all messages
-// else entries will each contain at most max_entries_ amount of entries
+// Returns vector of tuples <follower_id, AeFields>.
+// If heart_beat == true, entries[] will be empty for all messages,
+// else entries will each contain at most max_entries_ amount of entries.
 // Followers will be excluded from the broadcast if they are at inflight max
-// unless this is a heartbeat
+// unless this is a heartbeat.
 std::vector<AeFields> Raft::GatherAeFieldsForBroadcastLocked(
     bool heart_beat) const {
   assert(role_ == Role::LEADER);
@@ -836,7 +794,7 @@ void Raft::CreateAndSendAppendEntryMsg(const AeFields& fields) {
   SendMessage(MessageType::AppendEntriesMsg, ae, follower_id);
   if (replication_logging_flag_) {
     uint64_t entry_count = fields.entries.size();
-    LOG(INFO) << "JIM -> " << __FUNCTION__ << ": Sent AE with " << entry_count
+    LOG(INFO) << __FUNCTION__ << ": Sent AE with " << entry_count
               << (entry_count == 1 ? " entry" : " entries");
   }
 }
@@ -847,6 +805,7 @@ LogEntry Raft::CreateLogEntry(const Entry& entry) const {
   return new_entry;
 }
 
+// Requires the raft mutex to be held.
 void Raft::ClearInFlightsLocked() {
   assert(role_ == Role::LEADER);
   for (auto& vec : in_flight_vecs_) {
@@ -854,6 +813,7 @@ void Raft::ClearInFlightsLocked() {
   }
 }
 
+// Requires the raft mutex to be held.
 void Raft::PruneExpiredInFlightMsgsLocked() {
   assert(role_ == Role::LEADER);
   auto now = std::chrono::steady_clock::now();
@@ -871,7 +831,7 @@ void Raft::PruneExpiredInFlightMsgsLocked() {
       if (time_elapsed >= ae_response_deadline_) {
         it = vec.erase(it);
         if (replication_logging_flag_) {
-          LOG(INFO) << "JIM -> " << __FUNCTION__
+          LOG(INFO) << __FUNCTION__
                     << ": Pruned expired inflight AE for follower " << i;
         }
       } else {
@@ -898,7 +858,7 @@ void Raft::PruneRedundantInFlightMsgsLocked(int follower_id,
         it->last_index_of_segment_sent <= followerlast_log_index) {
       it = msg_vec.erase(it);
       if (replication_logging_flag_) {
-        LOG(INFO) << "JIM -> " << __FUNCTION__
+        LOG(INFO) << __FUNCTION__
                   << ": Pruned redundant inflight AE for follower "
                   << follower_id;
       }
@@ -921,6 +881,7 @@ void Raft::RecordNewInFlightMsgLocked(
   in_flight_vecs_[msg.follower_id].push_back(in_flight);
 }
 
+// Requires the raft mutex to be held.
 bool Raft::InFlightPerFollowerLimitReachedLocked(int follower_id) const {
   assert(role_ == Role::LEADER);
   assert(follower_id > 0);
@@ -938,7 +899,7 @@ const LogEntry& Raft::GetLogEntryAtIndex(uint64_t index) const {
   // A sentinel value is always included after a snapshot
   // Example: snapshot_last_index_ = 5, we have truncated the entire log, added
   // 1 entry, then log_.size() == 2 with the sentinel. index could be 6, and
-  // snapshot_last_index_ + log_.size() == 7
+  // snapshot_last_index_ + log_.size() == 7.
   assert(index < snapshot_last_index_ + log_.size() &&
          "Tried to access element that has not been added yet");
   return log_[index - snapshot_last_index_];
@@ -997,8 +958,8 @@ void Raft::SetSnapshotLastIndexAndTerm(uint64_t snapshot_last_index,
     return;
   }
 
-  // Function is only called write_metadata == false on Initial recovery, so
-  // these variables need to be set
+  // Function is only called with write_metadata == false on initial recovery,
+  // so these variables need to be set.
   last_log_index_ = snapshot_last_index_;
   commit_index_ = snapshot_last_index_;
   last_committed_ = snapshot_last_index_;
@@ -1062,6 +1023,7 @@ void Raft::TruncatePrefix(uint64_t index) {
   TruncatePrefixLocked(index);
 }
 
+// Requires the raft mutex to be held.
 void Raft::TruncatePrefixLocked(uint64_t index) {
   assert(index > snapshot_last_index_ &&
          "Tried to truncate an entry that has been snapshotted");
@@ -1079,7 +1041,7 @@ void Raft::TruncatePrefixLocked(uint64_t index) {
 }
 
 // Serialize the storage state machine snapshot.
-// Format per entry: [4-byte key_len][key][4-byte val_len][val]
+// Format per entry: [4-byte key_len][key][4-byte val_len][val].
 static std::string SerializeSnapshot(Storage* storage) {
   LOG(INFO) << "Serializing Storage snapshot";
   std::string data;
@@ -1105,7 +1067,7 @@ static void ApplySnapshot(Storage* storage, const std::string& raw) {
   }
   LOG(INFO) << "Applying Snapshot";
 
-  // Clear existing storage before applying snapshot
+  // Clear existing storage before applying snapshot.
   storage->Clear();
   if (raw.empty()) {
     storage->Flush(true);
@@ -1136,12 +1098,12 @@ static void ApplySnapshot(Storage* storage, const std::string& raw) {
 
     storage->SetValue(key, val);
   }
-  // Flush storage to disk before WriteMetadata()
+  // Flush storage to disk before WriteMetadata().
   storage->Flush(/*should_sync=*/true);
 }
 
 // Send one chunk of a snapshot to a follower whose log has fallen behind the
-// entries remaining in the leader's log. Before the first chunk sent, the
+// entries remaining in the leader's log. Before the first chunk is sent, the
 // snapshot is written to disk. Then it is read back one chunk at a time.
 // Subsequent chunks are sent after the follower ACKs each one.
 void Raft::SendInstallSnapshot(int follower_id, size_t byte_offset) {
@@ -1679,12 +1641,13 @@ bool Raft::ReceiveInstallSnapshotResponse(
   return true;
 }
 
-void Raft::PrintDebugStateLocked() const {
+void Raft::PrintDebugState() const {
   std::lock_guard<std::mutex> lk(mutex_);
-  PrintDebugState();
+  PrintDebugStateLocked();
 }
 
-void Raft::PrintDebugState() const {
+// Requires the raft mutex to be held.
+void Raft::PrintDebugStateLocked() const {
   std::ostringstream oss;
 
   oss << "---- Raft Debug State ----\n";
@@ -1692,27 +1655,30 @@ void Raft::PrintDebugState() const {
   oss << "current_term_: " << current_term_ << "\n";
   oss << "voted_for_: " << voted_for_ << "\n";
 
-  // log_
   oss << "log_ (size " << GetLogicalLogSize() << "): [";
   for (size_t i = 0; i < GetLogicalLogSize(); ++i) {
     oss << "{term: " << GetLogTermAtIndex(i) << "}";
-    if (i + 1 != GetLogicalLogSize()) oss << ", ";
+    if (i + 1 != GetLogicalLogSize()) {
+      oss << ", ";
+    }
   }
   oss << "]\n";
 
-  // next_index_
   oss << "next_index_: [";
   for (size_t i = 0; i < next_index_.size(); ++i) {
     oss << next_index_[i];
-    if (i + 1 != next_index_.size()) oss << ", ";
+    if (i + 1 != next_index_.size()) {
+      oss << ", ";
+    }
   }
   oss << "]\n";
 
-  // match_index_
   oss << "match_index_: [";
   for (size_t i = 0; i < match_index_.size(); ++i) {
     oss << match_index_[i];
-    if (i + 1 != match_index_.size()) oss << ", ";
+    if (i + 1 != match_index_.size()) {
+      oss << ", ";
+    }
   }
   oss << "]\n";
 
@@ -1722,11 +1688,12 @@ void Raft::PrintDebugState() const {
   oss << "last_committed_: " << last_committed_ << "\n";
   oss << "role_: " << static_cast<int>(role_) << "\n";
 
-  // votes_
   oss << "votes_: [";
   for (size_t i = 0; i < votes_.size(); ++i) {
     oss << votes_[i];
-    if (i + 1 != votes_.size()) oss << ", ";
+    if (i + 1 != votes_.size()) {
+      oss << ", ";
+    }
   }
   oss << "]\n";
 

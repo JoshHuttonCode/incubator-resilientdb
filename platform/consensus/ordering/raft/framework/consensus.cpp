@@ -40,7 +40,7 @@ Consensus::Consensus(const ResDBConfig& config,
           config_, raft_checkpoint_manager_.get(),
           transaction_executor_->GetStorage(),
           [this](uint64_t seq) { OnCheckpointFinish(seq); })) {
-  // LOG(INFO) << "JIM -> " << __FUNCTION__ << ": In consensus constructor";
+  // LOG(INFO) << __FUNCTION__ << ": In consensus constructor";
   int total_replicas = config_.GetReplicaNum();
   int f = (total_replicas - 1) / 3;
 
@@ -105,7 +105,7 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
     raft_->ReceiveRequestVoteResponse(std::move(rvr));
     return 0;
   } else if (request->user_type() == MessageType::DirectToLeaderMsg) {
-    // LOG(INFO) << "JIM -> " << __FUNCTION__ << ": In DirectToLeader";
+    // LOG(INFO) << __FUNCTION__ << ": In DirectToLeader";
     std::unique_ptr<DirectToLeader> dtl =
         std::make_unique<resdb::raft::DirectToLeader>();
     if (!dtl->ParseFromString(request->data())) {
@@ -177,8 +177,7 @@ int Consensus::ProcessNewTransaction(std::unique_ptr<Request> request) {
 int Consensus::CommitMsg(const google::protobuf::Message& msg) {
   auto* req = dynamic_cast<const Request*>(&msg);
   if (!req) {
-    LOG(INFO) << "JIM -> " << __FUNCTION__
-              << ": Failed to cast Message to Request";
+    LOG(INFO) << __FUNCTION__ << ": Failed to cast Message to Request";
     return -1;
   }
   auto exec_req = std::make_unique<Request>(*req);

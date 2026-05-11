@@ -73,7 +73,7 @@ void PerformanceManager::SetPrimary(int id) {
   int curr_primary = primary_.load();
   while (id != curr_primary) {
     if (primary_.compare_exchange_strong(curr_primary, id)) {
-      LOG(INFO) << "JIM -> " << __FUNCTION__ << ": primary updated to " << id;
+      LOG(INFO) << __FUNCTION__ << ": primary updated to " << id;
       return;
     }
   }
