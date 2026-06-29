@@ -113,7 +113,7 @@ TEST_F(RaftRecoveryTest, WriteAndReadLog) {
 
     EXPECT_EQ(list.size(), entries_to_add);
 
-    for (size_t i = 0; i < entries_to_add; ++i) {
+    for (int i = 0; i < entries_to_add; ++i) {
       EXPECT_EQ(list[i].payload_case(), WALRecord::kEntry);
 
       EXPECT_EQ(list[i].entry().term(), i + 1);
@@ -145,7 +145,7 @@ TEST_F(RaftRecoveryTest, WriteMultipleEntriesAndReadLog) {
 
     EXPECT_EQ(list.size(), entries_to_add);
 
-    for (size_t i = 0; i < entries_to_add; ++i) {
+    for (int i = 0; i < entries_to_add; ++i) {
       EXPECT_EQ(list[i].payload_case(), WALRecord::kEntry);
 
       EXPECT_EQ(list[i].entry().term(), i + 1);
@@ -302,7 +302,7 @@ TEST_F(RaftRecoveryTest, TruncateLog) {
 
     EXPECT_EQ(list.size(), 2 * entries_to_add + 1);
 
-    for (size_t i = 0; i < entries_to_add; ++i) {
+    for (int i = 0; i < entries_to_add; ++i) {
       EXPECT_EQ(list[i].payload_case(), WALRecord::kEntry);
       EXPECT_EQ(list[i].entry().term(), i + 1);
       Request req;
@@ -314,7 +314,7 @@ TEST_F(RaftRecoveryTest, TruncateLog) {
     EXPECT_EQ(list[4].payload_case(), WALRecord::kTruncation);
     EXPECT_EQ(list[4].truncation().truncate_from_index(), 3);
 
-    for (size_t i = entries_to_add + 1; i < 2 * entries_to_add + 1; ++i) {
+    for (int i = entries_to_add + 1; i < 2 * entries_to_add + 1; ++i) {
       EXPECT_EQ(list[i].payload_case(), WALRecord::kEntry);
       EXPECT_EQ(list[i].entry().term(), i + 1);
       Request req;

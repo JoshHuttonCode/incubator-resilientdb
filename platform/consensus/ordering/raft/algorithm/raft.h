@@ -85,6 +85,54 @@ struct FollowerProgress {
   bool probe_in_flight = false;
 };
 
+struct ReceiveTransactionResult {
+  bool direct_to_leader = false;
+  bool broadcasted = false;
+  uint64_t my_log_index = 0;
+  std::future<void> wal_future;
+  std::vector<AeFields> messages;
+};
+
+struct AppendEntriesResult {
+  bool success = false;
+  bool demoted = false;
+  uint64_t term = 0;
+  TermRelation tr;
+  uint64_t last_log_index = 0;
+  Role initial_role = Role::FOLLOWER;
+  std::future<void> wal_future;
+  std::vector<std::unique_ptr<Request>> entries_to_apply;
+  uint64_t conflicting_term;
+  uint64_t conflicting_index;
+};
+
+struct AppendEntriesResponseResult {
+  bool demoted = false;
+  uint64_t term = 0;
+  Role initial_role = Role::FOLLOWER;
+  bool resending = false;
+  bool should_send_snapshot = false;
+  std::vector<std::unique_ptr<Request>> entries_to_apply;
+  std::vector<AeFields> fields_vector;
+  int follower_id = -1;
+};
+
+struct RequestVoteResult {
+  bool demoted = false;
+  uint64_t term = 0;
+  Role initial_role = Role::FOLLOWER;
+  bool vote_granted = false;
+  bool valid_candidate = false;
+  int voted_for = -1;
+};
+
+struct RequestVoteResponseResult {
+  bool demoted = false;
+  bool elected = false;
+  uint64_t term = 0;
+  Role initial_role = Role::FOLLOWER;
+};
+
 #ifdef RAFT_TEST_MODE
 
 struct FollowerProgressPatch {
@@ -188,6 +236,17 @@ class Raft : public common::ProtocolBase {
   mutable std::mutex snapshot_queue_mutex_;
   std::condition_variable snapshot_queue_cv_;
 
+  ReceiveTransactionResult ReceiveTransactionLocked(
+      const std::unique_ptr<Request>& req, const std::string& serialized);
+  AppendEntriesResult ReceiveAppendEntriesLocked(
+      const std::unique_ptr<AppendEntries>& ae);
+  AppendEntriesResponseResult ReceiveAppendEntriesResponseLocked(
+      const std::unique_ptr<AppendEntriesResponse>& aer);
+  RequestVoteResult ReceiveRequestVoteLocked(
+      const std::unique_ptr<RequestVote>& rv);
+  RequestVoteResponseResult ReceiveRequestVoteResponseLocked(
+      const std::unique_ptr<RequestVoteResponse>& rvr);
+
   virtual TermRelation TermCheckLocked(
       uint64_t term) const;                       // Must be called under mutex
   virtual bool DemoteSelfLocked(uint64_t term);   // Must be called under mutex
@@ -235,6 +294,8 @@ class Raft : public common::ProtocolBase {
  private:
 #endif
   void TruncatePrefixLocked(uint64_t snapshot_index);
+  void SendSnapshotsToBehindFollowersLocked();
+  std::string ReadSnapshotFileData(std::string snapshot_file_path_);
   void SetRoleLocked(Role role);  // Must be called under mutex_.
 
   // Writes the current storage state machine snapshot to snapshot_file_path_

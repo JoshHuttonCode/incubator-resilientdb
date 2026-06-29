@@ -836,7 +836,7 @@ TEST_F(RaftTest, FollowerReceivingAppendEntriesCoveringCommittedTransactions) {
   const auto& le = raft_->GetLog()[0];
   EXPECT_EQ(le.entry.term(), 0);
   EXPECT_EQ(raft_->GetLog().size(), 6);
-  for (int i = 1; i < raft_->GetLog().size(); ++i) {
+  for (size_t i = 1; i < raft_->GetLog().size(); ++i) {
     const auto& le = raft_->GetLog()[i];
     ClientTestRequest req;
     req.ParseFromString(le.entry.command());
@@ -948,7 +948,7 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
   EXPECT_EQ(raft_->GetLog().size(), 5);
   EXPECT_EQ(raft_->GetLogicalLogSize(), 8);
 
-  for (int i = 1; i < raft_->GetLog().size(); ++i) {
+  for (size_t i = 1; i < raft_->GetLog().size(); ++i) {
     const auto& le = raft_->GetLog()[i];
     ClientTestRequest req;
     req.ParseFromString(le.entry.command());
@@ -995,7 +995,7 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
   EXPECT_EQ(raft_->GetLog().size(), 5);
   EXPECT_EQ(raft_->GetLogicalLogSize(), 9);
 
-  for (int i = 1; i < raft_->GetLog().size() - 1; ++i) {
+  for (size_t i = 1; i < raft_->GetLog().size() - 1; ++i) {
     const auto& le = raft_->GetLog()[i];
     ClientTestRequest req;
     req.ParseFromString(raft_->GetLogEntryAtIndex(i + 4).entry.command());

@@ -38,6 +38,7 @@
 #include "common/utils/utils.h"
 #include "platform/consensus/ordering/raft/proto/proposal.pb.h"
 #include "platform/proto/resdb.pb.h"
+#include "raft.h"
 
 namespace resdb {
 namespace raft {
@@ -203,16 +204,20 @@ bool Raft::ShouldSendSnapshotChunkLocked(int follower_id,
   const auto& [last_sent_time, last_sent_offset] =
       snapshot_send_time_[follower_id];
 
-  if (last_sent_time == std::chrono::steady_clock::time_point{}) {
+  bool no_pending_snapshot =
+      last_sent_time == std::chrono::steady_clock::time_point{};
+  if (no_pending_snapshot) {
     return true;
   }
 
-  if (byte_offset > last_sent_offset) {
+  bool sending_next_chunk = byte_offset > last_sent_offset;
+  if (sending_next_chunk) {
     return true;
   }
 
   auto elapsed = std::chrono::steady_clock::now() - last_sent_time;
-  return elapsed >= snapshot_response_deadline_;
+  bool enough_time_has_elapsed = elapsed >= snapshot_response_deadline_;
+  return enough_time_has_elapsed;
 }
 
 void Raft::EnqueueSnapshot(int follower_id, size_t byte_offset) {
@@ -270,63 +275,69 @@ void Raft::SetRole(Role role) {
   role_ = role;
 }
 
+ReceiveTransactionResult Raft::ReceiveTransactionLocked(
+    const std::unique_ptr<Request>& req, const std::string& serialized) {
+  ReceiveTransactionResult result;
+
+  if (role_ != Role::LEADER) {
+    VLOG(1) << __FUNCTION__
+            << ": Replica is not leader, redirecting clients to leader";
+    result.direct_to_leader = true;
+    return result;
+  }
+
+  // Append new transaction to log.
+  LogEntry log_entry;
+  log_entry.entry.set_term(current_term_);
+  log_entry.entry.set_command(std::move(serialized));
+  log_entry.GetSerializedSize();
+
+  result.wal_future = AddToLogLocked(log_entry);
+  result.my_log_index = last_log_index_;
+  progress_[id_].next_index = last_log_index_ + 1;
+  // Match index is set later once wal_future has shown it has persisted to
+  // disk.
+
+  VLOG(2) << ": Leader appended entry at index " << last_log_index_;
+
+  // Prepare fields for AppendEntries message broadcasting.
+  PruneExpiredInFlightMsgsLocked();
+  auto now = std::chrono::steady_clock::now();
+  auto time_since_last_batch = now - timestamp_since_last_transaction_batch_;
+
+  if (time_since_last_batch > batch_threshold_ || !enable_batching_) {
+    result.broadcasted = true;
+    timestamp_since_last_transaction_batch_ = now;
+    result.messages = GatherAeFieldsForBroadcastLocked();
+    for (const auto& msg : result.messages) {
+      RecordNewInFlightMsgLocked(msg, now);
+    }
+  }
+
+  // Detect large batch sizes.
+  for (const auto& msg : result.messages) {
+    VLOG_IF(1, msg.entries.size() >= 100)
+        << "Large batch broadcasted to follower " << msg.follower_id << " with "
+        << msg.entries.size() << " entries";
+  }
+
+  return result;
+}
+
 bool Raft::ReceiveTransaction(std::unique_ptr<Request> req) {
   std::string serialized;
   if (!req->SerializeToString(&serialized)) {
     LOG(ERROR) << __FUNCTION__ << ": req could not be serialized";
     return false;
   }
-  bool direct_to_leader = false;
-  bool broadcasted = false;
-  std::future<void> wal_future;
-  uint64_t my_log_index = 0;
 
-  std::vector<AeFields> messages;
-  [&]() {
+  ReceiveTransactionResult transaction_result;
+  {
     std::lock_guard<std::mutex> lk(mutex_);
-    if (role_ != Role::LEADER) {
-      VLOG(1) << __FUNCTION__
-              << ": Replica is not leader, redirecting clients to leader";
-      direct_to_leader = true;
-      return;
-    }
-    // Append new transaction to log.
-    LogEntry log_entry;
-    log_entry.entry.set_term(current_term_);
+    transaction_result = ReceiveTransactionLocked(req, serialized);
+  }
 
-    log_entry.entry.set_command(std::move(serialized));
-    log_entry.GetSerializedSize();
-    wal_future = AddToLogLocked(log_entry);
-    my_log_index = last_log_index_;
-
-    progress_[id_].next_index = last_log_index_ + 1;
-    // Match index is set later once wal_future has shown it has persisted to
-    // disk.
-
-    VLOG(2) << ": Leader appended entry at index " << last_log_index_;
-
-    // Prepare fields for AppendEntries message.
-    PruneExpiredInFlightMsgsLocked();
-    auto now = std::chrono::steady_clock::now();
-    auto time_since_last_batch = now - timestamp_since_last_transaction_batch_;
-    if (time_since_last_batch > batch_threshold_ || !enable_batching_) {
-      broadcasted = true;
-      timestamp_since_last_transaction_batch_ = now;
-      messages = GatherAeFieldsForBroadcastLocked();
-      for (const auto& msg : messages) {
-        RecordNewInFlightMsgLocked(msg, now);
-      }
-    }
-
-    // Detect if batches are consistently hitting large sizes
-    for (const auto& msg : messages) {
-      VLOG_IF(1, msg.entries.size() >= 100)
-          << "Large batch broadcasted to follower " << msg.follower_id
-          << " with " << msg.entries.size() << " entries";
-    }
-  }();
-
-  if (direct_to_leader) {
+  if (transaction_result.direct_to_leader) {
     DirectToLeader dtl;
     {
       std::lock_guard<std::mutex> lk(mutex_);
@@ -338,530 +349,565 @@ bool Raft::ReceiveTransaction(std::unique_ptr<Request> req) {
     }
     return false;
   }
-  for (const auto& msg : messages) {
+  for (const auto& msg : transaction_result.messages) {
     CreateAndSendAppendEntryMsg(msg);
   }
-  if (broadcasted) {
+  if (transaction_result.broadcasted) {
     leader_election_manager_->OnAeBroadcast();
   }
 
   // Entries can be sent out before they are persisted to disk. This check
   // logically could be delayed up until the leader checks for quorum to be met
   // on an entry, but this should be sufficient to reduce latency.
-  if (wal_future.valid()) {
-    wal_future.wait();
+  if (transaction_result.wal_future.valid()) {
+    transaction_result.wal_future.wait();
   }
   {
     std::lock_guard<std::mutex> lk(mutex_);
     if (role_ == Role::LEADER) {
       progress_[id_].match_index =
-          std::max(progress_[id_].match_index, my_log_index);
+          std::max(progress_[id_].match_index, transaction_result.my_log_index);
     }
   }
 
   return true;
+}
+
+AppendEntriesResult Raft::ReceiveAppendEntriesLocked(
+    const std::unique_ptr<AppendEntries>& ae) {
+  AppendEntriesResult result;
+  result.initial_role = role_;
+  result.last_log_index = last_log_index_;
+
+  uint64_t entries_size = static_cast<uint64_t>(ae->entries_size());
+  auto leader_commit = ae->leader_commit_index();
+  auto leader_id = ae->leader_id();
+
+  VLOG_IF(2, entries_size > 0)
+      << __FUNCTION__ << ": follower received " << entries_size
+      << " entries from " << leader_id << " with prevlogindex "
+      << ae->prev_log_index() << " while having last_log_index_ "
+      << last_log_index_ << " first_entry_term " << ae->entries(0).term();
+
+  result.tr = TermCheckLocked(ae->term());
+  if (result.tr == TermRelation::NEW) {
+    result.demoted = DemoteSelfLocked(ae->term());
+  } else if (role_ != Role::FOLLOWER && result.tr == TermRelation::CURRENT) {
+    result.demoted = DemoteSelfLocked(ae->term());
+  }
+
+  if (result.tr != TermRelation::STALE) {
+    current_leader_ = leader_id;
+    if (role_ == Role::FOLLOWER) {
+      uint64_t i = ae->prev_log_index();
+      if (i <= truncated_last_index_ ||
+          (i < static_cast<uint64_t>(GetLogicalLogSize()) &&
+           ae->prev_log_term() == GetLogTermAtIndex(i))) {
+        result.success = true;
+      }
+    }
+  }
+
+  result.term = current_term_;
+
+  // Early return if we should not append.
+  if (!result.success) {
+    auto prev_log_index = ae->prev_log_index();
+    bool log_too_short = ae->prev_log_index() > last_log_index_;
+    bool has_conflicting_term_at_index =
+        !log_too_short &&
+        (ae->prev_log_term() != GetLogTermAtIndex(prev_log_index));
+
+    if (has_conflicting_term_at_index) {
+      result.conflicting_term = GetLogTermAtIndex(prev_log_index);
+      result.conflicting_index = prev_log_index;
+
+      // Need to ensure that we don't try to access an element that has been
+      // truncated. Also, any element that has been committed must be in the
+      // leader's log, so it is unnecessary to check.
+      bool entry_to_check_not_committed =
+          result.conflicting_index - 1 >= commit_index_;
+      while (entry_to_check_not_committed &&
+             GetLogTermAtIndex(result.conflicting_index - 1) ==
+                 result.conflicting_term) {
+        result.conflicting_index--;
+        entry_to_check_not_committed =
+            result.conflicting_index - 1 >= commit_index_;
+      }
+    }
+    return result;
+  }
+
+  VLOG_IF(1, entries_size > 0 &&
+                 (ae->prev_log_index() + entries_size) <= last_log_index_)
+      << "Redundant AppendEntries received. prevLogIndex: "
+      << ae->prev_log_index() << " + size: " << entries_size
+      << " <= follower last_log_index_: " << last_log_index_;
+
+  uint64_t log_idx = ae->prev_log_index() + 1;
+  uint64_t entries_idx = 0;
+  // If we receive an entry that has already been committed, it must be
+  // identical to what we have. So, skip to the first entry after the
+  // committed entry.
+  assert(snapshot_last_index_ <= commit_index_);
+  if (log_idx <= commit_index_) {
+    entries_idx = commit_index_ - log_idx + 1;
+    log_idx = commit_index_ + 1;
+  }
+
+  // Check each entry's term one by one to ensure it matches. If it does not,
+  // truncate the log.
+  while (log_idx < GetLogicalLogSize() && entries_idx < entries_size) {
+    uint64_t log_term = ae->entries(entries_idx).term();
+    if (log_term != GetLogTermAtIndex(log_idx)) {
+      TruncateLogLocked(log_idx);
+      VLOG(1) << __FUNCTION__ << ": follower saw term mismatch at index "
+              << log_idx << ". Suffix erased from log";
+      break;
+    }
+    ++entries_idx;
+    ++log_idx;
+  }
+
+  // Append remaining entries.
+  const auto append_size = entries_size - entries_idx;
+  std::vector<LogEntry> log_entries_to_add;
+  for (uint64_t i = entries_idx; i < entries_size; ++i) {
+    log_entries_to_add.push_back(CreateLogEntry(ae->entries(i)));
+  }
+
+  uint64_t first_append_idx = last_log_index_ + 1;
+  result.wal_future = AddToLogLocked(std::move(log_entries_to_add));
+  result.last_log_index = last_log_index_;
+
+  VLOG_IF(2, (append_size > 1) && last_log_index_ >= first_append_idx)
+      << __FUNCTION__ << ": follower appended entries at indices "
+      << first_append_idx << " to " << last_log_index_;
+  VLOG_IF(2, (append_size == 1) && last_log_index_ >= first_append_idx)
+      << __FUNCTION__ << ": follower appended entry at index "
+      << last_log_index_;
+
+  // Try to raise commit_index and commit entries.
+  uint64_t prev_commit_index = commit_index_;
+  if (leader_commit > commit_index_) {
+    commit_index_ = std::min(leader_commit, result.last_log_index);
+
+    VLOG_IF(2, commit_index_ > prev_commit_index)
+        << __FUNCTION__ << ": Raised commit_index_ from " << prev_commit_index
+        << " to " << commit_index_;
+  }
+
+  result.entries_to_apply = PrepareCommitLocked();
+  return result;
 }
 
 bool Raft::ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae) {
   if (ae->leader_id() == id_) {
     return false;
   }
-  uint64_t term;
-  bool success = false;
-  bool demoted = false;
-  TermRelation tr;
-  Role initial_role;
-  uint64_t last_log_index;
-  uint64_t conflicting_index = 0;
-  uint64_t conflicting_term = 0;
-  auto leader_commit = ae->leader_commit_index();
-  auto leader_id = ae->leader_id();
-  std::vector<std::unique_ptr<Request>> entries_to_apply;
-  std::future<void> wal_future;
 
-  [&]() {
+  AppendEntriesResult result;
+  {
     std::lock_guard<std::mutex> lk(mutex_);
-    initial_role = role_;
-    last_log_index = last_log_index_;
-    uint64_t entries_size = static_cast<uint64_t>(ae->entries_size());
-    VLOG_IF(2, entries_size > 0)
-        << __FUNCTION__ << ": follower received " << entries_size
-        << " entries from " << leader_id << " with prevlogindex "
-        << ae->prev_log_index() << " while having last_log_index_ "
-        << last_log_index_ << " first_entry_term " << ae->entries(0).term();
-
-    tr = TermCheckLocked(ae->term());
-    if (tr == TermRelation::NEW) {
-      demoted = DemoteSelfLocked(ae->term());
-    } else if (role_ != Role::FOLLOWER && tr == TermRelation::CURRENT) {
-      demoted = DemoteSelfLocked(ae->term());
-    }
-
-    if (tr != TermRelation::STALE) {
-      current_leader_ = leader_id;
-      if (role_ == Role::FOLLOWER) {
-        uint64_t i = ae->prev_log_index();
-
-        if (i <= truncated_last_index_ ||
-            (i < static_cast<uint64_t>(GetLogicalLogSize()) &&
-             ae->prev_log_term() == GetLogTermAtIndex(i))) {
-          success = true;
-        }
-      }
-    }
-    term = current_term_;
-    // Early return if we should not append.
-    if (!success) {
-      auto prev_log_index = ae->prev_log_index();
-      bool log_too_short = ae->prev_log_index() > last_log_index_;
-      bool has_conflicting_term_at_index =
-          !log_too_short &&
-          (ae->prev_log_term() != GetLogTermAtIndex(prev_log_index));
-      if (has_conflicting_term_at_index) {
-        conflicting_term = GetLogTermAtIndex(prev_log_index);
-        conflicting_index = prev_log_index;
-
-        // Need to ensure that we don't try to access an element that has been
-        // truncated. Also, any element that has been committed must be in the
-        // leader's log, so it is unnecessary to check.
-        bool entry_to_check_not_committed =
-            conflicting_index - 1 >= commit_index_;
-        while (entry_to_check_not_committed &&
-               GetLogTermAtIndex(conflicting_index - 1) == conflicting_term) {
-          conflicting_index--;
-          entry_to_check_not_committed = conflicting_index - 1 >= commit_index_;
-        }
-      }
-      return;
-    }
-
-    VLOG_IF(1, entries_size > 0 &&
-                   (ae->prev_log_index() + entries_size) <= last_log_index_)
-        << "Redundant AppendEntries received. prevLogIndex: "
-        << ae->prev_log_index() << " + size: " << entries_size
-        << " <= follower last_log_index_: " << last_log_index_;
-
-    // Append the entries to the log.
-    uint64_t log_idx = ae->prev_log_index() + 1;
-    uint64_t entries_idx = 0;
-    // If we receive an entry that has already been committed, it must be
-    // identical to what we have. So, skip to the first entry after the
-    // committed entry.
-    assert(snapshot_last_index_ <= commit_index_);
-    if (log_idx <= commit_index_) {
-      entries_idx = commit_index_ - log_idx + 1;
-      log_idx = commit_index_ + 1;
-    }
-
-    // Check for conflicting entry terms in existing indices.
-    // If there is a conflict, delete the suffix and short circuit out of the
-    // loop.
-    while (log_idx < GetLogicalLogSize() && entries_idx < entries_size) {
-      uint64_t log_term = ae->entries(entries_idx).term();
-      if (log_term != GetLogTermAtIndex(log_idx)) {
-        TruncateLogLocked(log_idx);
-
-        VLOG(1) << __FUNCTION__ << ": follower saw term mismatch at index "
-                << log_idx << ". Suffix erased from log";
-
-        break;
-      }
-      ++entries_idx;
-      ++log_idx;
-    }
-
-    // Append remaining entries.
-    const auto append_size = entries_size - entries_idx;
-    std::vector<LogEntry> log_entries_to_add;
-    for (uint64_t i = entries_idx; i < entries_size; ++i) {
-      log_entries_to_add.push_back(CreateLogEntry(ae->entries(i)));
-    }
-
-    uint64_t firstAppend_idx = last_log_index_ + 1;
-    wal_future = AddToLogLocked(std::move(log_entries_to_add));
-    last_log_index = last_log_index_;
-
-    VLOG_IF(2, (append_size > 1) && last_log_index_ >= firstAppend_idx)
-        << __FUNCTION__ << ": follower appended entries at indices "
-        << firstAppend_idx << " to " << last_log_index_;
-    VLOG_IF(2, (append_size == 1) && last_log_index_ >= firstAppend_idx)
-        << __FUNCTION__ << ": follower appended entry at index "
-        << last_log_index_;
-
-    // Try to raise commit_index and commit entries
-    uint64_t prev_commit_index = commit_index_;
-    if (leader_commit > commit_index_) {
-      commit_index_ = std::min(leader_commit, last_log_index_);
-
-      VLOG_IF(2, commit_index_ > prev_commit_index)
-          << __FUNCTION__ << ": Raised commit_index_ from " << prev_commit_index
-          << " to " << commit_index_;
-    }
-
-    // Build the vector to apply committed entries outside mutex.
-    entries_to_apply = PrepareCommitLocked();
-  }();
-
-  // Inform leader_election_manager, apply committed entries, and send response.
-  if (demoted) {
-    leader_election_manager_->OnRoleChange();
-    LOG(INFO) << __FUNCTION__ << ": Demoted from "
-              << (initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
-              << "->FOLLOWER in term " << term;
+    result = ReceiveAppendEntriesLocked(ae);
   }
 
-  if (tr != TermRelation::STALE) {
+  // Inform leader_election_manager, apply committed entries, and send response.
+  if (result.demoted) {
+    leader_election_manager_->OnRoleChange();
+    LOG(INFO) << __FUNCTION__ << ": Demoted from "
+              << (result.initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
+              << "->FOLLOWER in term " << result.term;
+  }
+
+  if (result.tr != TermRelation::STALE) {
     leader_election_manager_->OnHeartBeat();
   }
 
-  VLOG_IF(2, !entries_to_apply.empty())
-      << "Follower applying " << entries_to_apply.size()
+  VLOG_IF(2, !result.entries_to_apply.empty())
+      << "Follower applying " << result.entries_to_apply.size()
       << " committed entries starting at "
-      << last_log_index - entries_to_apply.size();
-  for (auto& entry : entries_to_apply) {
+      << result.last_log_index - result.entries_to_apply.size();
+  for (auto& entry : result.entries_to_apply) {
     commit_(*entry);
   }
 
   // Wait until all log entries have been persisted to disk before responding.
-  if (wal_future.valid()) {
-    wal_future.wait();
+  if (result.wal_future.valid()) {
+    result.wal_future.wait();
   }
 
   AppendEntriesResponse aer;
-  aer.set_term(term);
-  aer.set_success(success);
+  aer.set_term(result.term);
+  aer.set_success(result.success);
   aer.set_id(id_);
-  aer.set_last_log_index(last_log_index);
-  VLOG(3) << "sending aer Success: " << (success ? "true" : "false")
-          << " last log index: " << last_log_index;
-  SendMessage(MessageType::AppendEntriesResponseMsg, aer, leader_id);
+  aer.set_last_log_index(result.last_log_index);
+  VLOG(3) << "sending aer Success: " << (result.success ? "true" : "false")
+          << " last log index: " << result.last_log_index;
+  SendMessage(MessageType::AppendEntriesResponseMsg, aer, ae->leader_id());
 
   return true;
 }
 
+AppendEntriesResponseResult Raft::ReceiveAppendEntriesResponseLocked(
+    const std::unique_ptr<AppendEntriesResponse>& aer) {
+  AppendEntriesResponseResult result;
+  result.initial_role = role_;
+  result.follower_id = aer->id();
+  FollowerProgress& follower_progress = progress_[result.follower_id];
+
+  TermRelation tr = TermCheckLocked(aer->term());
+  if (tr == TermRelation::NEW) {
+    result.demoted = DemoteSelfLocked(aer->term());
+  }
+  result.term = current_term_;
+
+  if (role_ != Role::LEADER || tr == TermRelation::STALE) {
+    return result;
+  }
+
+  PruneExpiredInFlightMsgsLocked();
+  PruneRedundantInFlightMsgsLocked(result.follower_id, aer->last_log_index());
+
+  // Successful AppendEntries updates the follower's match_index and advances
+  // commits.
+  if (aer->success()) {
+    VLOG(3) << "Before update: AER success from follower " << result.follower_id
+            << " their last_log_index=" << aer->last_log_index()
+            << " progress_[follower].match_index="
+            << follower_progress.match_index
+            << " progress_[follower].next_index="
+            << follower_progress.next_index;
+    // A success behind the follower's match_index must be stale, so it can be
+    // ignored. match_index must never decrease.
+    bool response_is_stale =
+        aer->last_log_index() < follower_progress.match_index;
+    if (response_is_stale) {
+      return result;
+    }
+
+    follower_progress.match_index =
+        std::min(aer->last_log_index(), last_log_index_);
+    follower_progress.next_index = std::max(follower_progress.next_index,
+                                            follower_progress.match_index + 1);
+
+    if (follower_progress.state == ProgressState::PROBE) {
+      assert(aer->last_log_index() <= last_log_index_);
+      // If the follower was being probed, we reset its next_index based on what
+      // we just received.
+      follower_progress.next_index = std::max(follower_progress.match_index + 1,
+                                              aer->last_log_index() + 1);
+      follower_progress.state = ProgressState::REPLICATE;
+      follower_progress.probe_in_flight = false;
+    }
+
+    VLOG(1) << "AER success from follower " << result.follower_id
+            << " their last_log_index=" << aer->last_log_index()
+            << " progress_[follower].match_index="
+            << follower_progress.match_index
+            << " progress_[follower].next_index="
+            << follower_progress.next_index;
+    // Use the updated match_index to find new entries eligible for commit.
+    std::vector<uint64_t> sorted;
+    sorted.reserve(progress_.size());
+    for (const auto& followers_progress : progress_) {
+      sorted.push_back(followers_progress.match_index);
+    }
+    std::sort(sorted.begin(), sorted.end(), std::greater<uint64_t>());
+
+    uint64_t last_replicated_index = sorted[quorum_ - 1];
+
+    // Need to check the last_replicated_index contains entry from current
+    // term.
+    // If this node recently became leader and does not have an up-to-date
+    // matchIndex, then
+    bool entry_not_yet_committed = last_replicated_index > commit_index_;
+    assert(commit_index_ >= truncated_last_index_);
+    bool entry_from_current_term =
+        GetLogTermAtIndex(last_replicated_index) == current_term_;
+    if (entry_not_yet_committed && entry_from_current_term) {
+      VLOG(2) << __FUNCTION__ << ": Raised commit_index_ from " << commit_index_
+              << " to " << last_replicated_index;
+      commit_index_ = last_replicated_index;
+    }
+    VLOG(1) << "Quorum check: last_replicated_index=" << last_replicated_index
+            << " commit_index_=" << commit_index_ << " term_at_replicated="
+            << (last_replicated_index >= truncated_last_index_
+                    ? GetLogTermAtIndex(last_replicated_index)
+                    : 0)
+            << " current_term_=" << current_term_;
+
+    result.entries_to_apply = PrepareCommitLocked();
+  }
+
+  // Failed AppendEntries or trailing follower: probe or send snapshot.
+  bool follower_still_behind =
+      follower_progress.next_index < last_log_index_ + 1;
+  if (!aer->success() || follower_still_behind) {
+    if (!aer->success()) {
+      // If we do not get a success, set the follower's state to probe, send
+      // out one AppendEntries to figure out where it is at, and wait for a
+      // response. Once we have identified the correct location to start
+      // sending catch-up entries, that will be on the success path.
+      // Otherwise, stale probes will be re-attempted on heartbeats once they
+      // have expired.
+      if (follower_progress.state == ProgressState::REPLICATE) {
+        follower_progress.state = ProgressState::PROBE;
+        follower_progress.in_flight.clear();
+      }
+      // If conflicting_index and conflicting_term are 0, that means the
+      // follower's log was just too short. If not, that means it had an entry
+      // with a conflicting term.
+      auto index_to_send = aer->last_log_index();
+      auto conflicting_term = aer->conflicting_term();
+
+      if (conflicting_term) {
+        index_to_send = aer->conflicting_index();
+        assert(index_to_send > 0);
+        assert(index_to_send <= last_log_index_);
+        // Since a leader starts a term by committing a no-op, we don't need
+        // to worry about advancing too far.
+        assert(conflicting_term < current_term_);
+        // If we have no entry at that term, then the follower's entire log
+        // starting at that term needs to be replaced. If we do have an entry
+        // at that term, advance until the start of the next term.
+        bool is_entry_with_matching_term =
+            GetLogTermAtIndex(index_to_send) == conflicting_term;
+        while (is_entry_with_matching_term) {
+          index_to_send++;
+          assert(index_to_send <= last_log_index_);
+          is_entry_with_matching_term =
+              GetLogTermAtIndex(index_to_send) == conflicting_term;
+        }
+        index_to_send--;
+      }
+
+      follower_progress.next_index =
+          std::max(std::min(index_to_send + 1, last_log_index_ + 1),
+                   follower_progress.match_index + 1);
+      // CanSendLocked will allow exactly one probe, then block.
+      VLOG(1) << "AppendEntriesResponse indicates FAILURE from follower "
+              << result.follower_id
+              << " next_index is: " << follower_progress.next_index
+              << " their last_log_index is: " << aer->last_log_index();
+    }
+
+    bool follower_needs_snapshot =
+        aer->last_log_index() < truncated_last_index_;
+    if (follower_needs_snapshot) {
+      result.should_send_snapshot = true;
+    } else {
+      bool follower_is_being_probed =
+          follower_progress.state == ProgressState::PROBE;
+      while (CanSendLocked(result.follower_id)) {
+        AeFields fields = GatherAeFieldsLocked(result.follower_id);
+        // If the follower is being probed, we need to still send one message,
+        // then CanSendLocked will block more from being sent.
+        if (fields.entries.empty() && !follower_is_being_probed) {
+          break;
+        }
+        result.resending = true;
+        auto now = std::chrono::steady_clock::now();
+        RecordNewInFlightMsgLocked(fields, now);
+        result.fields_vector.push_back(std::move(fields));
+      }
+      result.resending = !result.fields_vector.empty();
+    }
+  }
+
+  return result;
+}
+
 bool Raft::ReceiveAppendEntriesResponse(
     std::unique_ptr<AppendEntriesResponse> aer) {
-  uint64_t term;
-  bool demoted = false;
-  bool resending = false;
-  TermRelation tr;
-  Role initial_role;
-  std::vector<std::unique_ptr<Request>> entries_to_apply;
-  std::vector<AeFields> fields_vector;
-  int follower_id = aer->id();
-  bool should_send_snapshot = false;
-  [&]() {
+  AppendEntriesResponseResult result;
+  {
     std::lock_guard<std::mutex> lk(mutex_);
-    initial_role = role_;
-    tr = TermCheckLocked(aer->term());
-    if (tr == TermRelation::NEW) {
-      demoted = DemoteSelfLocked(aer->term());
-    }
-    term = current_term_;
+    result = ReceiveAppendEntriesResponseLocked(aer);
+  }
 
-    if (role_ != Role::LEADER || tr == TermRelation::STALE) {
-      return;
-    }
-    PruneExpiredInFlightMsgsLocked();
-    PruneRedundantInFlightMsgsLocked(follower_id, aer->last_log_index());
-
-    // If successful, update match_index and try to commit more entries.
-    if (aer->success()) {
-      VLOG(3) << "Before update: AER success from follower " << follower_id
-              << " their last_log_index=" << aer->last_log_index()
-              << " progress_[follower].match_index="
-              << progress_[follower_id].match_index
-              << " progress_[follower].next_index="
-              << progress_[follower_id].next_index;
-      // A success behind the follower's match_index must be stale, so it can be
-      // ignored. match_index must never decrease.
-      if (aer->last_log_index() < progress_[follower_id].match_index) {
-        return;
-      }
-
-      progress_[follower_id].match_index =
-          std::min(aer->last_log_index(), last_log_index_);
-
-      progress_[follower_id].next_index =
-          std::max(progress_[follower_id].next_index,
-                   progress_[follower_id].match_index + 1);
-      if (progress_[follower_id].state == ProgressState::PROBE) {
-        assert(aer->last_log_index() <= last_log_index_);
-        // If the follower was being probed, we cannot trust the old next_index.
-        progress_[follower_id].next_index = std::max(
-            progress_[follower_id].match_index + 1, aer->last_log_index() + 1);
-        progress_[follower_id].state = ProgressState::REPLICATE;
-        progress_[follower_id].probe_in_flight = false;
-      }
-
-      VLOG(1) << "AER success from follower " << follower_id
-              << " their last_log_index=" << aer->last_log_index()
-              << " progress_[follower].match_index="
-              << progress_[follower_id].match_index
-              << " progress_[follower].next_index="
-              << progress_[follower_id].next_index;
-      // Use the updated match_index to find new entries eligible for commit.
-      std::vector<uint64_t> sorted;
-      sorted.reserve(progress_.size());
-      for (const auto& follower_progress : progress_) {
-        sorted.push_back(follower_progress.match_index);
-      }
-      std::sort(sorted.begin(), sorted.end(), std::greater<uint64_t>());
-      uint64_t last_replicated_index = sorted[quorum_ - 1];
-      // Need to check the last_replicated_index contains entry from current
-      // term.
-      // If this node recently became leader and does not have an up-to-date
-      // matchIndex, then
-      if (last_replicated_index > commit_index_ &&
-          last_replicated_index >= truncated_last_index_ &&
-          GetLogTermAtIndex(last_replicated_index) == current_term_) {
-        VLOG(2) << __FUNCTION__ << ": Raised commit_index_ from "
-                << commit_index_ << " to " << last_replicated_index;
-        commit_index_ = last_replicated_index;
-      }
-      VLOG(1) << "Quorum check: last_replicated_index=" << last_replicated_index
-              << " commit_index_=" << commit_index_ << " term_at_replicated="
-              << (last_replicated_index >= truncated_last_index_
-                      ? GetLogTermAtIndex(last_replicated_index)
-                      : 0)
-              << " current_term_=" << current_term_;
-
-      // Apply any newly committed entries to state machine.
-      entries_to_apply = PrepareCommitLocked();
-    }
-
-    if (!aer->success() ||
-        (progress_[follower_id].next_index < last_log_index_ + 1)) {
-      if (!aer->success()) {
-        // If we do not get a success, set the follower's state to probe, send
-        // out one AppendEntries to figure out where it is at, and wait for a
-        // response. Once we have identified the correct location to start
-        // sending catch-up entries, that will be on the success path.
-        // Otherwise, stale probes will be re-attempted on heartbeats once they
-        // have expired.
-        FollowerProgress& follower_progress = progress_[follower_id];
-        if (follower_progress.state == ProgressState::REPLICATE) {
-          follower_progress.state = ProgressState::PROBE;
-          follower_progress.in_flight.clear();
-        }
-        // If conflicting_index and conflicting_term are 0, that means the
-        // follower's log was just too short. If not, that means it had an entry
-        // with a conflicting term.
-        auto index_to_send = aer->last_log_index();
-        auto conflicting_term = aer->conflicting_term();
-        if (conflicting_term) {
-          index_to_send = aer->conflicting_index();
-          assert(index_to_send > 0);
-          assert(index_to_send <= last_log_index_);
-
-          // Since a leader starts a term by committing a no-op, we don't need
-          // to worry about advancing too far.
-          assert(conflicting_term < current_term_);
-          // If we have no entry at that term, then the follower's entire log
-          // starting at that term needs to be replaced. If we do have an entry
-          // at that term, advance until the start of the next term.
-          bool is_entry_with_matching_term =
-              GetLogTermAtIndex(index_to_send) == conflicting_term;
-          while (is_entry_with_matching_term) {
-            index_to_send++;
-            assert(index_to_send <= last_log_index_);
-            is_entry_with_matching_term =
-                GetLogTermAtIndex(index_to_send) == conflicting_term;
-          }
-          index_to_send--;
-        }
-        follower_progress.next_index =
-            std::max(std::min(index_to_send + 1, last_log_index_ + 1),
-                     follower_progress.match_index + 1);
-        // CanSendLocked will allow exactly one probe, then block.
-        VLOG(1) << "AppendEntriesResponse indicates FAILURE from follower "
-                << follower_id
-                << " next_index is: " << progress_[follower_id].next_index
-                << " their last_log_index is: " << aer->last_log_index();
-      }
-      if (aer->last_log_index() < truncated_last_index_) {
-        should_send_snapshot = true;
-      } else {
-        bool follower_is_being_probed =
-            progress_[follower_id].state == ProgressState::PROBE;
-        while (CanSendLocked(follower_id)) {
-          AeFields fields = GatherAeFieldsLocked(follower_id);
-          if (fields.entries.empty() && !follower_is_being_probed) {
-            break;
-          }
-          resending = true;
-          auto now = std::chrono::steady_clock::now();
-          RecordNewInFlightMsgLocked(fields, now);
-          fields_vector.push_back(std::move(fields));
-        }
-        resending = !fields_vector.empty();
-      }
-    }
-  }();
-  if (demoted) {
+  if (result.demoted) {
     leader_election_manager_->OnRoleChange();
     LOG(INFO) << __FUNCTION__ << ": Demoted from "
-              << (initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
-              << "->FOLLOWER in term " << term;
+              << (result.initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
+              << "->FOLLOWER in term " << result.term;
     return false;
   }
-  if (resending) {
-    for (auto& fields : fields_vector) {
+  if (result.resending) {
+    for (auto& fields : result.fields_vector) {
       CreateAndSendAppendEntryMsg(fields);
     }
   }
-  if (should_send_snapshot) {
-    EnqueueSnapshot(follower_id, 0);
+  if (result.should_send_snapshot) {
+    EnqueueSnapshot(result.follower_id, 0);
   }
 
-  VLOG_IF(2, !entries_to_apply.empty())
-      << "Leader applying " << entries_to_apply.size() << " committed entries";
-  for (auto& entry : entries_to_apply) {
+  VLOG_IF(2, !result.entries_to_apply.empty())
+      << "Leader applying " << result.entries_to_apply.size()
+      << " committed entries";
+  for (auto& entry : result.entries_to_apply) {
     commit_(*entry);
   }
   return true;
 }
 
-void Raft::ReceiveRequestVote(std::unique_ptr<RequestVote> rv) {
+RequestVoteResult Raft::ReceiveRequestVoteLocked(
+    const std::unique_ptr<RequestVote>& rv) {
+  RequestVoteResult result;
+  result.initial_role = role_;
+
   int rv_sender = rv->candidateid();
   uint64_t rv_term = rv->term();
 
-  uint64_t term;
-  bool vote_granted = false;
-  bool demoted = false;
-  bool valid_candidate = false;
-  int voted_for = -1;
-  Role initial_role;
+  TermRelation tr = TermCheckLocked(rv_term);
+  if (tr == TermRelation::STALE) {
+    result.term = current_term_;
+    return result;
+  } else if (tr == TermRelation::NEW) {
+    result.demoted = DemoteSelfLocked(rv_term);
+  }
 
+  result.term = current_term_;
+  result.voted_for = voted_for_;
+
+  uint64_t last_log_term = GetLastLogTermLocked();
+  bool candidate_log_has_outdated_term = rv->lastlogterm() < last_log_term;
+  bool candidate_log_not_as_far_along =
+      rv->lastlogterm() == last_log_term &&
+      rv->last_log_index() < last_log_index_;
+  if (candidate_log_has_outdated_term || candidate_log_not_as_far_along) {
+    return result;
+  }
+
+  result.valid_candidate = true;
+  bool not_voted_yet = voted_for_ == -1;
+  bool already_voted_for_this_candidate = voted_for_ == rv_sender;
+  if (not_voted_yet || already_voted_for_this_candidate) {
+    SetVotedForLocked(rv_sender);
+    result.vote_granted = true;
+  }
+
+  return result;
+}
+
+void Raft::ReceiveRequestVote(std::unique_ptr<RequestVote> rv) {
+  int rv_sender = rv->candidateid();
   if (rv_sender == id_) {
     return;
   }
 
-  [&]() {
+  RequestVoteResult result;
+  {
     std::lock_guard<std::mutex> lk(mutex_);
-    initial_role = role_;
-    // If their term is higher than ours, we accept new term, reset voted_for
-    // and convert to follower.
-    TermRelation tr = TermCheckLocked(rv_term);
-    if (tr == TermRelation::STALE) {
-      term = current_term_;
-      return;
-    } else if (tr == TermRelation::NEW) {
-      demoted = DemoteSelfLocked(rv_term);
-    }
-    // Then we continue voting process.
-    term = current_term_;
-    voted_for = voted_for_;
+    result = ReceiveRequestVoteLocked(rv);
+  }
 
-    uint64_t last_log_term = GetLastLogTermLocked();
-    if (rv->lastlogterm() < last_log_term) {
-      return;
-    }
-    if (rv->lastlogterm() == last_log_term &&
-        rv->last_log_index() < last_log_index_) {
-      return;
-    }
-    valid_candidate = true;
-    if (voted_for_ == -1 || voted_for_ == rv_sender) {
-      SetVotedForLocked(rv_sender);
-      vote_granted = true;
-    }
-  }();
-  if (demoted) {
+  if (result.demoted) {
     leader_election_manager_->OnRoleChange();
     LOG(INFO) << __FUNCTION__ << ": Demoted from "
-              << (initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
-              << "->FOLLOWER in term " << term;
+              << (result.initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
+              << "->FOLLOWER in term " << result.term;
   }
-  if (vote_granted) {
+  if (result.vote_granted) {
     leader_election_manager_->OnHeartBeat();
     LOG(INFO) << __FUNCTION__ << ": voted for " << rv_sender << " in term "
-              << term;
-  } else if (valid_candidate) {
+              << result.term;
+  } else if (result.valid_candidate) {
     LOG(INFO) << __FUNCTION__ << ": did not vote for " << rv_sender
-              << " on term " << term << ". I already voted for " << voted_for
-              << ((voted_for == id_) ? " (myself)" : "");
+              << " on term " << result.term << ". I already voted for "
+              << result.voted_for
+              << ((result.voted_for == id_) ? " (myself)" : "");
   }
 
   RequestVoteResponse rvr;
-  rvr.set_term(term);
+  rvr.set_term(result.term);
   rvr.set_voterid(id_);
-  rvr.set_votegranted(vote_granted);
+  rvr.set_votegranted(result.vote_granted);
   SendMessage(MessageType::RequestVoteResponseMsg, rvr, rv_sender);
+}
+
+RequestVoteResponseResult Raft::ReceiveRequestVoteResponseLocked(
+    const std::unique_ptr<RequestVoteResponse>& rvr) {
+  RequestVoteResponseResult result;
+  result.initial_role = role_;
+
+  uint64_t term = rvr->term();
+  int voter_id = rvr->voterid();
+  bool voted_yes = rvr->votegranted();
+
+  TermRelation tr = TermCheckLocked(term);
+  if (tr == TermRelation::STALE) {
+    return result;
+  } else if (tr == TermRelation::NEW) {
+    result.demoted = DemoteSelfLocked(term);
+    return result;
+  }
+
+  if (role_ != Role::CANDIDATE || !voted_yes) {
+    return result;
+  }
+
+  bool duplicate_vote =
+      (std::find(votes_.begin(), votes_.end(), voter_id) != votes_.end());
+  if (duplicate_vote) {
+    return result;
+  }
+
+  votes_.push_back(voter_id);
+  LOG(INFO) << __FUNCTION__ << ": Replica " << voter_id
+            << " voted for me. Votes: " << votes_.size() << "/" << quorum_
+            << " in term " << current_term_;
+
+  if (votes_.size() >= quorum_) {
+    result.elected = true;
+    SetRoleLocked(Role::LEADER);
+    ClearInFlightsLocked();
+
+    for (size_t i = 1; i <= static_cast<size_t>(total_num_); ++i) {
+      progress_[i] = FollowerProgress{};
+      progress_[i].next_index = last_log_index_ + 1;
+      progress_[i].match_index = 0;
+    }
+
+    snapshot_send_time_.assign(
+        total_num_ + 1,
+        std::make_pair(std::chrono::steady_clock::time_point{}, size_t{0}));
+
+    VLOG(1) << "Post-election index state: last_log_index_=" << last_log_index_
+            << " progress_[id_].next_index=" << progress_[id_].next_index
+            << " progress_[id_].match_index=" << progress_[id_].match_index;
+    LOG(INFO) << __FUNCTION__ << ": CANDIDATE->LEADER in term "
+              << current_term_;
+
+    LogEntry noop;
+    noop.entry.set_term(current_term_);
+    noop.entry.set_command("RAFT_NO_OP");
+    AddToLogLocked(noop);
+
+    progress_[id_].next_index = last_log_index_ + 1;
+    progress_[id_].match_index = last_log_index_;
+  }
+
+  return result;
 }
 
 void Raft::ReceiveRequestVoteResponse(
     std::unique_ptr<RequestVoteResponse> rvr) {
-  uint64_t term = rvr->term();
-  int voter_id = rvr->voterid();
-  bool voted_yes = rvr->votegranted();
-  bool demoted = false;
-  bool elected = false;
-  Role initial_role;
-
-  [&]() {
+  RequestVoteResponseResult result;
+  {
     std::lock_guard<std::mutex> lk(mutex_);
-    initial_role = role_;
-    TermRelation tr = TermCheckLocked(term);
-    if (tr == TermRelation::STALE) {
-      return;
-    } else if (tr == TermRelation::NEW) {
-      demoted = DemoteSelfLocked(term);
-      return;
-    }
-    if (role_ != Role::CANDIDATE) {
-      return;
-    }
-    if (!voted_yes) {
-      return;
-    }
-    bool dupe =
-        (std::find(votes_.begin(), votes_.end(), voter_id) != votes_.end());
-    if (dupe) {
-      return;
-    }
-    votes_.push_back(voter_id);
-    LOG(INFO) << __FUNCTION__ << ": Replica " << voter_id
-              << " voted for me. Votes: " << votes_.size() << "/" << quorum_
-              << " in term " << current_term_;
-    if (votes_.size() >= quorum_) {
-      elected = true;
-      SetRoleLocked(Role::LEADER);
-      ClearInFlightsLocked();
+    result = ReceiveRequestVoteResponseLocked(rvr);
+  }
 
-      for (size_t i = 1; i <= static_cast<size_t>(total_num_); ++i) {
-        progress_[i] = FollowerProgress{};
-        progress_[i].next_index = last_log_index_ + 1;
-        progress_[i].match_index = 0;
-      }
-
-      snapshot_send_time_.assign(
-          total_num_ + 1,
-          std::make_pair(std::chrono::steady_clock::time_point{}, size_t{0}));
-      VLOG(1) << "Post-election index state: last_log_index_="
-              << last_log_index_
-              << " progress_[id_].next_index=" << progress_[id_].next_index
-              << " progress_[id_].match_index=" << progress_[id_].match_index;
-      LOG(INFO) << __FUNCTION__ << ": CANDIDATE->LEADER in term "
-                << current_term_;
-
-      LogEntry noop;
-      noop.entry.set_term(current_term_);
-      noop.entry.set_command("RAFT_NO_OP");
-      AddToLogLocked(noop);
-      progress_[id_].next_index = last_log_index_ + 1;
-      progress_[id_].match_index = last_log_index_;
-    }
-  }();
-  if (demoted || elected) {
+  if (result.demoted || result.elected) {
     leader_election_manager_->OnRoleChange();
   }
-  if (demoted) {
+  if (result.demoted) {
     LOG(INFO) << __FUNCTION__ << ": Demoted from "
-              << (initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
-              << "->FOLLOWER in term " << term;
+              << (result.initial_role == Role::LEADER ? "LEADER" : "CANDIDATE")
+              << "->FOLLOWER in term " << result.term;
   }
-  if (elected) {
+  if (result.elected) {
     SendHeartBeat();
   }
 }
@@ -922,7 +968,7 @@ void Raft::SendHeartBeat() {
 
   std::vector<AeFields> messages;
   uint64_t current_term;
-  uint64_t heartBeat_num;
+  uint64_t heartbeat_num;
   std::vector<uint64_t> send_snapshot;
   {
     std::lock_guard<std::mutex> lk(mutex_);
@@ -933,7 +979,7 @@ void Raft::SendHeartBeat() {
     current_term = current_term_;
 
     heartbeats_sent_this_term_++;
-    heartBeat_num = heartbeats_sent_this_term_;
+    heartbeat_num = heartbeats_sent_this_term_;
 
     PruneExpiredInFlightMsgsLocked();
 
@@ -945,7 +991,7 @@ void Raft::SendHeartBeat() {
       RecordNewInFlightMsgLocked(msg, now);
     }
 
-    for (size_t i = 1; i <= total_num_; ++i) {
+    for (auto i = 1; i <= total_num_; ++i) {
       if (i == id_) {
         continue;
       }
@@ -981,7 +1027,7 @@ void Raft::SendHeartBeat() {
   if (liveness_logging_flag_) {
     LOG(INFO) << __FUNCTION__ << ": " << msg_ms
               << " ms elapsed in CreateAndSend loop";
-    LOG(INFO) << __FUNCTION__ << ": Heartbeat " << heartBeat_num << " for term "
+    LOG(INFO) << __FUNCTION__ << ": Heartbeat " << heartbeat_num << " for term "
               << current_term;
   }
 
@@ -1138,15 +1184,15 @@ AeFields Raft::GatherAeFieldsLocked(int follower_id) {
 // last_log_index_. AeFields.entries will each contain at most max_entries_
 // amount of entries. Followers at max_in_flight_per_follower_ will be ignored
 // unless this is a heartbeat.
-std::vector<AeFields> Raft::GatherAeFieldsForBroadcastLocked(bool heart_beat) {
+std::vector<AeFields> Raft::GatherAeFieldsForBroadcastLocked(bool heartbeat) {
   assert(role_ == Role::LEADER);
   std::vector<AeFields> fields_vec;
   fields_vec.reserve(total_num_ - 1);
-  for (size_t i = 1; i <= total_num_; ++i) {
+  for (auto i = 1; i <= total_num_; ++i) {
     if (i == id_) {
       continue;
     }
-    if (!heart_beat && !CanSendLocked(i)) {
+    if (!heartbeat && !CanSendLocked(i)) {
       VLOG(3) << "Skipping follower " << i
               << " (in-flight limit, queue=" << progress_[i].in_flight.size()
               << ", match=" << progress_[i].match_index
@@ -1203,7 +1249,7 @@ void Raft::PruneExpiredInFlightMsgsLocked() {
   assert(role_ == Role::LEADER);
   auto now = std::chrono::steady_clock::now();
   for (size_t i = 1; i < progress_.size(); ++i) {
-    if (i == id_) {
+    if (i == static_cast<size_t>(id_)) {
       continue;
     }
     auto& follower = progress_[i];
@@ -1281,8 +1327,9 @@ bool Raft::CanSendLocked(int follower_id) const {
   auto follower_progress = progress_[follower_id];
   assert(role_ == Role::LEADER);
 
-  // Never send any entries to a follower who needs a snapshot.
-  if (follower_progress.next_index <= truncated_last_index_) {
+  bool follower_needs_snapshot =
+      follower_progress.next_index <= truncated_last_index_;
+  if (follower_needs_snapshot) {
     return false;
   }
 
@@ -1532,16 +1579,9 @@ void Raft::TruncatePrefixLocked(uint64_t snapshot_index) {
   auto last_snapshot_entry_term = GetLogTermAtIndex(snapshot_index);
   log_.erase(log_.begin() + 1, erase_end + 1);
 
-  auto t1 = std::chrono::steady_clock::now();
 
   SetSnapshotLastIndexAndTermLocked(snapshot_index, last_snapshot_entry_term,
                                     index, last_truncated_entry_term);
-
-  auto t2 = std::chrono::steady_clock::now();
-  LOG(INFO)
-      << __FUNCTION__ << ": SetSnapshotLastIndexAndTerm completed in "
-      << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
-      << "ms";
 
   assert(last_log_index_ == GetLogicalLogSize() - 1);
 
@@ -1549,6 +1589,10 @@ void Raft::TruncatePrefixLocked(uint64_t snapshot_index) {
     return;
   }
 
+  SendSnapshotsToBehindFollowersLocked();
+}
+
+void Raft::SendSnapshotsToBehindFollowersLocked() {
   for (size_t i = 1; i <= static_cast<size_t>(total_num_); ++i) {
     if (static_cast<int>(i) == id_) {
       continue;
@@ -1663,7 +1707,7 @@ void Raft::SendInstallSnapshot(int follower_id, size_t byte_offset) {
     int tmp_fd =
         open(snapshot_tmp_path_.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
     if (tmp_fd < 0) {
-      LOG(ERROR) << "SendInstallSnapshot: failed to open tmp snapshot file "
+      LOG(ERROR) << __FUNCTION__ << ": failed to open tmp snapshot file "
                  << snapshot_tmp_path_ << ": " << strerror(errno);
       return;
     }
@@ -1673,7 +1717,7 @@ void Raft::SendInstallSnapshot(int follower_id, size_t byte_offset) {
     while (remaining > 0) {
       ssize_t written = write(tmp_fd, ptr, remaining);
       if (written <= 0) {
-        LOG(ERROR) << "SendInstallSnapshot: write failed: " << strerror(errno);
+        LOG(ERROR) << __FUNCTION__ << ": write failed: " << strerror(errno);
         close(tmp_fd);
         unlink(snapshot_tmp_path_.c_str());
         return;
@@ -1683,7 +1727,7 @@ void Raft::SendInstallSnapshot(int follower_id, size_t byte_offset) {
     }
 
     if (fsync(tmp_fd) < 0) {
-      LOG(ERROR) << "SendInstallSnapshot: fsync failed: " << strerror(errno);
+      LOG(ERROR) << __FUNCTION__ << ": fsync failed: " << strerror(errno);
       close(tmp_fd);
       unlink(snapshot_tmp_path_.c_str());
       return;
@@ -1691,7 +1735,7 @@ void Raft::SendInstallSnapshot(int follower_id, size_t byte_offset) {
     close(tmp_fd);
 
     if (rename(snapshot_tmp_path_.c_str(), snapshot_file_path_.c_str()) < 0) {
-      LOG(ERROR) << "SendInstallSnapshot: rename failed: " << strerror(errno);
+      LOG(ERROR) << __FUNCTION__ << ": rename failed: " << strerror(errno);
       unlink(snapshot_tmp_path_.c_str());
       return;
     }
@@ -1701,28 +1745,28 @@ void Raft::SendInstallSnapshot(int follower_id, size_t byte_offset) {
   // byte_offset.
   int snap_fd = open(snapshot_file_path_.c_str(), O_RDONLY);
   if (snap_fd < 0) {
-    LOG(ERROR) << "SendInstallSnapshot: failed to open snapshot file "
+    LOG(ERROR) << __FUNCTION__ << ": failed to open snapshot file "
                << snapshot_file_path_ << ": " << strerror(errno);
     return;
   }
 
   struct stat st;
   if (fstat(snap_fd, &st) < 0) {
-    LOG(ERROR) << "SendInstallSnapshot: fstat failed: " << strerror(errno);
+    LOG(ERROR) << __FUNCTION__ << ": fstat failed: " << strerror(errno);
     close(snap_fd);
     return;
   }
   size_t total_size = static_cast<size_t>(st.st_size);
 
   if (byte_offset > total_size) {
-    LOG(WARNING) << "SendInstallSnapshot: byte_offset " << byte_offset
+    LOG(WARNING) << __FUNCTION__ << ": byte_offset " << byte_offset
                  << " exceeds snapshot size " << total_size;
     close(snap_fd);
     return;
   }
 
   if (lseek(snap_fd, static_cast<off_t>(byte_offset), SEEK_SET) < 0) {
-    LOG(ERROR) << "SendInstallSnapshot: lseek failed: " << strerror(errno);
+    LOG(ERROR) << __FUNCTION__ << ": lseek failed: " << strerror(errno);
     close(snap_fd);
     return;
   }
@@ -1734,7 +1778,7 @@ void Raft::SendInstallSnapshot(int follower_id, size_t byte_offset) {
     ssize_t n =
         read(snap_fd, chunk.data() + bytes_read, chunk_size - bytes_read);
     if (n <= 0) {
-      LOG(ERROR) << "SendInstallSnapshot: read failed: " << strerror(errno);
+      LOG(ERROR) << __FUNCTION__ << ": read failed: " << strerror(errno);
       close(snap_fd);
       return;
     }
@@ -1782,15 +1826,12 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
   uint64_t last_included_term = is->last_included_term();
   bool done = is->done();
 
-  // Variables set inside the lock, acted on outside.
   bool demoted = false;
   bool should_install = false;
   uint64_t our_term = 0;
   uint64_t bytes_stored = 0;
   TermRelation tr;
   InstallSnapshotResponse isr;
-  // Copies of the pending snapshot's fd and path, taken under the lock so the
-  // out-of-lock write/fsync lambdas never dereference a pointer into the map.
   int pending_fd = -1;
   std::string pending_tmp_path;
   size_t remaining = 0;
@@ -1825,6 +1866,20 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
     pending_snapshot_chunks_.erase(leader_id);
   };
 
+  // Fills isr with an early-exit response and marks ready_to_respond, which
+  // prevents the write/fsync lambdas from doing further work. need_snapshot
+  // tells the leader whether to send more chunks; stored is the confirmed byte
+  // offset so far.
+  auto SetSnapshotResponse = [&](bool need_snapshot, uint64_t stored) {
+    isr.set_term(our_term);
+    isr.set_id(id_);
+    isr.set_need_snapshot(need_snapshot);
+    isr.set_bytes_stored(stored);
+    isr.set_last_included_index(last_included_index);
+    isr.set_transfer_complete(false);
+    ready_to_respond = true;
+  };
+
   [&]() {
     std::lock_guard<std::mutex> lk(mutex_);
     our_term = current_term_;
@@ -1833,47 +1888,40 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
     if (tr == TermRelation::STALE) {
       LOG(INFO) << "ReceiveInstallSnapshot: stale term " << is->term()
                 << " (ours=" << our_term << ")";
-      isr.set_term(our_term);
-      isr.set_id(id_);
-      isr.set_need_snapshot(false);
-      isr.set_bytes_stored(0);
-      isr.set_last_included_index(last_included_index);
-      isr.set_transfer_complete(false);
-      ready_to_respond = true;
+      SetSnapshotResponse(/*need_snapshot=*/false, /*stored=*/0);
       return;
     }
-
     if (tr == TermRelation::NEW) {
       demoted = DemoteSelfLocked(is->term());
       our_term = current_term_;
     }
 
-    // If offset == 0 and the snapshot is older than what we already have, our
-    // state is already further ahead.
-    if (incoming_offset == 0) {
+    bool is_first_chunk = (incoming_offset == 0);
+
+    if (is_first_chunk) {
       assert(commit_index_ >= snapshot_last_index_);
+
       // If the snapshot contains the prefix to our log (either directly or
       // through snapshot), then reply rejecting the snapshot.
-      if (last_included_index <= commit_index_ ||
+      bool already_have_matching_entry =
+          (last_included_index <= commit_index_) ||
           (last_included_index <= last_log_index_ &&
-           GetLogTermAtIndex(last_included_index) == last_included_term)) {
+           GetLogTermAtIndex(last_included_index) == last_included_term);
+
+      if (already_have_matching_entry) {
         LOG(INFO) << "ReceiveInstallSnapshot: ignoring snapshot at index "
                   << last_included_index
                   << ", already have matching entry at index "
                   << last_included_index << " with term " << last_included_term;
-        isr.set_term(our_term);
-        isr.set_id(id_);
-        isr.set_need_snapshot(false);
-        isr.set_bytes_stored(0);
-        isr.set_last_included_index(last_included_index);
-        isr.set_transfer_complete(false);
-        ready_to_respond = true;
+        SetSnapshotResponse(/*need_snapshot=*/false, /*stored=*/0);
         return;
       }
 
       // Discard any in-progress transfer from this leader and start fresh.
       auto existing = pending_snapshot_chunks_.find(leader_id);
-      if (existing != pending_snapshot_chunks_.end()) {
+      bool snapshot_was_in_progress_for_this_leader =
+          existing != pending_snapshot_chunks_.end();
+      if (snapshot_was_in_progress_for_this_leader) {
         AbortPendingLocked(existing);
       }
 
@@ -1883,13 +1931,7 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
       if (fd < 0) {
         LOG(ERROR) << "ReceiveInstallSnapshot: failed to open recv tmp file "
                    << tmp_path << ": " << strerror(errno);
-        isr.set_term(our_term);
-        isr.set_id(id_);
-        isr.set_need_snapshot(true);
-        isr.set_bytes_stored(0);
-        isr.set_last_included_index(last_included_index);
-        isr.set_transfer_complete(false);
-        ready_to_respond = true;
+        SetSnapshotResponse(/*need_snapshot=*/true, /*stored=*/0);
         return;
       }
 
@@ -1903,51 +1945,39 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
     }
 
     auto it = pending_snapshot_chunks_.find(leader_id);
-    // Non-first chunk with no transfer in progress.
-    if (it == pending_snapshot_chunks_.end()) {
+    bool no_pending_transfer = (it == pending_snapshot_chunks_.end());
+
+    if (no_pending_transfer) {
+      // Non-first chunk with no transfer in progress.
       LOG(WARNING) << "ReceiveInstallSnapshot: chunk at offset "
                    << incoming_offset << " but no pending transfer from leader "
                    << leader_id << "; requesting restart";
-      isr.set_term(our_term);
-      isr.set_id(id_);
-      isr.set_need_snapshot(true);
-      isr.set_bytes_stored(0);
-      isr.set_last_included_index(last_included_index);
-      isr.set_transfer_complete(false);
-      ready_to_respond = true;
+      SetSnapshotResponse(/*need_snapshot=*/true, /*stored=*/0);
       return;
     }
 
-    // Restart if this chunk belongs to a different snapshot.
-    if (it->second.last_included_index != last_included_index ||
-        it->second.last_included_term != last_included_term) {
+    bool chunk_belongs_to_different_snapshot =
+        (it->second.last_included_index != last_included_index ||
+         it->second.last_included_term != last_included_term);
+
+    if (chunk_belongs_to_different_snapshot) {
       LOG(WARNING) << "ReceiveInstallSnapshot: chunk belongs to different "
                       "snapshot (index "
                    << last_included_index << " vs pending "
                    << it->second.last_included_index << "); requesting restart";
       AbortPendingLocked(it);
-      isr.set_term(our_term);
-      isr.set_id(id_);
-      isr.set_need_snapshot(true);
-      isr.set_bytes_stored(0);
-      isr.set_last_included_index(last_included_index);
-      isr.set_transfer_complete(false);
-      ready_to_respond = true;
+      SetSnapshotResponse(/*need_snapshot=*/true, /*stored=*/0);
       return;
     }
 
-    // Reject out-of-order chunks and tell the leader what offset we expect
-    // next.
-    if (incoming_offset != it->second.expected_offset) {
+    bool received_out_of_order_chunk =
+        (incoming_offset != it->second.expected_offset);
+
+    if (received_out_of_order_chunk) {
       LOG(WARNING) << "ReceiveInstallSnapshot: out-of-order chunk: expected "
                    << it->second.expected_offset << " got " << incoming_offset;
-      isr.set_term(our_term);
-      isr.set_id(id_);
-      isr.set_need_snapshot(true);
-      isr.set_bytes_stored(it->second.expected_offset);
-      isr.set_last_included_index(last_included_index);
-      isr.set_transfer_complete(false);
-      ready_to_respond = true;
+      SetSnapshotResponse(/*need_snapshot=*/true,
+                          /*stored=*/it->second.expected_offset);
       return;
     }
 
@@ -1955,7 +1985,6 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
     // can operate without holding the lock or dereferencing a map pointer.
     pending_fd = it->second.fd;
     pending_tmp_path = it->second.tmp_path;
-    // Set up remaining so the write lambda knows how much data to write.
     remaining = is->data().size();
 
     if (done) {
@@ -1965,6 +1994,7 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
 
   // Write the chunk data to the temp file outside the lock. pending_fd and
   // pending_tmp_path were copied from the map entry under the lock above.
+  // remaining == 0 means the first lambda exited early via SetSnapshotResponse.
   [&]() {
     if (remaining == 0) {
       return;
@@ -1973,24 +2003,20 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
     const std::string& chunk = is->data();
     const char* ptr = chunk.data();
     while (remaining > 0) {
-      ssize_t written = write(pending_fd, ptr, remaining);
-      if (written <= 0) {
+      ssize_t bytes_written = write(pending_fd, ptr, remaining);
+      bool write_failed = (bytes_written <= 0);
+      if (write_failed) {
         LOG(ERROR) << "ReceiveInstallSnapshot: write to temp file failed: "
                    << strerror(errno);
         AbortPendingUnlocked();
-        isr.set_term(our_term);
-        isr.set_id(id_);
-        isr.set_need_snapshot(true);
-        isr.set_bytes_stored(0);
-        isr.set_last_included_index(last_included_index);
-        isr.set_transfer_complete(false);
-        ready_to_respond = true;
+        SetSnapshotResponse(/*need_snapshot=*/true, /*stored=*/0);
         return;
       }
-      ptr += written;
-      remaining -= static_cast<size_t>(written);
+      ptr += bytes_written;
+      remaining -= static_cast<size_t>(bytes_written);
     }
-    if (fsync(pending_fd) < 0) {
+    bool chunk_fsync_failed = (fsync(pending_fd) < 0);
+    if (chunk_fsync_failed) {
       LOG(ERROR) << "ReceiveInstallSnapshot: fsync to temp file failed: "
                  << strerror(errno);
       // Non-fatal: data may not be durable but we can still proceed.
@@ -2008,20 +2034,17 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
 
   // fsync, close, and rename the temp file once all chunks have arrived.
   [&]() {
-    if (!done || ready_to_respond) {
+    bool should_finalize_snapshot_data = done && !ready_to_respond;
+    if (!should_finalize_snapshot_data) {
       return;
     }
-    if (fsync(pending_fd) < 0) {
+
+    bool final_fsync_failed = (fsync(pending_fd) < 0);
+    if (final_fsync_failed) {
       LOG(ERROR) << "ReceiveInstallSnapshot: final fsync failed: "
                  << strerror(errno);
       AbortPendingUnlocked();
-      isr.set_term(our_term);
-      isr.set_id(id_);
-      isr.set_need_snapshot(true);
-      isr.set_bytes_stored(0);
-      isr.set_last_included_index(last_included_index);
-      isr.set_transfer_complete(false);
-      ready_to_respond = true;
+      SetSnapshotResponse(/*need_snapshot=*/true, /*stored=*/0);
       return;
     }
     LOG(INFO) << "Completed snapshot fsynced to disk";
@@ -2066,35 +2089,7 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
                  << strerror(errno);
     }
 
-    std::string full_data;
-    {
-      int snap_fd = open(snapshot_file_path_.c_str(), O_RDONLY);
-      if (snap_fd < 0) {
-        snap_fd = open(tmp_path_to_rename.c_str(), O_RDONLY);
-      }
-      if (snap_fd < 0) {
-        LOG(ERROR)
-            << "ReceiveInstallSnapshot: failed to open snapshot for apply: "
-            << strerror(errno);
-      } else {
-        struct stat st;
-        if (fstat(snap_fd, &st) == 0) {
-          full_data.resize(static_cast<size_t>(st.st_size));
-          size_t bytes_read = 0;
-          while (bytes_read < full_data.size()) {
-            ssize_t n = read(snap_fd, full_data.data() + bytes_read,
-                             full_data.size() - bytes_read);
-            if (n <= 0) {
-              LOG(ERROR) << "ReceiveInstallSnapshot: read failed: "
-                         << strerror(errno);
-              break;
-            }
-            bytes_read += static_cast<size_t>(n);
-          }
-        }
-        close(snap_fd);
-      }
-    }
+    std::string full_data = ReadSnapshotFileData(tmp_path_to_rename);
 
     ApplySnapshot(recovery_->GetStorage(), full_data);
     std::lock_guard<std::mutex> lk(mutex_);
@@ -2115,6 +2110,42 @@ bool Raft::ReceiveInstallSnapshot(std::unique_ptr<InstallSnapshot> is) {
   }
   SendMessage(MessageType::InstallSnapshotResponseMsg, isr, leader_id);
   return true;
+}
+
+std::string Raft::ReadSnapshotFileData(std::string tmp_path_to_rename) {
+  std::string full_data;
+  int snapshot_fd = open(snapshot_file_path_.c_str(), O_RDONLY);
+  bool primary_path_open_failed = (snapshot_fd < 0);
+  if (primary_path_open_failed) {
+    snapshot_fd = open(tmp_path_to_rename.c_str(), O_RDONLY);
+  }
+  bool snapshot_file_failed_to_open = (snapshot_fd < 0);
+  if (snapshot_file_failed_to_open) {
+    LOG(ERROR)
+        << "ReceiveInstallSnapshot: failed to open snapshot to be applied: "
+        << strerror(errno);
+  } else {
+    struct stat st;
+    if (fstat(snapshot_fd, &st) == 0) {
+      full_data.resize(static_cast<size_t>(st.st_size));
+      size_t bytes_read = 0;
+      while (bytes_read < full_data.size()) {
+        ssize_t bytes_this_read =
+            read(snapshot_fd, full_data.data() + bytes_read,
+                 full_data.size() - bytes_read);
+        bool read_failed = (bytes_this_read <= 0);
+        if (read_failed) {
+          LOG(ERROR) << "ReceiveInstallSnapshot: read failed: "
+                     << strerror(errno);
+          break;
+        }
+        bytes_read += static_cast<size_t>(bytes_this_read);
+      }
+    }
+    close(snapshot_fd);
+  }
+
+  return full_data;
 }
 
 bool Raft::ReceiveInstallSnapshotResponse(
@@ -2140,7 +2171,9 @@ bool Raft::ReceiveInstallSnapshotResponse(
       demoted = DemoteSelfLocked(isr->term());
     }
 
-    if (role_ != Role::LEADER || tr == TermRelation::STALE) {
+    bool no_longer_leader =
+        (role_ != Role::LEADER || tr == TermRelation::STALE);
+    if (no_longer_leader) {
       if (demoted) {
         leader_election_manager_->OnRoleChange();
       }
@@ -2160,8 +2193,10 @@ bool Raft::ReceiveInstallSnapshotResponse(
         progress_[follower_id].next_index = last_included_index + 1;
         progress_[follower_id].match_index =
             std::max(progress_[follower_id].match_index, last_included_index);
-        // If the follower still needs log entries, send them now.
-        if (progress_[follower_id].next_index <= last_log_index_) {
+
+        bool follower_still_needs_log_entries =
+            (progress_[follower_id].next_index <= last_log_index_);
+        if (follower_still_needs_log_entries) {
           catchup_fields = GatherAeFieldsLocked(follower_id);
           send_catchup_ae = true;
         }
@@ -2173,6 +2208,7 @@ bool Raft::ReceiveInstallSnapshotResponse(
       }
     }
   }
+
   if (demoted) {
     leader_election_manager_->OnRoleChange();
     LOG(INFO) << "ReceiveInstallSnapshotResponse: demoted from "
