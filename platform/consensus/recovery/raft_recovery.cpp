@@ -363,9 +363,8 @@ void RaftRecovery::PerformCallback(
     // Since truncation records store the seq of the last index remaining in the
     // log, it could be equal to the ckpt, meaning that everything since the
     // checkpoint is to be truncated.
-    if (ckpt < record->seq() ||
-        (ckpt == record->seq() &&
-         record->payload_case() == WALRecord::kTruncation)) {
+    const int64_t seq = static_cast<int64_t>(record->seq());
+    if (ckpt < seq || (ckpt == seq && record->payload_case() == WALRecord::kTruncation)) {
       max_seq = record->seq();
       call_back(std::move(record));
     }

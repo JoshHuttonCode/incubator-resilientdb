@@ -137,8 +137,8 @@ void RecoveryBase<TDerived, TSystemInfoData, TCallback,
     int64_t min_seq = std::stoll(
         file_name.substr(min_seq_pos + 1, max_seq_pos - min_seq_pos - 1));
 
-    int64_t time_s =
-        std::stoll(file_name.substr(time_pos + 1, min_seq_pos - time_pos - 1));
+    uint64_t time_s =
+        std::stoull(file_name.substr(time_pos + 1, min_seq_pos - time_pos - 1));
     LOG(ERROR) << "get path:" << entry.path() << " min:" << min_seq
                << " time:" << time_s;
     if (min_seq == -1) {
@@ -352,9 +352,9 @@ RecoveryBase<TDerived, TSystemInfoData, TCallback,
     int64_t min_seq = std::stoll(
         file_name.substr(min_seq_pos + 1, max_seq_pos - min_seq_pos - 1));
 
-    int time_pos = file_name.rfind("_", min_seq_pos - 1);
+    uint time_pos = file_name.rfind("_", min_seq_pos - 1);
     int64_t time =
-        std::stoll(file_name.substr(time_pos + 1, min_seq_pos - time_pos - 1));
+        std::stoull(file_name.substr(time_pos + 1, min_seq_pos - time_pos - 1));
 
     if (min_seq == -1) {
       e_list.push_back(std::make_pair(time, entry.path()));
@@ -399,8 +399,8 @@ RecoveryBase<TDerived, TSystemInfoData, TCallback,
         file_name.substr(min_seq_pos + 1, max_seq_pos - min_seq_pos - 1));
 
     int time_pos = file_name.rfind("_", min_seq_pos - 1);
-    int64_t time =
-        std::stoll(file_name.substr(time_pos + 1, min_seq_pos - time_pos - 1));
+    uint64_t time =
+        std::stoull(file_name.substr(time_pos + 1, min_seq_pos - time_pos - 1));
 
     // LOG(ERROR)<<" min seq:"<<min_seq << " max seq:"<<max_seq<<"
     // need:"<<need_min_seq<<" "<<need_max_seq;
