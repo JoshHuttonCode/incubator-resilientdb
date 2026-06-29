@@ -24,6 +24,7 @@
 #include <chrono>
 #include <cstdint>
 #include <deque>
+#include <future>
 #include <map>
 #include <memory>
 #include <queue>
@@ -46,6 +47,7 @@ namespace raft {
 
 enum class Role { FOLLOWER, CANDIDATE, LEADER };
 enum class TermRelation { STALE, CURRENT, NEW };
+enum class ProgressState { PROBE, REPLICATE, SNAPSHOT };
 
 class LogEntry {
  public:
@@ -75,7 +77,23 @@ struct InFlightMsg {
   uint64_t last_index_of_segment_sent;
 };
 
+struct FollowerProgress {
+  ProgressState state = ProgressState::PROBE;
+  uint64_t match_index = 0;
+  uint64_t next_index = 1;
+  std::vector<InFlightMsg> in_flight;
+  bool probe_in_flight = false;
+};
+
 #ifdef RAFT_TEST_MODE
+
+struct FollowerProgressPatch {
+  std::optional<ProgressState> state;
+  std::optional<uint64_t> match_index;
+  std::optional<uint64_t> next_index;
+  std::optional<std::vector<InFlightMsg>> in_flight;
+};
+
 struct RaftStatePatch {
   std::optional<uint64_t> current_term;
   std::optional<int> voted_for;
@@ -84,22 +102,21 @@ struct RaftStatePatch {
   std::optional<Role> role;
 
   std::optional<std::vector<LogEntry>> log;
-  std::optional<std::vector<uint64_t>> next_index;
-  std::optional<std::vector<uint64_t>> match_index;
+  std::optional<std::vector<FollowerProgressPatch>> progress;
   std::optional<std::vector<int>> votes;
-  std::optional<std::vector<std::vector<InFlightMsg>>> in_flight_vecs;
+  std::optional<bool> enable_batching;
+  std::optional<uint64_t> snapshot_buffer_amount;
 };
+
 #endif
 
 class Raft : public common::ProtocolBase {
  public:
   Raft(int id, int f, int total_num, SignatureVerifier* verifier,
        LeaderElectionManager* leader_election_manager,
-       ReplicaCommunicator* replica_communicator, RaftRecovery* recovery);
+       ReplicaCommunicator* replica_communicator, RaftRecovery* recovery,
+       const ResDBConfig& config);
   ~Raft();
-
-  const bool replication_logging_flag_ = true;
-  const bool liveness_logging_flag_ = false;
 
   virtual bool ReceiveTransaction(std::unique_ptr<Request> req);
   virtual bool ReceiveAppendEntries(std::unique_ptr<AppendEntries> ae);
@@ -116,7 +133,7 @@ class Raft : public common::ProtocolBase {
   virtual Role GetRoleSnapshot() const;
   virtual void SetRole(Role role);
   virtual void PrintDebugState() const;
-  void WriteMetadata();
+  void WriteMetadataLocked();
   uint64_t GetSnapshotLastIndex();
 
   // These functions with write_metadata are also used to replay information
@@ -124,28 +141,52 @@ class Raft : public common::ProtocolBase {
   // everywhere else.
   virtual void SetCurrentTerm(uint64_t current_term,
                               bool write_metadata = true);
+  virtual void SetCurrentTermLocked(uint64_t current_term,
+                                    bool write_metadata = true);
   virtual void SetVotedFor(int votedFor, bool write_metadata = true);
+  virtual void SetVotedForLocked(int votedFor, bool write_metadata = true);
   virtual void SetCurrentTermAndVotedFor(uint64_t current_term, int voted_for,
+                                         bool write_metadata = true);
+  virtual void SetCurrentTermAndVotedForLocked(uint64_t current_term,
+                                               int voted_for,
+                                               bool write_metadata = true);
+  void SetSnapshotLastIndexAndTermLocked(uint64_t snapshot_last_index,
+                                         uint64_t snapshot_last_term,
+                                         uint64_t truncated_last_index,
+                                         uint64_t truncated_last_term,
                                          bool write_metadata = true);
   void SetSnapshotLastIndexAndTerm(uint64_t snapshot_last_index,
                                    uint64_t snapshot_last_term,
                                    bool write_metadata = true);
   void AddToLog(LogEntry& log_entry, bool write_metadata = true);
+  std::future<void> AddToLogLocked(LogEntry& log_entry,
+                                   bool write_metadata = true);
   void AddToLog(std::vector<LogEntry> logEntriesToAdd,
                 bool write_metadata = true);
+  std::future<void> AddToLogLocked(std::vector<LogEntry> logEntriesToAdd,
+                                   bool write_metadata = true);
   void TruncateLog(uint64_t first, bool write_metadata = true);
-  void TruncatePrefix(uint64_t index);
+  void TruncateLogLocked(uint64_t first, bool write_metadata = true);
+  void TruncatePrefix(uint64_t snapshot_index);
   bool IsSendSnapshotInProgress() {
-    for (auto in_progress : snapshot_in_progress_) {
-      if (in_progress) {
+    std::lock_guard<std::mutex> lk(mutex_);
+    for (const auto& [last_sent_time, _] : snapshot_send_time_) {
+      if (last_sent_time != std::chrono::steady_clock::time_point{}) {
         return true;
       }
     }
     return false;
-  };
+  }
+  // These flags gate logging inside hot paths. replication_logging_flag_ is
+  // on by default; liveness_logging_flag_ adds heartbeat/timing noise and is
+  // off unless you're actively debugging liveness.
+  const bool replication_logging_flag_ = true;
+  const bool liveness_logging_flag_ = false;
 
  private:
   mutable std::mutex mutex_;
+  mutable std::mutex snapshot_queue_mutex_;
+  std::condition_variable snapshot_queue_cv_;
 
   virtual TermRelation TermCheckLocked(
       uint64_t term) const;                       // Must be called under mutex
@@ -154,34 +195,62 @@ class Raft : public common::ProtocolBase {
   virtual bool IsStop();
   virtual std::vector<std::unique_ptr<Request>>
   PrepareCommitLocked();  // Must be called under mutex
-  virtual AeFields GatherAeFieldsLocked(int follower_id, bool heartBeat = false)
-      const;  // Must be called under mutex
+  virtual AeFields GatherAeFieldsLocked(
+      int follower_id);  // Must be called under mutex
   std::vector<AeFields> GatherAeFieldsForBroadcastLocked(
-      bool heartBeat = false) const;  // Must be called under mutex
+      bool heartBeat = false);  // Must be called under mutex
   virtual void CreateAndSendAppendEntryMsg(const AeFields& fields);
   virtual LogEntry CreateLogEntry(const Entry& entry) const;
   virtual void ClearInFlightsLocked();
+  // This function is called before sending any AppendEntries messages to
+  // followers. Once messages have been in a follower's
+  // FollowerProgress.in_flight for longer than ae_response_deadline_, remove
+  // them so that they will be re-sent.
   virtual void PruneExpiredInFlightMsgsLocked();
   virtual void PruneRedundantInFlightMsgsLocked(
-      int follower_id, uint64_t followerlast_log_index);
+      int follower_id,
+      uint64_t follower_last_log_index);  // Must be called under mutex_.
   virtual void RecordNewInFlightMsgLocked(
-      const AeFields& msg, std::chrono::steady_clock::time_point timestamp);
-  virtual void PrintDebugStateLocked() const;
+      const AeFields& msg, std::chrono::steady_clock::time_point
+                               timestamp);     // Must be called under mutex_.
+  virtual void PrintDebugStateLocked() const;  // Must be called under mutex_.
+  void CheckSnapshotQueue();
+  void EnqueueSnapshot(int follower_id, size_t byte_offset);
+  void EnqueueSnapshotLocked(int follower_id, size_t byte_offset);
+  // Used to drain the snapshot queue when a leader demotes.
+  void RequestSnapshotQueueDrain();
+  bool ShouldSendSnapshotChunkLocked(int follower_id, size_t byte_offset)
+      const;  // Must be called under mutex_.
 
 #ifdef RAFT_TEST_MODE
  public:
   std::string GetSnapshotFilePath() const { return snapshot_file_path_; }
 #endif
-  virtual bool InFlightPerFollowerLimitReachedLocked(int follower_id) const;
-  int GetLogicalLogSize() const;
+  bool CanSendLocked(int follower_id) const;
+  uint64_t GetLogicalLogSize() const;
   const LogEntry& GetLogEntryAtIndex(uint64_t index) const;
   const uint64_t GetLogTermAtIndex(uint64_t index) const;
   void SendInstallSnapshot(int follower_id, size_t byte_offset);
 #ifdef RAFT_TEST_MODE
  private:
 #endif
-  void TruncatePrefixLocked(uint64_t index);
-  void SetRoleLocked(Role role);
+  void TruncatePrefixLocked(uint64_t snapshot_index);
+  void SetRoleLocked(Role role);  // Must be called under mutex_.
+
+  // Writes the current storage state machine snapshot to snapshot_file_path_
+  // atomically via a temp file. Must NOT be called under mutex_.
+  bool WriteSnapshotToDisk();
+  // Reads one chunk of chunk_size_in_bytes_ from snapshot_file_path_ starting
+  // at byte_offset. Fills chunk_out, total_size_out, and done_out. Returns
+  // false on any I/O failure. Must NOT be called under mutex_.
+  bool ReadSnapshotChunk(size_t byte_offset, std::string& chunk_out,
+                         size_t& total_size_out, bool& done_out);
+  // Applies a fully-received snapshot: resets log state, renames the temp file,
+  // reads the snapshot back, and calls ApplySnapshot + WriteMetadataLocked.
+  // Must NOT be called under mutex_.
+  void InstallReceivedSnapshot(uint64_t last_included_index,
+                               uint64_t last_included_term,
+                               const std::string& tmp_path);
 
   // Persistent state on all servers:
   uint64_t current_term_;      // Protected by mutex_
@@ -189,22 +258,28 @@ class Raft : public common::ProtocolBase {
   std::vector<LogEntry> log_;  // Protected by mutex_
 
   // Volatile state on leaders:
-  std::vector<uint64_t> next_index_;    // Protected by mutex_
-  std::vector<uint64_t> match_index_;   // Protected by mutex_
+  std::vector<FollowerProgress> progress_;  // Protected by mutex_
   uint64_t heartbeats_sent_this_term_;  // Protected by mutex_
-  uint64_t last_log_index_;             // Protected by mutex_
 
   // Volatile state on all servers:
+  uint64_t last_log_index_;  // Protected by mutex_
   uint64_t commit_index_;  // Protected by mutex_
   // last_committed stores the last entry that has been passed to commit_, but
-  // it may not yet have been executed. Raft's Consensus file holds lastApplied_
+  // it may not yet have been executed. Raft's Consensus file holds
+  // last_applied_
   uint64_t last_committed_;  // Protected by mutex_
   Role role_;                // Protected by mutex_
+  int current_leader_;       // Protected by mutex_
   std::vector<int> votes_;                                // Protected by mutex_
-  std::vector<std::vector<InFlightMsg>> in_flight_vecs_;  // Protected by mutex_
-  int64_t snapshot_last_index_;
-  int64_t snapshot_last_term_;
-  std::vector<bool> snapshot_in_progress_;  // Protected by mutex_
+  // These are required by the Raft algorithm, but only used when actually
+  // sending the snapshot and in recording the metadata.
+  uint64_t snapshot_last_index_, snapshot_last_term_;  // Protected by mutex_
+  // Since we leave some amount of buffer for snapshotted terms before
+  // truncation, this is used for all log arithmetic and to see if an entry is
+  // contained in our log or not.
+  uint64_t truncated_last_index_, truncated_last_term_;
+  // Drain the snapshot queue
+  bool drain_requested_;  // Protected by snapshot_queue_mutex_
 
   // Reassembly state for incoming chunked InstallSnapshot RPCs (follower side).
   // Key: leader_id. Cleared when snapshot finishes or a new one starts.
@@ -233,39 +308,97 @@ class Raft : public common::ProtocolBase {
   bool is_stop_;
   const uint64_t quorum_;
 
-  // for limiting AppendEntries batch sizing
   static constexpr size_t max_header_bytes_ = 64;
-  static constexpr size_t max_bytes_ = 64 * 1024;
-  static constexpr size_t max_entries_ = 16;
-  static constexpr size_t max_in_flight_per_follower_ = 4;
+  // for limiting AppendEntries batch sizing
+  static constexpr size_t max_bytes_ = 64 * 1024 * 16 * 16;
+  static constexpr size_t max_entries_ = 128 * 10; /*128;*/
+  static constexpr size_t max_in_flight_per_follower_ = 128;
   static constexpr std::chrono::milliseconds ae_response_deadline_{
-      300};  // in milliseconds
+      1500};  // in milliseconds
+  std::chrono::steady_clock::time_point
+      timestamp_since_last_transaction_batch_ =
+          std::chrono::steady_clock::now();
+  std::chrono::milliseconds batch_threshold_{5};
+  bool enable_batching_ = true;
+  // This is the number of entries that are covered by the snapshot that will
+  // remain in the log.
+  uint64_t snapshot_buffer_amount_ = 5000;
+  static constexpr std::chrono::seconds snapshot_response_deadline_{30};
 
   SignatureVerifier* verifier_;
   LeaderElectionManager* leader_election_manager_;
-  // Stats* global_stats_;
   ReplicaCommunicator* replica_communicator_;
   RaftRecovery* recovery_;
+  ResDBConfig config_;
+  std::thread snapshot_sending_thread_;
+  LockFreeQueue<std::pair<uint64_t, size_t>> snapshot_queue_;
+  std::vector<std::pair<std::chrono::steady_clock::time_point, size_t>>
+      snapshot_send_time_;
 
 #ifdef RAFT_TEST_MODE
  public:
   void SetStateForTest(RaftStatePatch patch) {
     std::lock_guard lk(mutex_);
-    if (patch.current_term) current_term_ = *patch.current_term;
-    if (patch.voted_for) voted_for_ = *patch.voted_for;
-    if (patch.commit_index) commit_index_ = *patch.commit_index;
-    if (patch.last_committed) last_committed_ = *patch.last_committed;
-    if (patch.role) role_ = *patch.role;
+    if (patch.current_term) {
+      current_term_ = *patch.current_term;
+    }
+    if (patch.voted_for) {
+      voted_for_ = *patch.voted_for;
+    }
+    if (patch.commit_index) {
+      commit_index_ = *patch.commit_index;
+    }
+    if (patch.last_committed) {
+      last_committed_ = *patch.last_committed;
+    }
+    if (patch.role) {
+      role_ = *patch.role;
+    }
 
     if (patch.log) {
       log_ = *patch.log;
       last_log_index_ = log_.size() - 1 + snapshot_last_index_;
     }
 
-    if (patch.next_index) next_index_ = *patch.next_index;
-    if (patch.match_index) match_index_ = *patch.match_index;
-    if (patch.votes) votes_ = *patch.votes;
-    if (patch.in_flight_vecs) in_flight_vecs_ = *patch.in_flight_vecs;
+    if (patch.progress) {
+      CHECK_EQ(progress_.size(), patch.progress->size());
+
+      for (size_t i = 0; i < patch.progress->size(); ++i) {
+        const FollowerProgressPatch& progress_patch = (*patch.progress)[i];
+
+        FollowerProgress& progress = progress_[i];
+
+        if (progress_patch.state) {
+          progress.state = *progress_patch.state;
+        }
+
+        if (progress_patch.match_index) {
+          progress.match_index = *progress_patch.match_index;
+        }
+
+        if (progress_patch.next_index) {
+          progress.next_index = *progress_patch.next_index;
+        }
+
+        if (progress_patch.in_flight) {
+          progress.in_flight = *progress_patch.in_flight;
+        }
+      }
+    }
+    if (patch.votes) {
+      votes_ = *patch.votes;
+    }
+    if (patch.enable_batching) {
+      enable_batching_ = *patch.enable_batching;
+    }
+    if (patch.snapshot_buffer_amount) {
+      snapshot_buffer_amount_ = *patch.snapshot_buffer_amount;
+    }
+  }
+
+  uint64_t GetTruncatedLastIndex() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return truncated_last_index_;
   }
 
   uint64_t GetCurrentTerm() const {
@@ -306,14 +439,29 @@ class Raft : public common::ProtocolBase {
     return log_.empty() ? 0 : log_.size() - 1;
   }
 
-  std::vector<uint64_t> GetNextIndex() const {
+  std::vector<size_t> GetNextIndex() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return next_index_;
+    std::vector<size_t> result;
+    result.reserve(progress_.size());
+    for (const auto& progress : progress_) {
+      result.push_back(progress.next_index);
+    }
+    return result;
   }
 
-  std::vector<uint64_t> GetMatchIndex() const {
+  std::vector<size_t> GetMatchIndex() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return match_index_;
+    std::vector<size_t> result;
+    result.reserve(progress_.size());
+    for (const auto& progress : progress_) {
+      result.push_back(progress.match_index);
+    }
+    return result;
+  }
+
+  std::vector<FollowerProgress> GetFollowerProgress() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return progress_;
   }
 
   uint64_t GetHeartBeatsSentThisTerm() const {
@@ -344,11 +492,6 @@ class Raft : public common::ProtocolBase {
   std::vector<int> GetVotes() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return votes_;
-  }
-
-  std::vector<std::vector<InFlightMsg>> GetInFlightVecs() const {
-    std::lock_guard<std::mutex> lock(mutex_);
-    return in_flight_vecs_;
   }
 
   size_t GetMaxInFlightVecs() const { return max_in_flight_per_follower_; }

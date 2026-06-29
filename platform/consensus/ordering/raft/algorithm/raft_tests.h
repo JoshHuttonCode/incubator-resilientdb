@@ -25,6 +25,7 @@ namespace raft {
 using resdb::raft::test_utils::CreateAeFields;
 using resdb::raft::test_utils::CreateAeMessage;
 using resdb::raft::test_utils::CreateLogEntries;
+using resdb::raft::test_utils::CreateProgressPatch;
 using resdb::raft::test_utils::GenerateConfig;
 using resdb::raft::test_utils::MockBroadcastFunction;
 using resdb::raft::test_utils::MockCommitFunction;
@@ -47,7 +48,7 @@ class RaftTest : public ::testing::Test {
         /*id=*/1,
         /*f=*/1,
         /*total=*/4, verifier_.get(), leader_election_manager_.get(),
-        replica_communicator_.get(), recovery_.get());
+        replica_communicator_.get(), recovery_.get(), config_);
 
     raft_->SetSingleCallFunc(
         [&](int type, const google::protobuf::Message& msg, int node_id) {

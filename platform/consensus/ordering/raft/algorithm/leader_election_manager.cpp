@@ -72,7 +72,9 @@ void LeaderElectionManager::MayStart() {
     return;
   }
 
-  if (config_.GetConfigData().enable_viewchange()) {
+  enable_viewchange_ = config_.GetConfigData().enable_viewchange();
+
+  if (enable_viewchange_) {
     server_checking_timeout_thread_ =
         std::thread(&LeaderElectionManager::MonitoringElectionTimeout, this);
   }
@@ -81,6 +83,10 @@ void LeaderElectionManager::MayStart() {
 void LeaderElectionManager::SetRaft(raft::Raft* raft) { raft_ = raft; }
 
 void LeaderElectionManager::OnHeartBeat() {
+  if (!enable_viewchange_) {
+    return;
+  }
+
   {
     std::lock_guard<std::mutex> lk(cv_mutex_);
     heartbeat_count_++;
@@ -89,6 +95,10 @@ void LeaderElectionManager::OnHeartBeat() {
 }
 
 void LeaderElectionManager::OnRoleChange() {
+  if (!enable_viewchange_) {
+    return;
+  }
+
   {
     LOG(INFO) << __FUNCTION__;
     std::lock_guard<std::mutex> lk(cv_mutex_);
@@ -98,8 +108,12 @@ void LeaderElectionManager::OnRoleChange() {
 }
 
 void LeaderElectionManager::OnAeBroadcast() {
+  if (!enable_viewchange_) {
+    return;
+  }
+
   {
-    LOG(INFO) << __FUNCTION__;
+    // LOG(INFO) << __FUNCTION__;
     std::lock_guard<std::mutex> lk(cv_mutex_);
     broadcast_count_++;
   }

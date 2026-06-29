@@ -240,6 +240,19 @@ void TransactionExecutor::ExecuteMessageOutOfOrder() {
 }
 
 void TransactionExecutor::OnlyExecute(std::unique_ptr<Request> request) {
+  // Added in case Raft ever supports out of ordering
+  if (request->data() == "RAFT_NO_OP") {
+    WaitForExecute(request->seq());
+    if (last_seq_ == 0) {
+      last_seq_ = request->seq();
+    } else {
+      last_seq_++;
+    }
+    FinishExecute(request->seq());
+    global_stats_->IncExecuteDone();
+    return;
+  }
+
   // Only Execute the request.
   BatchUserRequest batch_request;
   if (!batch_request.ParseFromString(request->data())) {
@@ -268,6 +281,20 @@ void TransactionExecutor::OnlyExecute(std::unique_ptr<Request> request) {
 
 void TransactionExecutor::Execute(std::unique_ptr<Request> request,
                                   bool need_execute) {
+  if (request->data() == "RAFT_NO_OP") {
+    WaitForExecute(request->seq());
+    LOG(INFO) << "Raft no-op being processed";
+    if (last_seq_ == 0) {
+      last_seq_ = request->seq();
+    } else {
+      last_seq_++;
+    }
+
+    FinishExecute(request->seq());
+    global_stats_->IncExecuteDone();
+    return;
+  }
+
   std::unique_ptr<BatchUserRequest> batch_request = nullptr;
   std::unique_ptr<std::vector<std::unique_ptr<google::protobuf::Message>>> data;
   std::vector<std::unique_ptr<google::protobuf::Message>>* data_p = nullptr;

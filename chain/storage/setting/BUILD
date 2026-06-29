@@ -33,3 +33,11 @@ config_setting(
     },
     visibility = ["//visibility:public"],
 )
+
+config_setting(
+    name = "enable_duckdb_setting",
+    values = {
+        "define": "enable_duckdb_setting=True",
+    },
+    visibility = ["//visibility:public"],
+)

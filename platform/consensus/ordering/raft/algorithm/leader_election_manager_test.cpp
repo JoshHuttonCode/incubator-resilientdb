@@ -76,7 +76,7 @@ class LeaderElectionManagerTest : public ::testing::Test {
     mock_recovery_ = std::make_unique<MockRaftRecovery>(config_);
     mock_raft_ = std::make_unique<MockRaft>(
         1, 1, 3, verifier_.get(), leader_election_manager_.get(),
-        replica_communicator_.get(), mock_recovery_.get());
+        replica_communicator_.get(), mock_recovery_.get(), config_);
   }
 
   void TearDown() override {

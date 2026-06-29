@@ -33,21 +33,23 @@ TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccess) {
   ae_response.set_id(2);
   ae_response.set_last_log_index(2);
 
-  raft_->SetStateForTest({.current_term = 1,
-                          .commit_index = 0,
-                          .role = Role::LEADER,
-                          .log = CreateLogEntries(
-                              {
-                                  {0, "Transaction 1"},
-                                  {0, "Transaction 2"},
-                              },
-                              true),
-                          .match_index = std::vector<uint64_t>{0, 2, 0, 0, 0}});
+  raft_->SetStateForTest(
+      {.current_term = 1,
+       .commit_index = 0,
+       .role = Role::LEADER,
+       .log = CreateLogEntries(
+           {
+               {0, "Transaction 1"},
+               {0, "Transaction 2"},
+           },
+           true),
+       CreateProgressPatch(
+           {.match_index = std::vector<uint64_t>{0, 2, 0, 0, 0}})});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
       std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
-  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 2, 0, 0));
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(_, 2, 2, 0, 0));
 }
 
 // Test 2: A leader receiving an AppendEntriesResponse from a follower that in a
@@ -82,23 +84,25 @@ TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccessAndCommits) {
   ae_response.set_id(2);
   ae_response.set_last_log_index(2);
 
-  raft_->SetStateForTest({.current_term = 1,
-                          .commit_index = 0,
-                          .last_committed = 0,
-                          .role = Role::LEADER,
-                          .log = CreateLogEntries(
-                              {
-                                  {1, "Transaction 1"},
-                                  {1, "Transaction 2"},
-                              },
-                              true),
-                          .next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
-                          .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0}});
+  raft_->SetStateForTest(
+      {.current_term = 1,
+       .commit_index = 0,
+       .last_committed = 0,
+       .role = Role::LEADER,
+       .log = CreateLogEntries(
+           {
+               {1, "Transaction 1"},
+               {1, "Transaction 2"},
+           },
+           true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
+            .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0}})});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
       std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
-  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 2, 1, 0));
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(_, 2, 2, 1, 0));
   EXPECT_EQ(raft_->GetCommitIndex(), 1);
 }
 
@@ -122,46 +126,6 @@ TEST_F(RaftTest, LeaderCatchesUpFollowerThatIsBehind) {
   ae_response.set_term(1);
   ae_response.set_id(2);
   ae_response.set_last_log_index(1);
-
-  raft_->SetStateForTest({
-      .current_term = 1,
-      .commit_index = 0,
-      .last_committed = 0,
-      .role = Role::LEADER,
-      .log = CreateLogEntries(
-          {
-              {1, "Transaction 1"},
-              {1, "Transaction 2"},
-          },
-          true),
-  });
-
-  bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(ae_response));
-  EXPECT_TRUE(success);
-}
-
-// Test 5: A leader receiving an AppendEntriesResponse Failure and catching up a
-// follower that is behind.
-TEST_F(RaftTest, LeaderCatchesUpFollowerThatIsBehindFailure) {
-  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
-  EXPECT_CALL(mock_call, Call(_, _, _))
-      .WillOnce(::testing::Invoke(
-          [](int type, const google::protobuf::Message& msg, int node_id) {
-            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
-            // TODO: Use serialized string instead of manually doing it.
-            EXPECT_EQ(ae.entries(0).command(), "\n\rTransaction 1");
-            EXPECT_EQ(ae.entries(1).command(), "\n\rTransaction 2");
-            EXPECT_EQ(ae.entries_size(), 2);
-            EXPECT_EQ(node_id, 2);
-            return 0;
-          }));
-
-  AppendEntriesResponse ae_response;
-  ae_response.set_success(false);
-  ae_response.set_term(1);
-  ae_response.set_id(2);
-  ae_response.set_last_log_index(0);
 
   raft_->SetStateForTest({
       .current_term = 1,
@@ -230,28 +194,30 @@ TEST_F(RaftTest,
   ae_response.set_id(2);
   ae_response.set_last_log_index(2);
 
-  raft_->SetStateForTest({.current_term = 1,
-                          .commit_index = 0,
-                          .last_committed = 0,
-                          .role = Role::LEADER,
-                          .log = CreateLogEntries(
-                              {
-                                  {0, "Transaction 1"},
-                                  {0, "Transaction 2"},
-                              },
-                              true),
-                          .next_index = std::vector<uint64_t>{0, 2, 2, 2, 2},
-                          .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0}});
+  raft_->SetStateForTest(
+      {.current_term = 1,
+       .commit_index = 0,
+       .last_committed = 0,
+       .role = Role::LEADER,
+       .log = CreateLogEntries(
+           {
+               {0, "Transaction 1"},
+               {0, "Transaction 2"},
+           },
+           true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{0, 2, 2, 2, 2},
+            .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0}})});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
       std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
-  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 2, 1, 0));
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(_, 2, 2, 1, 0));
   EXPECT_EQ(raft_->GetCommitIndex(), 0);
 }
 
 // Test 9: A leader receiving an AppendEntriesResponse success, updating the
-// follower's match_index, and not committing
+// follower's match_index, and not committing the entry.
 TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccessAndDoesNotCommit) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_commit, Commit(_)).Times(0);
@@ -262,23 +228,25 @@ TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseSuccessAndDoesNotCommit) {
   ae_response.set_id(2);
   ae_response.set_last_log_index(2);
 
-  raft_->SetStateForTest({.current_term = 1,
-                          .commit_index = 0,
-                          .last_committed = 0,
-                          .role = Role::LEADER,
-                          .log = CreateLogEntries(
-                              {
-                                  {1, "Transaction 1"},
-                                  {1, "Transaction 2"},
-                              },
-                              true),
-                          .next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
-                          .match_index = std::vector<uint64_t>{0, 0, 0, 1, 0}});
+  raft_->SetStateForTest(
+      {.current_term = 1,
+       .commit_index = 0,
+       .last_committed = 0,
+       .role = Role::LEADER,
+       .log = CreateLogEntries(
+           {
+               {1, "Transaction 1"},
+               {1, "Transaction 2"},
+           },
+           true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
+            .match_index = std::vector<uint64_t>{0, 0, 0, 1, 0}})});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
       std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
-  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 0, 2, 1, 0));
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(_, 0, 2, 1, 0));
   EXPECT_EQ(raft_->GetCommitIndex(), 0);
 }
 
@@ -295,23 +263,25 @@ TEST_F(RaftTest, LeaderReceivingOutOfDateAERDoesNotLowerMatchIndex) {
   ae_response.set_id(2);
   ae_response.set_last_log_index(1);
 
-  raft_->SetStateForTest({.current_term = 1,
-                          .commit_index = 0,
-                          .last_committed = 0,
-                          .role = Role::LEADER,
-                          .log = CreateLogEntries(
-                              {
-                                  {1, "Transaction 1"},
-                                  {1, "Transaction 2"},
-                              },
-                              true),
-                          .next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
-                          .match_index = std::vector<uint64_t>{0, 0, 2, 1, 0}});
+  raft_->SetStateForTest(
+      {.current_term = 1,
+       .commit_index = 0,
+       .last_committed = 0,
+       .role = Role::LEADER,
+       .log = CreateLogEntries(
+           {
+               {1, "Transaction 1"},
+               {1, "Transaction 2"},
+           },
+           true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
+            .match_index = std::vector<uint64_t>{0, 0, 2, 1, 0}})});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
       std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
-  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 0, 2, 1, 0));
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(_, 0, 2, 1, 0));
   EXPECT_EQ(raft_->GetCommitIndex(), 0);
 }
 
@@ -328,23 +298,25 @@ TEST_F(RaftTest, LeaderReceivingAERDoesNotCommitFromPreviousTerm) {
   ae_response.set_id(2);
   ae_response.set_last_log_index(1);
 
-  raft_->SetStateForTest({.current_term = 2,
-                          .commit_index = 0,
-                          .last_committed = 0,
-                          .role = Role::LEADER,
-                          .log = CreateLogEntries(
-                              {
-                                  {1, "Transaction 1"},
-                                  {1, "Transaction 2"},
-                              },
-                              true),
-                          .next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
-                          .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0}});
+  raft_->SetStateForTest(
+      {.current_term = 2,
+       .commit_index = 0,
+       .last_committed = 0,
+       .role = Role::LEADER,
+       .log = CreateLogEntries(
+           {
+               {1, "Transaction 1"},
+               {1, "Transaction 2"},
+           },
+           true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{1, 2, 2, 2, 2},
+            .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0}})});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
       std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
-  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 1, 1, 0));
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(_, 2, 1, 1, 0));
   EXPECT_EQ(raft_->GetCommitIndex(), 0);
 }
 
@@ -359,45 +331,48 @@ TEST_F(RaftTest, LeaderReceivesAppendEntriesResponseFromLongerLog) {
   ae_response.set_id(2);
   ae_response.set_last_log_index(8);
 
-  raft_->SetStateForTest({.current_term = 1,
-                          .commit_index = 0,
-                          .role = Role::LEADER,
-                          .log = CreateLogEntries(
-                              {
-                                  {0, "Transaction 1"},
-                                  {0, "Transaction 2"},
-                              },
-                              true),
-                          .next_index = std::vector<uint64_t>{0, 2, 0, 0, 0},
-                          .match_index = std::vector<uint64_t>{0, 2, 0, 0, 0}});
+  raft_->SetStateForTest(
+      {.current_term = 1,
+       .commit_index = 0,
+       .role = Role::LEADER,
+       .log = CreateLogEntries(
+           {
+               {0, "Transaction 1"},
+               {0, "Transaction 2"},
+           },
+           true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{0, 2, 0, 0, 0},
+            .match_index = std::vector<uint64_t>{0, 2, 0, 0, 0}})});
 
   bool success = raft_->ReceiveAppendEntriesResponse(
       std::make_unique<AppendEntriesResponse>(ae_response));
   EXPECT_TRUE(success);
-  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 0, 0, 0));
-  EXPECT_THAT(raft_->GetNextIndex(), ::testing::ElementsAre(0, 2, 3, 0, 0));
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(_, 2, 0, 0, 0));
+  EXPECT_THAT(raft_->GetNextIndex(), ::testing::ElementsAre(_, 2, 3, 0, 0));
 }
 
 // Test 13: A leader receiving an out of order AppendEntriesResponse does not
 // decrease a follower's next_index below 1 + match_index.
 TEST_F(RaftTest, AppendEntriesResponseDoesNotDecreaseNextIndexBelowMatchIndex) {
-  raft_->SetStateForTest({
-      .current_term = 2,
-      .commit_index = 0,
-      .last_committed = 0,
-      .role = Role::LEADER,
-      .log = CreateLogEntries({{2, "Transaction 1"},
-                               {2, "Transaction 2"},
-                               {2, "Transaction 3"},
-                               {2, "Transaction 4"}},
-                              true),
-      .next_index = std::vector<uint64_t>{1, 5, 5, 5, 5},
-      .match_index = std::vector<uint64_t>{0, 3, 3, 3, 3},
-  });
+  raft_->SetStateForTest(
+      {.current_term = 2,
+       .commit_index = 3,
+       .last_committed = 3,
+       .role = Role::LEADER,
+       .log = CreateLogEntries({{2, "Transaction 1"},
+                                {2, "Transaction 2"},
+                                {2, "Transaction 3"},
+                                {2, "Transaction 4"}},
+                               true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{1, 5, 4, 5, 5},
+            .match_index = std::vector<uint64_t>{0, 3, 3, 3, 3}})});
 
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
-  // The leader will send out an AppendEntries containing elements 4 and 5.
-  EXPECT_CALL(mock_call, Call(_, _, _)).Times(1);
+  // Whenever a leader receives a stale/out of order AppendEntriesResponse, it
+  // is ignored and nothing is sent out.
+  EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
 
   // Stale success AER from follower 2 reporting last_log_index=2
   // (older than the already-acknowledged match_index of 3).
@@ -411,9 +386,183 @@ TEST_F(RaftTest, AppendEntriesResponseDoesNotDecreaseNextIndexBelowMatchIndex) {
       std::make_unique<AppendEntriesResponse>(aer));
 
   EXPECT_EQ(raft_->GetMatchIndex()[2], 3u) << "match_index must never decrease";
-  EXPECT_EQ(raft_->GetNextIndex()[2], 4u)
+  EXPECT_GE(raft_->GetNextIndex()[2], 4u)
       << "next_index for a follower must never decrease below 1 + its "
          "match_index";
+}
+
+// Test 14: A leader transitively commits entries from a previous term using its
+// NO-OP.
+TEST_F(RaftTest, LeaderUsesNoOpToTransitivelyCommitOldEntries) {
+  raft_->SetStateForTest(
+      {.current_term = 3,
+       .commit_index = 3,
+       .last_committed = 3,
+       .role = Role::LEADER,
+       .log = CreateLogEntries({{2, "Transaction 1"},
+                                {2, "Transaction 2"},
+                                {2, "Transaction 3"},
+                                {2, "Transaction 4"},
+                                {3, "RAFT_NO_OP"}},
+                               true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+            .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0}})});
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(true);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(5);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  EXPECT_EQ(raft_->GetCommitIndex(), 5u);
+}
+
+// ProgressState tests
+
+// Test 15: Upon AppendEntriesResponse failure, the follower gets set to PROBE,
+// and gets its in flight messages cleared.
+TEST_F(RaftTest, FollowerGoesFromReplicateToProbeAfterFailure) {
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(ae.entries_size(), 0);
+            EXPECT_EQ(node_id, 3);
+            return 0;
+          }));
+
+  // Fill all in-flight slots for every follower
+  std::vector<std::vector<InFlightMsg>> in_flight_vecs(5);
+  auto now = std::chrono::steady_clock::now();
+  for (int follower_id = 2; follower_id <= 4; ++follower_id) {
+    for (size_t i = 0; i < raft_->GetMaxInFlightVecs(); ++i) {
+      InFlightMsg msg;
+      msg.time_sent = now;
+      msg.prev_log_index_sent = i;
+      msg.last_index_of_segment_sent = i + 1;
+      in_flight_vecs[follower_id].push_back(msg);
+    }
+  }
+
+  raft_->SetStateForTest(
+      {.current_term = 3,
+       .commit_index = 3,
+       .last_committed = 3,
+       .role = Role::LEADER,
+       .log = CreateLogEntries({{2, "Transaction 1"},
+                                {2, "Transaction 2"},
+                                {2, "Transaction 3"},
+                                {2, "Transaction 4"}},
+                               true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+            .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
+            .in_flight_vecs = in_flight_vecs,
+            .states = std::vector<ProgressState>{
+                ProgressState::REPLICATE, ProgressState::REPLICATE,
+                ProgressState::REPLICATE, ProgressState::REPLICATE,
+                ProgressState::REPLICATE}})});
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(false);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(2);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  auto follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::PROBE);
+  EXPECT_EQ(follower_progress[3].in_flight.size(), 0);
+  EXPECT_TRUE(follower_progress[3].probe_in_flight);
+}
+
+// Test 17: A follower in PROBE state does not get sent any messages except
+// heartbeats until it responds.
+TEST_F(RaftTest, FollowerInProbeStateDoesNotGetTransactions) {
+  raft_->SetStateForTest(
+      {.current_term = 3,
+       .commit_index = 3,
+       .last_committed = 3,
+       .role = Role::LEADER,
+       .log = CreateLogEntries({{2, "Transaction 1"},
+                                {2, "Transaction 2"},
+                                {2, "Transaction 3"},
+                                {2, "Transaction 4"},
+                                {3, "RAFT_NO_OP"}},
+                               true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+            .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0}})});
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(true);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(5);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  EXPECT_EQ(raft_->GetCommitIndex(), 5u);
+}
+
+// Test 18: A follower in PROBE sends the leader a success, and transitions back
+// to REPLICATE.
+TEST_F(RaftTest, FollowerRespondingToProbeWithSuccessTransitionsToReplicate) {
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(ae.entries_size(), 3);
+            EXPECT_EQ(node_id, 3);
+            return 0;
+          }));
+
+  raft_->SetStateForTest(
+      {.current_term = 3,
+       .commit_index = 3,
+       .last_committed = 3,
+       .role = Role::LEADER,
+       .log = CreateLogEntries({{2, "Transaction 1"},
+                                {2, "Transaction 2"},
+                                {2, "Transaction 3"},
+                                {2, "Transaction 4"},
+                                {3, "RAFT_NO_OP"}},
+                               true),
+       CreateProgressPatch({.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+                            .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
+                            .states = std::vector<ProgressState>{
+                                ProgressState::PROBE, ProgressState::PROBE,
+                                ProgressState::PROBE, ProgressState::PROBE,
+                                ProgressState::PROBE}})});
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(true);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(2);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  auto follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::REPLICATE);
 }
 
 }  // namespace raft

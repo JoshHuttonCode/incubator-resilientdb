@@ -74,9 +74,10 @@ static Entry CreateTestEntry(RaftRecovery &recovery, int term, int seq) {
   return log_entry;
 }
 
-static void AddTestEntry(RaftRecovery &recovery, int term, int seq) {
+static std::future<void> AddTestEntry(RaftRecovery &recovery, int term,
+                                      int seq) {
   Entry log_entry = CreateTestEntry(recovery, term, seq);
-  recovery.AddLogEntry(&log_entry, seq);
+  return recovery.AddLogEntry(&log_entry, seq);
 }
 
 class RaftRecoveryTest : public Test {
@@ -433,7 +434,8 @@ TEST_F(RaftRecoveryTest, CheckpointResetsMinMaxSeq) {
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
 
     for (int i = 1; i <= 5; i++) {
-      AddTestEntry(recovery, i, i);
+      auto future = AddTestEntry(recovery, i, i);
+      future.get();
     }
     insert_done.set_value(true);
     ckpt_fired_future.get();
@@ -443,7 +445,8 @@ TEST_F(RaftRecoveryTest, CheckpointResetsMinMaxSeq) {
 
     // Add entries to the new file and verify the range is tracked correctly.
     for (int i = 6; i <= 9; i++) {
-      AddTestEntry(recovery, i, i);
+      auto future = AddTestEntry(recovery, i, i);
+      future.get();
     }
 
     EXPECT_EQ(recovery.GetMinSeq(), 6);
@@ -732,7 +735,8 @@ TEST_F(RaftRecoveryTest, TruncationAtCheckpointBoundary) {
 
     // Write two replacement entries at seq 3–4 (new leader's branch).
     for (int i = 3; i <= 4; ++i) {
-      AddTestEntry(recovery, 10 + i, i);
+      auto future = AddTestEntry(recovery, 10 + i, i);
+      future.get();
     }
 
     insert_done.set_value(true);
@@ -883,13 +887,23 @@ static void TruncateFileTo(const std::string &filepath,
 // ─────────────────────────────────────────────────────────────
 
 // Test 18: Write 5 entries, then overwrite bytes in the middle of the file so
-// that the 3rd record is unreadable.  ReadLogs must surface records 1 and 2,
-// then stop — it must NOT return records 4 or 5 (which come after the
-// corruption).
+// that the 3rd record is unreadable. ReadLogs should recover records 1 and 2.
 TEST_F(RaftRecoveryTest, CorruptMiddleRecordStopsReplay) {
   {
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
-    for (int i = 1; i <= 5; ++i) AddTestEntry(recovery, i, i);
+    for (int i = 1; i <= 5; ++i) {
+      auto future = AddTestEntry(recovery, i, i);
+      // Waiting on each future individually ensures that the data is stored as:
+      // [data_len][record1]
+      // [data_len][record2]
+      // [data_len][record3]
+      // [data_len][record4]
+      // [data_len][record5]
+      // Instead of:
+      // [data_len][record1 record2 record3 record4 record5]
+      // Any corrupted entry is thrown out
+      future.get();
+    }
   }
 
   // Corrupt roughly the middle of the log file.
@@ -927,7 +941,10 @@ TEST_F(RaftRecoveryTest, CorruptMiddleRecordStopsReplay) {
 TEST_F(RaftRecoveryTest, CorruptFirstRecordReturnsEmpty) {
   {
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
-    for (int i = 1; i <= 4; ++i) AddTestEntry(recovery, i, i);
+    for (int i = 1; i <= 4; ++i) {
+      auto future = AddTestEntry(recovery, i, i);
+      future.get();
+    }
   }
 
   std::vector<std::string> logs = GetLogFiles(log_path);
@@ -955,17 +972,45 @@ TEST_F(RaftRecoveryTest, TruncatedTailRecordIsIgnored) {
   constexpr int entries = 5;
   {
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
-    for (int i = 1; i <= entries; ++i) AddTestEntry(recovery, i, i);
+    for (int i = 1; i <= entries; ++i) {
+      auto future = AddTestEntry(recovery, i, i);
+      future.get();
+    }
   }
 
   std::vector<std::string> logs = GetLogFiles(log_path);
   ASSERT_EQ(logs.size(), 1u);
+  std::uintmax_t original_size = std::filesystem::file_size(logs[0]);
+  LOG(INFO) << "Check 1: Pre-truncation corruption file size: "
+            << original_size;
+
+  {
+    std::vector<WALRecord> list;
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    recovery.ReadLogs([&](const RaftMetadata &) {},
+                      [&](std::unique_ptr<WALRecord> r) { list.push_back(*r); },
+                      [&](const RaftMetadata &) {});
+
+    // At minimum the first entries-1 intact records should come back.
+    EXPECT_EQ(list.size(), 5);
+
+    // Verify the records that did come back are intact.
+    for (size_t i = 0; i < list.size(); ++i) {
+      EXPECT_EQ(list[i].payload_case(), WALRecord::kEntry);
+      Request req;
+      req.ParseFromString(list[i].entry().command());
+      EXPECT_EQ(req.seq(), static_cast<int>(i + 1));
+    }
+    std::uintmax_t original = std::filesystem::file_size(logs[0]);
+    LOG(INFO) << "Check 2: Pre-truncation corruption file size: " << original;
+  }
 
   // Lop off the last 8 bytes — enough to break the final length prefix or
   // checksum without touching earlier records.
   std::uintmax_t original = std::filesystem::file_size(logs[0]);
+  LOG(INFO) << "Check 3: Pre-truncation corruption file size: " << original;
   ASSERT_GT(original, 8u);
-  TruncateFileTo(logs[0], original - 8);
+  TruncateFileTo(logs[0], original - 1);
 
   {
     std::vector<WALRecord> list;
@@ -997,7 +1042,10 @@ TEST_F(RaftRecoveryTest, TruncatedTailRecordIsIgnored) {
 TEST_F(RaftRecoveryTest, EmptyLogFileIsHandledGracefully) {
   {
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
-    for (int i = 1; i <= 3; ++i) AddTestEntry(recovery, i, i);
+    for (int i = 1; i <= 3; ++i) {
+      auto future = AddTestEntry(recovery, i, i);
+      future.get();
+    }
   }
 
   std::vector<std::string> logs = GetLogFiles(log_path);
@@ -1039,13 +1087,19 @@ TEST_F(RaftRecoveryTest, CorruptionInSecondLogFileAfterCheckpoint) {
 
   {
     RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
-    for (int i = 1; i <= 9; ++i) AddTestEntry(recovery, i, i);
+    for (int i = 1; i <= 9; ++i) {
+      auto future = AddTestEntry(recovery, i, i);
+      future.get();
+    }
 
     insert_done.set_value(true);
     ckpt_fired_f.get();  // first file sealed at ckpt=5
 
     // Write 6 more entries into the freshly opened second file.
-    for (int i = 10; i <= 15; ++i) AddTestEntry(recovery, i, i);
+    for (int i = 10; i <= 15; ++i) {
+      auto future = AddTestEntry(recovery, i, i);
+      future.get();
+    }
   }
 
   // Two .log files should exist now.

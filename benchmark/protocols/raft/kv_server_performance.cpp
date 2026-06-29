@@ -47,8 +47,10 @@ int main(int argc, char** argv) {
     exit(0);
   }
 
-  // google::InitGoogleLogging(argv[0]);
-  // FLAGS_minloglevel = google::GLOG_WARNING;
+  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::InitGoogleLogging(argv[0]);
+  FLAGS_logtostderr = 1;
+  FLAGS_minloglevel = google::GLOG_INFO;
 
   char* config_file = argv[1];
   char* private_key_file = argv[2];

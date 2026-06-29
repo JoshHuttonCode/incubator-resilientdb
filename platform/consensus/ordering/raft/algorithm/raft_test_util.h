@@ -132,6 +132,56 @@ inline AppendEntries CreateAeMessage(const AeFields& fields) {
   return ae;
 }
 
+struct ProgressVectorsPatch {
+  std::optional<std::vector<uint64_t>> next_index;
+  std::optional<std::vector<uint64_t>> match_index;
+  std::optional<std::vector<std::vector<InFlightMsg>>> in_flight_vecs;
+  std::optional<std::vector<ProgressState>> states;
+};
+
+inline std::vector<FollowerProgressPatch> CreateProgressPatch(
+    ProgressVectorsPatch patch) {
+  size_t size = 0;
+
+  auto UpdateAndCheckSize = [&](size_t new_size) {
+    if (size == 0) {
+      size = new_size;
+    } else {
+      CHECK_EQ(size, new_size);
+    }
+  };
+
+  if (patch.next_index) UpdateAndCheckSize(patch.next_index->size());
+
+  if (patch.match_index) UpdateAndCheckSize(patch.match_index->size());
+
+  if (patch.in_flight_vecs) UpdateAndCheckSize(patch.in_flight_vecs->size());
+
+  if (patch.states) UpdateAndCheckSize(patch.states->size());
+
+  std::vector<FollowerProgressPatch> progress(size);
+
+  for (size_t i = 0; i < size; ++i) {
+    if (patch.next_index) {
+      progress[i].next_index = (*patch.next_index)[i];
+    }
+
+    if (patch.match_index) {
+      progress[i].match_index = (*patch.match_index)[i];
+    }
+
+    if (patch.in_flight_vecs) {
+      progress[i].in_flight = (*patch.in_flight_vecs)[i];
+    }
+
+    if (patch.states) {
+      progress[i].state = (*patch.states)[i];
+    }
+  }
+
+  return progress;
+}
+
 }  // namespace test_utils
 }  // namespace raft
 }  // namespace resdb

@@ -30,9 +30,10 @@ class MockRaft : public Raft {
  public:
   MockRaft(int id, int f, int total_num, SignatureVerifier* verifier,
            LeaderElectionManager* leader_election_manager,
-           ReplicaCommunicator* replica_communicator, RaftRecovery* recovery)
+           ReplicaCommunicator* replica_communicator, RaftRecovery* recovery,
+           const ResDBConfig& config)
       : Raft(id, f, total_num, verifier, leader_election_manager,
-             replica_communicator, recovery) {}
+             replica_communicator, recovery, config) {}
 
   MOCK_METHOD(void, SendHeartBeat, (), ());
   MOCK_METHOD(void, StartElection, (), ());
