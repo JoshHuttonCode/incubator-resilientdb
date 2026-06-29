@@ -22,7 +22,8 @@
 namespace resdb {
 namespace raft {
 
-// Test 1: A candidate gets elected.
+// Test 1: A candidate gets elected, adds a NO-OP entry, and sends a probe to
+// all followers.
 TEST_F(RaftTest, CandidateGetsElected) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -83,9 +84,14 @@ TEST_F(RaftTest, CandidateGetsElected) {
 
   EXPECT_EQ(raft_->GetCurrentTerm(), 2);
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::LEADER);
-  EXPECT_EQ(raft_->GetLastLogIndexFromLog(), 2);
-  EXPECT_THAT(raft_->GetNextIndex(), ::testing::ElementsAre(3, 3, 3, 3, 3));
-  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 0, 0, 0));
+  // NO-OP entry is added.
+  EXPECT_EQ(raft_->GetLastLogIndexFromLog(), 3);
+  EXPECT_THAT(raft_->GetNextIndex(), ::testing::ElementsAre(_, 4, 3, 3, 3));
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(_, 3, 0, 0, 0));
+  const auto& follower_progress = raft_->GetFollowerProgress();
+  for (const auto& follower : follower_progress) {
+    EXPECT_EQ(follower.state, ProgressState::PROBE);
+  }
 }
 
 // Test 2: A candidate receives a RequestVoteResponse from an older term and
@@ -214,9 +220,11 @@ TEST_F(RaftTest, CandidateIgnoresDuplicateVote) {
   rvr.set_term(2);
   rvr.set_voterid(2);
   rvr.set_votegranted(true);
+  const auto& votes = raft_->GetVotes();
   raft_->ReceiveRequestVoteResponse(std::make_unique<RequestVoteResponse>(rvr));
 
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::CANDIDATE);
+  EXPECT_EQ(raft_->GetVotes(), votes);
 }
 
 }  // namespace raft

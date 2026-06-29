@@ -52,7 +52,8 @@ Consensus::Consensus(const ResDBConfig& config,
           .type() != CertificateKeyInfo::CLIENT) {
     raft_ = std::make_unique<Raft>(
         config_.GetSelfInfo().id(), f, total_replicas, GetSignatureVerifier(),
-        leader_election_manager_.get(), replica_communicator_, recovery_.get());
+        leader_election_manager_.get(), replica_communicator_, recovery_.get(),
+        config_);
 
     leader_election_manager_->SetRaft(raft_.get());
     leader_election_manager_->MayStart();

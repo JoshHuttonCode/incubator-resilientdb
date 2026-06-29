@@ -133,14 +133,14 @@ TEST_F(RaftRecoveryIntegrationTest, RaftStateRestoredAfterRecovery) {
   }
 
   MockSignatureVerifier verifier;
-  ResDBConfig config = MakeConfig();
-  MockLeaderElectionManager lem(config);
+  MockLeaderElectionManager lem(config_);
   MockReplicaCommunicator comm;
   MockCheckPoint ckpt;
 
   RaftRecovery recovery(config_, nullptr, nullptr, nullptr);
 
-  Raft raft(/*id=*/1, /*f=*/1, /*total=*/4, &verifier, &lem, &comm, &recovery);
+  Raft raft(/*id=*/1, /*f=*/1, /*total=*/4, &verifier, &lem, &comm, &recovery,
+            config_);
 
   RecoverFromLogs(recovery, raft);
 
@@ -218,14 +218,14 @@ TEST_F(RaftRecoveryIntegrationTest,
   }
 
   MockSignatureVerifier verifier;
-  ResDBConfig config = MakeConfig();
-  MockLeaderElectionManager lem(config);
+  MockLeaderElectionManager lem(config_);
   MockReplicaCommunicator comm;
   MockCheckPoint ckpt;
 
   RaftRecovery recovery(config_, nullptr, nullptr, nullptr);
 
-  Raft raft(/*id=*/1, /*f=*/1, /*total=*/4, &verifier, &lem, &comm, &recovery);
+  Raft raft(/*id=*/1, /*f=*/1, /*total=*/4, &verifier, &lem, &comm, &recovery,
+            config_);
 
   raft.SetCommitFunc([&](const google::protobuf::Message& msg) {
     return mock_commit.Commit(msg);
@@ -297,14 +297,13 @@ TEST_F(RaftRecoveryIntegrationTest,
 TEST_F(RaftRecoveryIntegrationTest, DemotionTriggersWriteMetadata) {
   {
     MockSignatureVerifier verifier;
-    ResDBConfig config = MakeConfig();
-    MockLeaderElectionManager lem(config);
+    MockLeaderElectionManager lem(config_);
     MockReplicaCommunicator comm;
 
     RaftRecovery recovery(config_, nullptr, nullptr, nullptr);
 
-    Raft raft(/*id=*/1, /*f=*/1, /*total=*/4, &verifier, &lem, &comm,
-              &recovery);
+    Raft raft(/*id=*/1, /*f=*/1, /*total=*/4, &verifier, &lem, &comm, &recovery,
+              config_);
 
     recovery.WriteMetadata(/*current_term=*/3, /*voted_for=*/1,
                            /*snapshot_last_index=*/0,
@@ -352,14 +351,13 @@ TEST_F(RaftRecoveryIntegrationTest, DemotionTriggersWriteMetadata) {
 
   {
     MockSignatureVerifier verifier;
-    ResDBConfig config = MakeConfig();
-    MockLeaderElectionManager lem(config);
+    MockLeaderElectionManager lem(config_);
     MockReplicaCommunicator comm;
 
     RaftRecovery recovery(config_, nullptr, nullptr, nullptr);
 
-    Raft raft(/*id=*/1, /*f=*/1, /*total=*/4, &verifier, &lem, &comm,
-              &recovery);
+    Raft raft(/*id=*/1, /*f=*/1, /*total=*/4, &verifier, &lem, &comm, &recovery,
+              config_);
 
     RecoverFromLogs(recovery, raft);
 
@@ -445,14 +443,13 @@ TEST_F(RaftRecoveryIntegrationTest, TruncationPersistsAfterCheckpoint) {
 
   {
     MockSignatureVerifier verifier;
-    ResDBConfig config = MakeConfig();
-    MockLeaderElectionManager lem(config);
+    MockLeaderElectionManager lem(config_);
     MockReplicaCommunicator comm;
 
     RaftRecovery recovery(config_, nullptr, nullptr, nullptr);
 
-    Raft raft(/*id=*/1, /*f=*/1, /*total=*/4, &verifier, &lem, &comm,
-              &recovery);
+    Raft raft(/*id=*/1, /*f=*/1, /*total=*/4, &verifier, &lem, &comm, &recovery,
+              config_);
 
     // Recover and verify: indices 1–3 are untouched, 4–5 carry the new data.
     RecoverFromLogs(recovery, raft);
@@ -502,7 +499,7 @@ TEST_F(RaftRecoveryIntegrationTest, RecoveryEmptyWALWithNonEmptyMetadata) {
   MockReplicaCommunicator comm;
 
   RaftRecovery recovery2(config_, nullptr, nullptr, nullptr);
-  Raft raft(1, 1, 4, &verifier, &lem, &comm, &recovery2);
+  Raft raft(1, 1, 4, &verifier, &lem, &comm, &recovery2, config_);
   RecoverFromLogs(recovery2, raft);
 
   EXPECT_EQ(raft.GetCurrentTerm(), 7u);

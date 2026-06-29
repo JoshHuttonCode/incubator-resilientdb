@@ -54,6 +54,8 @@ message AppendEntriesResponse {
   bool success = 2;
   int32 id = 3;
   uint64 last_log_index = 4;
+  uint64 conflicting_index = 5;
+  uint64 conflicting_term = 6;
 }
 
 message RequestVote {
@@ -70,7 +72,6 @@ message RequestVoteResponse {
 }
 
 message DirectToLeader {
-  uint64 term = 1;
   int32 leader_id = 2;
 }
 

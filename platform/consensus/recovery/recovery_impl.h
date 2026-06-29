@@ -178,14 +178,17 @@ template <typename TDerived, typename TSystemInfoData, typename TCallback,
           typename TStartPoint>
 void RecoveryBase<TDerived, TSystemInfoData, TCallback,
                   TStartPoint>::FinishFile(int64_t seq) {
+  // Flushing storage is expensive, do it outside of the lock.
+  // Storage does not depend on any state variables protected by the lock.
+  if (storage_) {
+    if (!storage_->Flush(true)) {
+      return;
+    }
+  }
+
   {
     std::unique_lock<std::mutex> lk(mutex_);
     Flush();
-    if (storage_) {
-      if (!storage_->Flush(true)) {
-        return;
-      }
-    }
     std::string new_file_path = GenerateFile(seq, min_seq_, max_seq_);
     close(fd_);
 
@@ -226,7 +229,7 @@ template <typename TDerived, typename TSystemInfoData, typename TCallback,
 auto RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::ParseData(
     const std::string& data) {
   std::vector<std::string> data_list;
-  int pos = 0;
+  size_t pos = 0;
   while (pos < data.size()) {
     size_t len;
     memcpy(&len, data.c_str() + pos, sizeof(len));
@@ -246,7 +249,7 @@ std::vector<std::string>
 RecoveryBase<TDerived, TSystemInfoData, TCallback, TStartPoint>::ParseRawData(
     const std::string& data) {
   std::vector<std::string> data_list;
-  int pos = 0;
+  size_t pos = 0;
   while (pos < data.size()) {
     size_t len;
     memcpy(&len, data.c_str() + pos, sizeof(len));

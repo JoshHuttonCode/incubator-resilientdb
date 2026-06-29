@@ -203,8 +203,8 @@ int PerformanceManager::BatchProposeMsg() {
   eval_ready_future_.get();
   bool start = false;
   while (!stop_) {
-    if (send_num_ > config_.GetMaxProcessTxn()) {
-      usleep(100000);
+    if (send_num_ >= config_.GetMaxProcessTxn()) {
+      usleep(100);
       continue;
     }
     if (batch_req.size() < config_.ClientBatchNum()) {

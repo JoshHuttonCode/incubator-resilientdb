@@ -98,7 +98,7 @@ class DuckDB : public Storage {
     return {};
   }
 
-  bool Flush() override { return true; }
+  bool Flush(bool should_sync = false) override { return true; }
   void Clear() override;
 
  private:

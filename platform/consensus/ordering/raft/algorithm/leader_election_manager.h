@@ -71,6 +71,7 @@ class LeaderElectionManager {
   uint64_t known_role_epoch_;  // Protected by cv_mutex_
   std::mutex cv_mutex_;
   std::condition_variable cv_;
+  bool enable_viewchange_;
 };
 
 }  // namespace raft

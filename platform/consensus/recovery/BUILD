@@ -69,7 +69,6 @@ cc_library(
     name = "raft_recovery",
     srcs = ["raft_recovery.cpp"],
     hdrs = ["raft_recovery.h"],
-    copts = ["-DRAFT_TEST_MODE"],
     deps = [
         "//chain/storage",
         "//common/utils",
@@ -96,7 +95,7 @@ cc_test(
         "//platform/consensus/ordering/common:transaction_utils",
         "//common/test:test_main",
         "//platform/proto:client_test_cc_proto",
-        "//platform/consensus/ordering/raft/algorithm:raft"
+        "//platform/consensus/ordering/raft/algorithm:test_raft"
     ],
     size="small"
 )

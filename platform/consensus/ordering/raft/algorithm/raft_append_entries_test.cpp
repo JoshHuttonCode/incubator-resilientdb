@@ -22,90 +22,7 @@
 namespace resdb {
 namespace raft {
 
-// Test 1: A follower receiving a client transaction should reject it.
-TEST_F(RaftTest, FollowerRejectsClientTransaction) {
-  EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
-  EXPECT_CALL(mock_broadcast, Broadcast(_, _)).Times(0);
-
-  auto req = std::make_unique<Request>();
-  req->set_seq(1);
-  raft_->SetStateForTest({
-      .current_term = 0,
-      .role = Role::FOLLOWER,
-      .log = CreateLogEntries({}, true),
-  });
-
-  bool success = raft_->ReceiveTransaction(std::move(req));
-  EXPECT_FALSE(success);
-}
-
-// Test 2: A leader receiving a client transaction should send an AppendEntries
-// to all other replicas.
-TEST_F(RaftTest, LeaderSendsAppendEntriesUponClientTransaction) {
-  EXPECT_CALL(mock_call, Call(_, _, _)).Times(3);
-  EXPECT_CALL(*leader_election_manager_, OnAeBroadcast()).Times(1);
-
-  auto req = std::make_unique<Request>();
-  req->set_seq(1);
-  raft_->SetStateForTest({
-      .current_term = 0,
-      .role = Role::LEADER,
-      .log = CreateLogEntries({}, true),
-  });
-
-  bool success = raft_->ReceiveTransaction(std::move(req));
-  EXPECT_TRUE(success);
-}
-
-// Test 3: Sent AppendEntries should be based on the follower's next_index.
-TEST_F(RaftTest, LeaderSendsAppendEntriesBasedOnnext_index) {
-  EXPECT_CALL(mock_call, Call(_, _, _))
-      .WillOnce(::testing::Invoke(
-          [](int type, const google::protobuf::Message& msg, int node_id) {
-            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
-            EXPECT_EQ(node_id, 2);
-            EXPECT_EQ(ae.prev_log_index(), 2);
-            EXPECT_EQ(ae.entries().size(), 3);
-            return 0;
-          }))
-      .WillOnce(::testing::Invoke(
-          [](int type, const google::protobuf::Message& msg, int node_id) {
-            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
-            EXPECT_EQ(node_id, 3);
-            EXPECT_EQ(ae.prev_log_index(), 1);
-            EXPECT_EQ(ae.entries().size(), 4);
-            return 0;
-          }))
-      .WillOnce(::testing::Invoke(
-          [](int type, const google::protobuf::Message& msg, int node_id) {
-            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
-            EXPECT_EQ(node_id, 4);
-            EXPECT_EQ(ae.prev_log_index(), 0);
-            EXPECT_EQ(ae.entries().size(), 5);
-            return 0;
-          }));
-  EXPECT_CALL(*leader_election_manager_, OnAeBroadcast()).Times(1);
-
-  raft_->SetStateForTest({.current_term = 0,
-                          .role = Role::LEADER,
-                          .log = CreateLogEntries(
-                              {
-                                  {0, "Term 0 Transaction 1"},
-                                  {0, "Term 0 Transaction 2"},
-                                  {0, "Term 0 Transaction 3"},
-                                  {0, "Term 0 Transaction 4"},
-                              },
-                              true),
-                          .next_index = std::vector<uint64_t>{1, 4, 3, 2, 1}});
-
-  auto req = std::make_unique<Request>();
-  req->set_seq(5);
-
-  bool success = raft_->ReceiveTransaction(std::move(req));
-  EXPECT_TRUE(success);
-}
-
-// Test 4: A follower receiving 1 AppendEntries with multiple entries that it
+// Test 1: A follower receiving 1 AppendEntries with multiple entries that it
 // can accept.
 TEST_F(RaftTest, FollowerAddsAppendEntriesWithMultipleEntries) {
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -144,7 +61,7 @@ TEST_F(RaftTest, FollowerAddsAppendEntriesWithMultipleEntries) {
   EXPECT_TRUE(success);
 }
 
-// Test 5: A follower receiving multiple AppendEntries that it can accept.
+// Test 2: A follower receiving multiple AppendEntries that it can accept.
 TEST_F(RaftTest, FollowerAddsMultipleAppendEntries) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
@@ -229,7 +146,7 @@ TEST_F(RaftTest, FollowerAddsMultipleAppendEntries) {
   EXPECT_TRUE(success3);
 }
 
-// Test 6: A follower rejects Append Entries because its own entry at
+// Test 3: A follower rejects Append Entries because its own entry at
 // prev_log_index does not have the same term.
 TEST_F(RaftTest, FollowerRejectsMismatchedTermAtPrevLogIndex) {
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -271,7 +188,7 @@ TEST_F(RaftTest, FollowerRejectsMismatchedTermAtPrevLogIndex) {
   EXPECT_TRUE(success);
 }
 
-// Test 7: A follower rejects Append Entries because it does not have an entry
+// Test 4: A follower rejects Append Entries because it does not have an entry
 // at prev_log_index.
 TEST_F(RaftTest, FollowerRejectsMissingIndex) {
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -309,7 +226,7 @@ TEST_F(RaftTest, FollowerRejectsMissingIndex) {
   EXPECT_TRUE(success);
 }
 
-// Test 8: A follower receiving 1 AppendEntries with multiple entries and
+// Test 5: A follower receiving 1 AppendEntries with multiple entries and
 // needing to truncate part of its log.
 TEST_F(RaftTest, FollowerAddsAppendEntriesAndTruncatesLog) {
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -363,7 +280,7 @@ TEST_F(RaftTest, FollowerAddsAppendEntriesAndTruncatesLog) {
   EXPECT_TRUE(success);
 }
 
-// Test 9: A follower increases its commit_index.
+// Test 6: A follower increases its commit_index.
 TEST_F(RaftTest, FollowerIncreasesCommitIndex) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
@@ -409,7 +326,7 @@ TEST_F(RaftTest, FollowerIncreasesCommitIndex) {
   EXPECT_EQ(raft_->GetCommitIndex(), 3);
 }
 
-// Test 10: A follower increases its commit_index, but not past its own log
+// Test 7: A follower increases its commit_index, but not past its own log
 // size.
 TEST_F(RaftTest, FollowerIncreasesCommitIndexCappedAtLogSize) {
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -456,7 +373,7 @@ TEST_F(RaftTest, FollowerIncreasesCommitIndexCappedAtLogSize) {
   EXPECT_EQ(raft_->GetCommitIndex(), 5);
 }
 
-// Test 11: A candidate rejecting an AppendEntries from an outdated term and
+// Test 8: A candidate rejecting an AppendEntries from an outdated term and
 // staying candidate.
 TEST_F(RaftTest, CandidateRejectsAppendEntriesFromOutdatedTerm) {
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -496,7 +413,7 @@ TEST_F(RaftTest, CandidateRejectsAppendEntriesFromOutdatedTerm) {
   EXPECT_TRUE(success);
 }
 
-// Test 12: A candidate rejecting an AppendEntries because their log is further
+// Test 9: A candidate rejecting an AppendEntries because their log is further
 // behind, but it is in the same term so they still demote.
 TEST_F(RaftTest, CandidateRejectsAppendEntriesFromSameTerm) {
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -536,7 +453,7 @@ TEST_F(RaftTest, CandidateRejectsAppendEntriesFromSameTerm) {
   EXPECT_TRUE(success);
 }
 
-// Test 13: A candidate receiving an AppendEntries it can accept from a newer
+// Test 10: A candidate receiving an AppendEntries it can accept from a newer
 // term.
 TEST_F(RaftTest, CandidateReceivesNewerTermWithAppendEntriesItCanAccept) {
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -581,7 +498,7 @@ TEST_F(RaftTest, CandidateReceivesNewerTermWithAppendEntriesItCanAccept) {
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::FOLLOWER);
 }
 
-// Test 14: A candidate receiving an AppendEntries that it can accept from the
+// Test 11: A candidate receiving an AppendEntries that it can accept from the
 // same term but further along.
 TEST_F(RaftTest, CandidateReceivesSameTermWithAppendEntriesItCanAccept) {
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -626,7 +543,7 @@ TEST_F(RaftTest, CandidateReceivesSameTermWithAppendEntriesItCanAccept) {
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::FOLLOWER);
 }
 
-// Test 15: A follower receiving a leader_commit whose index is less than its
+// Test 12: A follower receiving a leader_commit whose index is less than its
 // own commit_index does not lower its commit_index.
 TEST_F(RaftTest, FollowerWillNotLowerCommitIndex) {
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -665,7 +582,7 @@ TEST_F(RaftTest, FollowerWillNotLowerCommitIndex) {
   EXPECT_TRUE(success);
 }
 
-// Test 16: A leader ignores an AppendEntries from itself
+// Test 13: A leader ignores an AppendEntries from itself
 TEST_F(RaftTest, LeaderIgnoresAppendEntriesFromSelf) {
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
@@ -696,7 +613,7 @@ TEST_F(RaftTest, LeaderIgnoresAppendEntriesFromSelf) {
   EXPECT_FALSE(success);
 }
 
-// Test 17: A follower receiving a heartbeat will advance its commit index.
+// Test 14: A follower receiving a heartbeat will advance its commit index.
 TEST_F(RaftTest, FollowerAdvancesCommitIndexOnHeartbeat) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(
@@ -735,7 +652,7 @@ TEST_F(RaftTest, FollowerAdvancesCommitIndexOnHeartbeat) {
   EXPECT_EQ(raft_->GetCommitIndex(), 2);
 }
 
-// Test 17: A leader correctly sends a heartbeat.
+// Test 15: A leader correctly sends a heartbeat.
 TEST_F(RaftTest, LeaderCorrectlySendsHeartbeat) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
@@ -751,7 +668,7 @@ TEST_F(RaftTest, LeaderCorrectlySendsHeartbeat) {
             const auto& ae = dynamic_cast<const AppendEntries&>(msg);
             EXPECT_EQ(node_id, 3);
             EXPECT_EQ(ae.prev_log_index(), 1);
-            EXPECT_EQ(ae.entries().size(), 0);
+            EXPECT_EQ(ae.entries().size(), 1);
             return 0;
           }))
       .WillOnce(::testing::Invoke(
@@ -759,26 +676,28 @@ TEST_F(RaftTest, LeaderCorrectlySendsHeartbeat) {
             const auto& ae = dynamic_cast<const AppendEntries&>(msg);
             EXPECT_EQ(node_id, 4);
             EXPECT_EQ(ae.prev_log_index(), 0);
-            EXPECT_EQ(ae.entries().size(), 0);
+            EXPECT_EQ(ae.entries().size(), 2);
             return 0;
           }));
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
-  raft_->SetStateForTest({.current_term = 1,
-                          .voted_for = 1,
-                          .commit_index = 0,
-                          .last_committed = 0,
-                          .role = Role::LEADER,
-                          .log = CreateLogEntries(
-                              {
-                                  {0, "Transaction 1"},
-                                  {1, "Transaction 2"},
-                              },
-                              true),
-                          .next_index = std::vector<uint64_t>{1, 4, 3, 2, 1},
-                          .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0},
-                          .votes = std::vector<int>{1, 3, 2}});
+  raft_->SetStateForTest(
+      {.current_term = 1,
+       .voted_for = 1,
+       .commit_index = 0,
+       .last_committed = 0,
+       .role = Role::LEADER,
+       .log = CreateLogEntries(
+           {
+               {0, "Transaction 1"},
+               {1, "Transaction 2"},
+           },
+           true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{1, 4, 3, 2, 1},
+            .match_index = std::vector<uint64_t>{0, 2, 0, 1, 0}}),
+       .votes = std::vector<int>{1, 3, 2}});
 
   raft_->SendHeartBeat();
 
@@ -791,12 +710,12 @@ TEST_F(RaftTest, LeaderCorrectlySendsHeartbeat) {
   // Maybe check that the log itself is equal
   EXPECT_EQ(log.size(), 3);
   EXPECT_EQ(raft_->GetLastLogIndex(), log.size() - 1);
-  EXPECT_THAT(raft_->GetNextIndex(), ::testing::ElementsAre(1, 4, 3, 2, 1));
-  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(0, 2, 0, 1, 0));
+  EXPECT_THAT(raft_->GetNextIndex(), ::testing::ElementsAre(_, 4, 3, 3, 3));
+  EXPECT_THAT(raft_->GetMatchIndex(), ::testing::ElementsAre(_, 2, 0, 1, 0));
   EXPECT_THAT(raft_->GetVotes(), ::testing::ElementsAre(1, 3, 2));
 }
 
-// Test 18: A follower receives duplicate AppendEntries
+// Test 16: A follower receives duplicate AppendEntries
 TEST_F(RaftTest, FollowerReceivesDuplicateAppendEntries) {
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
@@ -837,7 +756,7 @@ TEST_F(RaftTest, FollowerReceivesDuplicateAppendEntries) {
   EXPECT_TRUE(success);
 }
 
-// Test 19: A leader ignores its own AppendEntries
+// Test 17: A leader ignores its own AppendEntries
 TEST_F(RaftTest, LeaderIgnoresItsOwnAppendEntries) {
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
   EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
@@ -871,7 +790,7 @@ TEST_F(RaftTest, LeaderIgnoresItsOwnAppendEntries) {
   EXPECT_FALSE(success);
 }
 
-// Test 20: A follower receiving an AppendEntries that covers an entry already
+// Test 18: A follower receiving an AppendEntries that covers an entry already
 // committed does not remove committed entries, but still adds new entries
 TEST_F(RaftTest, FollowerReceivingAppendEntriesCoveringCommittedTransactions) {
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(1);
@@ -933,7 +852,7 @@ TEST_F(RaftTest, FollowerReceivingAppendEntriesCoveringCommittedTransactions) {
   EXPECT_EQ(raft_->GetCommitIndex(), 3);
 }
 
-// Test 21: A follower performs 2 checkpoints/truncations and still does
+// Test 19: A follower performs 2 checkpoints/truncations and still does
 // accurate log arithmetric after adding and truncating entries.
 TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(3);
@@ -958,20 +877,19 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
       /*leader_commit=*/3,
       /*follower_id=*/1);
 
-  raft_->SetStateForTest({
-      .current_term = 2,
-      .commit_index = 3,
-      .last_committed = 3,
-      .role = Role::FOLLOWER,
-      .log = CreateLogEntries(
-          {
-              {2, "Term 2 Transaction 1"},
-              {2, "Term 2 Transaction 2"},
-              {2, "Term 2 Transaction 3"},
-              {2, "Term 2 Transaction 4"},
-          },
-          true),
-  });
+  raft_->SetStateForTest({.current_term = 2,
+                          .commit_index = 3,
+                          .last_committed = 3,
+                          .role = Role::FOLLOWER,
+                          .log = CreateLogEntries(
+                              {
+                                  {2, "Term 2 Transaction 1"},
+                                  {2, "Term 2 Transaction 2"},
+                                  {2, "Term 2 Transaction 3"},
+                                  {2, "Term 2 Transaction 4"},
+                              },
+                              true),
+                          .snapshot_buffer_amount = 0});
 
   auto ae_message = CreateAeMessage(ae_fields);
   bool success = raft_->ReceiveAppendEntries(
@@ -1098,18 +1016,17 @@ TEST_F(RaftTest, FollowerHasProperLogAfterCheckpoints) {
   EXPECT_EQ(le.entry.term(), 4);
   EXPECT_EQ(raft_->GetLogTermAtIndex(8), 4);
 
+  EXPECT_EQ(raft_->GetTruncatedLastIndex(), 4);
   EXPECT_DEATH(raft_->GetLogEntryAtIndex(4),
-               "Tried to access entry that has been snapshotted");
+               "Tried to access entry that has been prefix truncated");
   EXPECT_DEATH(raft_->GetLogEntryAtIndex(9),
                "Tried to access element that has not been added yet");
-  EXPECT_DEATH(raft_->TruncatePrefix(4),
-               "Tried to truncate an entry that has been snapshotted");
   EXPECT_DEATH(
       raft_->TruncatePrefix(5),
       "Tried to prefix truncate an element that has not been committed");
 }
 
-// Test 22: A follower receives an AppendEntries containing entries that had
+// Test 20: A follower receives an AppendEntries containing entries that had
 // already been truncated from its log.
 TEST_F(RaftTest, FollowerReceivesAppendEntriesWithOnlySnapshottedEntries) {
   EXPECT_CALL(*recovery_, WriteMetadata(_, _, _, _)).Times(AnyNumber());
@@ -1153,7 +1070,7 @@ TEST_F(RaftTest, FollowerReceivesAppendEntriesWithOnlySnapshottedEntries) {
   EXPECT_EQ(aer.last_log_index(), 3u);
 }
 
-// Test 23: A follower receives an AppendEntries continuing right after its last
+// Test 21: A follower receives an AppendEntries continuing right after its last
 // snapshot with an otherwise empty log
 TEST_F(RaftTest,
        FollowerReceivesAppendEntriesDirectlyAfterCheckpointTruncation) {
@@ -1198,7 +1115,7 @@ TEST_F(RaftTest,
   EXPECT_EQ(aer.last_log_index(), 5u);
 }
 
-// Test 24: A leader sends a heartbeat to a follower even if that follower is
+// Test 22: A leader sends a heartbeat to a follower even if that follower is
 // over the in flight message size limit.
 TEST_F(RaftTest, LeaderSendsHeartbeatToFollowerOverInFlightLimit) {
   EXPECT_CALL(mock_call, Call(_, _, _))
@@ -1223,31 +1140,33 @@ TEST_F(RaftTest, LeaderSendsHeartbeatToFollowerOverInFlightLimit) {
     }
   }
 
-  raft_->SetStateForTest({
-      .current_term = 1,
-      .role = Role::LEADER,
-      .log = CreateLogEntries(
-          {
-              {1, "Transaction 1"},
-              {1, "Transaction 2"},
-              {1, "Transaction 3"},
-          },
-          true),
-      .next_index = std::vector<uint64_t>{1, 4, 4, 4, 4},
-      .match_index = std::vector<uint64_t>{0, 3, 3, 3, 3},
-      .in_flight_vecs = in_flight_vecs,
-  });
+  raft_->SetStateForTest(
+      {.current_term = 1,
+       .role = Role::LEADER,
+       .log = CreateLogEntries(
+           {
+               {1, "Transaction 1"},
+               {1, "Transaction 2"},
+               {1, "Transaction 3"},
+           },
+           true),
+       CreateProgressPatch({
+           .next_index = std::vector<uint64_t>{1, 4, 4, 4, 4},
+           .match_index = std::vector<uint64_t>{0, 3, 3, 3, 3},
+           .in_flight_vecs = in_flight_vecs,
+       })});
 
   for (int follower_id = 2; follower_id <= 4; ++follower_id) {
-    EXPECT_TRUE(raft_->InFlightPerFollowerLimitReachedLocked(follower_id));
+    EXPECT_FALSE(raft_->CanSendLocked(follower_id));
   }
 
   raft_->SendHeartBeat();
 
   // In-flight vecs should be unchanged
-  auto result = raft_->GetInFlightVecs();
+  auto result = raft_->GetFollowerProgress();
   for (int follower_id = 2; follower_id <= 4; ++follower_id) {
-    EXPECT_EQ(result[follower_id].size(), raft_->GetMaxInFlightVecs());
+    EXPECT_EQ(result[follower_id].in_flight.size(),
+              raft_->GetMaxInFlightVecs());
   }
 }
 

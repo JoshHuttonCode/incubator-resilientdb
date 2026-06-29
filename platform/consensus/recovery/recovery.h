@@ -78,7 +78,7 @@ class RecoveryBase {
  protected:
   void GetLastFile();
   void UpdateStableCheckPoint();
-  void Flush();
+  virtual void Flush();
 
   void AppendData(const std::string& data);
   bool Read(int fd, size_t len, char* data);

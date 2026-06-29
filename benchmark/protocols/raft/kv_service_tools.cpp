@@ -18,6 +18,7 @@
  */
 
 #include <fcntl.h>
+#include <glog/logging.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -39,6 +40,11 @@ int main(int argc, char** argv) {
     printf("<config path>\n");
     return 0;
   }
+  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::InitGoogleLogging(argv[0]);
+  FLAGS_logtostderr = 1;
+  FLAGS_minloglevel = google::GLOG_INFO;
+
   std::string client_config_file = argv[1];
   ResDBConfig config = GenerateResDBConfig(client_config_file);
 
