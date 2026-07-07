@@ -25,9 +25,10 @@
 server_name=`echo "$server" | awk -F':' '{print $NF}'`
 server_bin=${server_name}
 
-bazel run //benchmark/protocols/pbft:kv_service_tools -- $PWD/config_out/client.config 
+server_package=`echo "$server" | awk -F':' '{print $1}'`
 
-sleep 60
+bazel run ${server_package}:kv_service_tools -- $PWD/config_out/client.config 
+sleep 120
 
 echo "benchmark done"
 count=1
@@ -39,7 +40,7 @@ do
 done
 
 while [ $count -gt 0 ]; do
-        wait $pids
+        wait
         count=`expr $count - 1`
 done
 
