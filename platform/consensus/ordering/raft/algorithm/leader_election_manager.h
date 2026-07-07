@@ -42,7 +42,7 @@ class LeaderElectionManager {
   void MayStart();
   void SetRaft(raft::Raft*);
   // This function is called upon receiving a heartbeat
-  virtual void OnHeartBeat();
+  virtual void OnHeartbeat();
   virtual void OnRoleChange();
   virtual void OnAeBroadcast();
 

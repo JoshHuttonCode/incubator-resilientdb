@@ -26,6 +26,7 @@ namespace raft {
 // election.
 TEST_F(RaftTest, FollowerTransitionsToCandidateAndStartsElection) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_broadcast, Broadcast(_, _))
       .WillOnce(
           ::testing::Invoke([](int type, const google::protobuf::Message& msg) {
@@ -57,6 +58,7 @@ TEST_F(RaftTest, FollowerTransitionsToCandidateAndStartsElection) {
 // demotes.
 TEST_F(RaftTest, LeaderReceivesRequestVoteFromNewTermAndDemotes) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(1);
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
@@ -68,7 +70,6 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromNewTermAndDemotes) {
             EXPECT_TRUE(request_vote_response.votegranted());
             return 0;
           }));
-  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(1);
 
   RequestVote rv;
   rv.set_term(1);
@@ -97,6 +98,7 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromNewTermAndDemotes) {
 // is fewer and does not vote.
 TEST_F(RaftTest, LeaderReceivesRequestVoteFromOldTerm) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
@@ -108,7 +110,6 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromOldTerm) {
             EXPECT_FALSE(request_vote_response.votegranted());
             return 0;
           }));
-  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   RequestVote rv;
   rv.set_term(1);
@@ -137,6 +138,7 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromOldTerm) {
 // is the same, but whose last_log_index is further behind.
 TEST_F(RaftTest, LeaderReceivesRequestVoteFromFurtherBehindLog) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
@@ -148,7 +150,6 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromFurtherBehindLog) {
             EXPECT_FALSE(request_vote_response.votegranted());
             return 0;
           }));
-  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   RequestVote rv;
   rv.set_term(2);
@@ -177,6 +178,7 @@ TEST_F(RaftTest, LeaderReceivesRequestVoteFromFurtherBehindLog) {
 // for, if it had not already voted for someone else.
 TEST_F(RaftTest, FollowerRejectsRequestVoteBecauseAlreadyVoted) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
@@ -188,7 +190,6 @@ TEST_F(RaftTest, FollowerRejectsRequestVoteBecauseAlreadyVoted) {
             EXPECT_FALSE(request_vote_response.votegranted());
             return 0;
           }));
-  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   RequestVote rv;
   rv.set_term(2);
@@ -218,6 +219,7 @@ TEST_F(RaftTest, FollowerRejectsRequestVoteBecauseAlreadyVoted) {
 // times out and starts another election.
 TEST_F(RaftTest, CandidateTimesOutAndStartsAnotherElection) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_broadcast, Broadcast(_, _))
       .WillOnce(
           ::testing::Invoke([](int type, const google::protobuf::Message& msg) {
@@ -264,6 +266,7 @@ TEST_F(RaftTest, CandidateTimesOutAndStartsAnotherElection) {
 // term and does not demote.
 TEST_F(RaftTest, CandidateReceivesRequestVoteFromSameTermAndDoesNotDemote) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
@@ -275,7 +278,6 @@ TEST_F(RaftTest, CandidateReceivesRequestVoteFromSameTermAndDoesNotDemote) {
             EXPECT_FALSE(request_vote_response.votegranted());
             return 0;
           }));
-  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   RequestVote rv;
   rv.set_term(1);
@@ -301,11 +303,94 @@ TEST_F(RaftTest, CandidateReceivesRequestVoteFromSameTermAndDoesNotDemote) {
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::CANDIDATE);
 }
 
-// Test 8: A candidate ignores a RequestVote from themselves
+// Test 8: A candidate receives a RequestVote from another candidate in the same
+// term, with a further along log and does not demote.
+TEST_F(RaftTest,
+       CandidateReceivesRequestVoteFromSameTermWithLongerLogAndDoesNotDemote) {
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& request_vote_response =
+                dynamic_cast<const RequestVoteResponse&>(msg);
+            EXPECT_EQ(node_id, 2);
+            EXPECT_EQ(request_vote_response.term(), 1);
+            EXPECT_EQ(request_vote_response.voterid(), 1);
+            EXPECT_FALSE(request_vote_response.votegranted());
+            return 0;
+          }));
+
+  RequestVote rv;
+  rv.set_term(1);
+  rv.set_candidateid(2);
+  rv.set_last_log_index(4);
+  rv.set_lastlogterm(0);
+
+  raft_->SetStateForTest({
+      .current_term = 1,
+      .voted_for = 1,
+      .role = Role::CANDIDATE,
+      .log = CreateLogEntries(
+          {
+              {0, "Term 0 Transaction 1"},
+          },
+          true),
+  });
+
+  raft_->ReceiveRequestVote(std::make_unique<RequestVote>(rv));
+
+  EXPECT_EQ(raft_->GetVotedFor(), 1);
+  EXPECT_EQ(raft_->GetCurrentTerm(), 1);
+  EXPECT_EQ(raft_->GetRoleSnapshot(), Role::CANDIDATE);
+}
+
+// Test 9: A follower receives a RequestVote from a candidate in the same
+// term, with a further along log and votes for them.
+TEST_F(RaftTest, FollowerReceivesRequestVoteFromSameTermWithLongerLog) {
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(1);
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& request_vote_response =
+                dynamic_cast<const RequestVoteResponse&>(msg);
+            EXPECT_EQ(node_id, 2);
+            EXPECT_EQ(request_vote_response.term(), 2);
+            EXPECT_EQ(request_vote_response.voterid(), 1);
+            EXPECT_TRUE(request_vote_response.votegranted());
+            return 0;
+          }));
+
+  RequestVote rv;
+  rv.set_term(2);
+  rv.set_candidateid(2);
+  rv.set_last_log_index(4);
+  rv.set_lastlogterm(1);
+
+  raft_->SetStateForTest({
+      .current_term = 2,
+      .voted_for = -1,
+      .role = Role::FOLLOWER,
+      .log = CreateLogEntries(
+          {
+              {0, "Term 0 Transaction 1"},
+          },
+          true),
+  });
+
+  raft_->ReceiveRequestVote(std::make_unique<RequestVote>(rv));
+
+  EXPECT_EQ(raft_->GetVotedFor(), 2);
+  EXPECT_EQ(raft_->GetCurrentTerm(), 2);
+  EXPECT_EQ(raft_->GetRoleSnapshot(), Role::FOLLOWER);
+}
+
+// Test 10: A candidate ignores a RequestVote from themselves
 TEST_F(RaftTest, CandidateIgnoresRequestVoteFromSelf) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
-  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   RequestVote rv;
   rv.set_term(1);
@@ -329,6 +414,48 @@ TEST_F(RaftTest, CandidateIgnoresRequestVoteFromSelf) {
   EXPECT_EQ(raft_->GetVotedFor(), 1);
   EXPECT_EQ(raft_->GetCurrentTerm(), 1);
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::CANDIDATE);
+  EXPECT_EQ(votes, raft_->GetVotes());
+}
+
+// Test 11: A follower that has already voted for a candidate will re-send their
+// vote to them if prompted.
+TEST_F(RaftTest, CandidateResendsVote) {
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(1);
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& request_vote_response =
+                dynamic_cast<const RequestVoteResponse&>(msg);
+            EXPECT_EQ(node_id, 2);
+            EXPECT_EQ(request_vote_response.term(), 1);
+            EXPECT_EQ(request_vote_response.voterid(), 1);
+            EXPECT_TRUE(request_vote_response.votegranted());
+            return 0;
+          }));
+
+  RequestVote rv;
+  rv.set_term(1);
+  rv.set_candidateid(2);
+  rv.set_last_log_index(1);
+  rv.set_lastlogterm(0);
+
+  raft_->SetStateForTest({.current_term = 1,
+                          .voted_for = 2,
+                          .role = Role::FOLLOWER,
+                          .log = CreateLogEntries(
+                              {
+                                  {0, "Term 0 Transaction 1"},
+                              },
+                              true),
+                          .votes = std::vector<int>{1}});
+  const auto& votes = raft_->GetVotes();
+
+  raft_->ReceiveRequestVote(std::make_unique<RequestVote>(rv));
+
+  EXPECT_EQ(raft_->GetVotedFor(), 2);
+  EXPECT_EQ(raft_->GetCurrentTerm(), 1);
+  EXPECT_EQ(raft_->GetRoleSnapshot(), Role::FOLLOWER);
   EXPECT_EQ(votes, raft_->GetVotes());
 }
 

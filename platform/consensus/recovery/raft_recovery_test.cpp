@@ -328,12 +328,14 @@ TEST_F(RaftRecoveryTest, TruncateLog) {
 // Test 8: After a checkpoint fires and the log file is rotated, there should be
 // exactly two .log files on disk: the sealed (checkpointed) file and the new
 // active one.
-TEST_F(RaftRecoveryTest, CheckpointCreatesNewLogFile) {
+TEST_F(RaftRecoveryTest,
+       CheckpointCreatesNewLogFileAndCallsOnCheckpointCallback) {
   std::promise<bool> insert_done, ckpt_fired;
   auto insert_done_future = insert_done.get_future();
   auto ckpt_fired_future = ckpt_fired.get_future();
 
   int call_count = 0;
+  int checkpoint_value = 5;
   EXPECT_CALL(checkpoint_, GetStableCheckpoint())
       .WillRepeatedly(Invoke([&]() -> uint64_t {
         ++call_count;
@@ -341,11 +343,16 @@ TEST_F(RaftRecoveryTest, CheckpointCreatesNewLogFile) {
           insert_done_future.get();
         else if (call_count == 2)
           ckpt_fired.set_value(true);
-        return 5;
+        return checkpoint_value;
       }));
 
+  bool callback_called = false;
+  uint64_t callback_seq = 123456789;
   {
-    RaftRecovery recovery(config_, &checkpoint_, nullptr, nullptr);
+    RaftRecovery recovery(config_, &checkpoint_, nullptr, [&](uint64_t seq) {
+      callback_called = true;
+      callback_seq = seq;
+    });
 
     for (int i = 1; i <= 9; i++) {
       AddTestEntry(recovery, i, i);
@@ -362,6 +369,8 @@ TEST_F(RaftRecoveryTest, CheckpointCreatesNewLogFile) {
   std::vector<std::string> log_list = Listlogs(log_path);
   // 2 log files and one metadata file
   EXPECT_EQ(log_list.size(), 3);
+  EXPECT_TRUE(callback_called);
+  EXPECT_EQ(callback_seq, checkpoint_value);
 }
 
 // Test 9: After a checkpoint at seq=5, ReadLogs should only replay WAL records

@@ -31,7 +31,7 @@ class MockLeaderElectionManager : public LeaderElectionManager {
   MockLeaderElectionManager(const ResDBConfig& config)
       : LeaderElectionManager(config) {}
   MOCK_METHOD(void, OnRoleChange, (), (override));
-  MOCK_METHOD(void, OnHeartBeat, (), (override));
+  MOCK_METHOD(void, OnHeartbeat, (), (override));
   MOCK_METHOD(void, OnAeBroadcast, (), (override));
 };
 

@@ -35,7 +35,7 @@ class MockRaft : public Raft {
       : Raft(id, f, total_num, verifier, leader_election_manager,
              replica_communicator, recovery, config) {}
 
-  MOCK_METHOD(void, SendHeartBeat, (), ());
+  MOCK_METHOD(void, SendHeartbeat, (), ());
   MOCK_METHOD(void, StartElection, (), ());
   MOCK_METHOD(int, Broadcast,
               (int msg_type, const google::protobuf::Message& msg), (override));

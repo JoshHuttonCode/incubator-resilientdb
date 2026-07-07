@@ -82,7 +82,7 @@ void LeaderElectionManager::MayStart() {
 
 void LeaderElectionManager::SetRaft(raft::Raft* raft) { raft_ = raft; }
 
-void LeaderElectionManager::OnHeartBeat() {
+void LeaderElectionManager::OnHeartbeat() {
   if (!enable_viewchange_) {
     return;
   }
@@ -227,7 +227,7 @@ void LeaderElectionManager::MonitoringElectionTimeout() {
     // Only gets here if timeout expired.
     // Leaders send a new heartbeat.
     if (raft_->GetRoleSnapshot() == Role::LEADER) {
-      raft_->SendHeartBeat();
+      raft_->SendHeartbeat();
     }
     // Followers and Candidates start an election.
     else {

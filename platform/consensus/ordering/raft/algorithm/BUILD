@@ -56,6 +56,7 @@ cc_library(
         "leader_election_manager.h",
     ],
     copts = ["-DRAFT_TEST_MODE"],
+    linkopts = ["-ldl"],
     testonly = True,
     deps = [
         "//common:comm",
@@ -77,18 +78,20 @@ cc_library(
 cc_library(
     name = "mock_raft",
     hdrs = ["mock_raft.h"],
+    copts = ["-DRAFT_TEST_MODE"],
     testonly = True,
     deps = [
-        ":raft",
+        ":test_raft",
     ],
 )
 
 cc_library(
     name = "mock_leader_election_manager",
     hdrs = ["mock_leader_election_manager.h"],
+    copts = ["-DRAFT_TEST_MODE"],
     testonly = True,
     deps = [
-        ":raft",
+        ":test_raft",
     ],
 )
 
