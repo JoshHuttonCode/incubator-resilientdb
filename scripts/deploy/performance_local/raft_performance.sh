@@ -19,7 +19,11 @@
 protocol=raft
 export server=//benchmark/protocols/$protocol:kv_server_performance
 export service_tools=//benchmark/protocols/$protocol:kv_service_tools
-export TEMPLATE_PATH=$PWD/config/$protocol.config
+# By default, use raft config. If a second argument is given,
+# use that config file instead. e.g.:
+# ./performance/raft_performance.sh config/kv_performance_server.conf
+# /abs/path/to/max_in_flight_10.config
+export TEMPLATE_PATH=${2:-$PWD/config/raft.config}
 export performance=true
 
 ./performance_local/run_performance.sh $*
