@@ -146,7 +146,7 @@ TEST_F(LeaderElectionManagerTest,
   leader_election_manager_->MayStart();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(45));
-  leader_election_manager_->OnHeartBeat();
+  leader_election_manager_->OnHeartbeat();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(45));
   ASSERT_EQ(leader_election_manager_->GetHeartbeatCount(), 1);
@@ -164,7 +164,7 @@ TEST_F(LeaderElectionManagerTest, LeaderTimeoutSendsHeartbeat) {
   leader_election_manager_->SetRaft(mock_raft_.get());
   leader_election_manager_->MayStart();
 
-  EXPECT_CALL(*mock_raft_, SendHeartBeat).WillOnce(Invoke([&]() {
+  EXPECT_CALL(*mock_raft_, SendHeartbeat).WillOnce(Invoke([&]() {
     heartbeat_sent.set_value(true);
   }));
 
@@ -179,13 +179,13 @@ TEST_F(LeaderElectionManagerTest, LeaderShouldNotSendHeartbeatEarly) {
   std::promise<bool> heartbeat_sent;
   std::future<bool> heartbeat_sent_future = heartbeat_sent.get_future();
 
-  EXPECT_CALL(*mock_raft_, SendHeartBeat()).Times(0);
+  EXPECT_CALL(*mock_raft_, SendHeartbeat()).Times(0);
 
   leader_election_manager_->SetRaft(mock_raft_.get());
   leader_election_manager_->MayStart();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(95));
-  // Since the heartbeat timer is set to 100 ms, SendHeartBeat should never be
+  // Since the heartbeat timer is set to 100 ms, SendHeartbeat should never be
   // called.
 }
 
@@ -196,7 +196,7 @@ TEST_F(LeaderElectionManagerTest, LeaderWithBroadcastDoesNotSendHeartbeat) {
   std::promise<bool> heartbeat_sent;
   std::future<bool> heartbeat_sent_future = heartbeat_sent.get_future();
 
-  EXPECT_CALL(*mock_raft_, SendHeartBeat()).Times(0);
+  EXPECT_CALL(*mock_raft_, SendHeartbeat()).Times(0);
   leader_election_manager_->SetRaft(mock_raft_.get());
   leader_election_manager_->MayStart();
 

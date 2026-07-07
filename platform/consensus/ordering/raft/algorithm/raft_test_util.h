@@ -135,7 +135,7 @@ inline AppendEntries CreateAeMessage(const AeFields& fields) {
 struct ProgressVectorsPatch {
   std::optional<std::vector<uint64_t>> next_index;
   std::optional<std::vector<uint64_t>> match_index;
-  std::optional<std::vector<std::vector<InFlightMsg>>> in_flight_vecs;
+  std::optional<std::vector<std::vector<InFlightMsg>>> in_flight;
   std::optional<std::vector<ProgressState>> states;
 };
 
@@ -155,7 +155,7 @@ inline std::vector<FollowerProgressPatch> CreateProgressPatch(
 
   if (patch.match_index) UpdateAndCheckSize(patch.match_index->size());
 
-  if (patch.in_flight_vecs) UpdateAndCheckSize(patch.in_flight_vecs->size());
+  if (patch.in_flight) UpdateAndCheckSize(patch.in_flight->size());
 
   if (patch.states) UpdateAndCheckSize(patch.states->size());
 
@@ -170,8 +170,8 @@ inline std::vector<FollowerProgressPatch> CreateProgressPatch(
       progress[i].match_index = (*patch.match_index)[i];
     }
 
-    if (patch.in_flight_vecs) {
-      progress[i].in_flight = (*patch.in_flight_vecs)[i];
+    if (patch.in_flight) {
+      progress[i].in_flight = (*patch.in_flight)[i];
     }
 
     if (patch.states) {

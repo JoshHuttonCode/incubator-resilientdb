@@ -26,6 +26,7 @@ namespace raft {
 // all followers.
 TEST_F(RaftTest, CandidateGetsElected) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _))
       .WillOnce(::testing::Invoke(
           [](int type, const google::protobuf::Message& msg, int node_id) {
@@ -98,8 +99,8 @@ TEST_F(RaftTest, CandidateGetsElected) {
 // ignores it.
 TEST_F(RaftTest, CandidateIgnoresResponseFromOldTerm) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
-  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   raft_->SetStateForTest({
       .current_term = 2,
@@ -124,8 +125,8 @@ TEST_F(RaftTest, CandidateIgnoresResponseFromOldTerm) {
 // demotes.
 TEST_F(RaftTest, CandidateDemotesAfterRequestVoteResponseFromNewerTerm) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(1);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
-  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   raft_->SetStateForTest({
       .current_term = 2,
@@ -151,8 +152,8 @@ TEST_F(RaftTest, CandidateDemotesAfterRequestVoteResponseFromNewerTerm) {
 // Test 4: A follower ignores a RequestVoteResponse.
 TEST_F(RaftTest, FollowerIgnoresRequestVoteResponse) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
-  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   raft_->SetStateForTest({
       .current_term = 2,
@@ -177,7 +178,7 @@ TEST_F(RaftTest, FollowerIgnoresRequestVoteResponse) {
 TEST_F(RaftTest, CandidateIgnoresNoVote) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
-  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
 
   raft_->SetStateForTest({
       .current_term = 2,
@@ -201,8 +202,8 @@ TEST_F(RaftTest, CandidateIgnoresNoVote) {
 // Test 6: A candidate ignores a duplicate vote.
 TEST_F(RaftTest, CandidateIgnoresDuplicateVote) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
-  EXPECT_CALL(*leader_election_manager_, OnHeartBeat()).Times(0);
 
   raft_->SetStateForTest({.current_term = 2,
                           .commit_index = 1,
@@ -225,6 +226,34 @@ TEST_F(RaftTest, CandidateIgnoresDuplicateVote) {
 
   EXPECT_EQ(raft_->GetRoleSnapshot(), Role::CANDIDATE);
   EXPECT_EQ(raft_->GetVotes(), votes);
+}
+
+// Test 7: A leader ignores a RequestVoteResponse.
+TEST_F(RaftTest, LeaderIgnoresRequestVoteResponse) {
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+  EXPECT_CALL(*leader_election_manager_, OnHeartbeat()).Times(0);
+  EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
+
+  raft_->SetStateForTest({.current_term = 2,
+                          .voted_for = 1,
+                          .commit_index = 1,
+                          .last_committed = 1,
+                          .role = Role::LEADER,
+                          .log = CreateLogEntries(
+                              {
+                                  {0, "Term 0 Transaction 1"},
+                                  {1, "Term 1 Transaction 1"},
+                              },
+                              true),
+                          .votes = std::vector<int>{1, 2}});
+
+  RequestVoteResponse rvr;
+  rvr.set_term(2);
+  rvr.set_voterid(2);
+  rvr.set_votegranted(true);
+  raft_->ReceiveRequestVoteResponse(std::make_unique<RequestVoteResponse>(rvr));
+
+  EXPECT_EQ(raft_->GetRoleSnapshot(), Role::LEADER);
 }
 
 }  // namespace raft

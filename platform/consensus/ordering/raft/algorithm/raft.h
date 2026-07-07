@@ -42,6 +42,9 @@
 #include "platform/proto/resdb.pb.h"
 #include "platform/statistic/stats.h"
 
+#ifdef RAFT_TEST_MODE
+#include <google/protobuf/util/message_differencer.h>
+#endif
 namespace resdb {
 namespace raft {
 
@@ -55,6 +58,15 @@ class LogEntry {
 
   uint32_t GetSerializedSize() const;
   uint32_t ComputeSerializedEntrySize() const;
+
+#ifdef RAFT_TEST_MODE
+  bool operator==(const LogEntry& other) const {
+    return google::protobuf::util::MessageDifferencer::Equals(entry,
+                                                              other.entry);
+  }
+
+  bool operator!=(const LogEntry& other) const { return !(*this == other); }
+#endif
 
  private:
   mutable uint32_t serialized_size = 0;
@@ -93,7 +105,9 @@ struct ReceiveTransactionResult {
   std::vector<AeFields> messages;
 };
 
-struct AppendEntriesResult {
+struct ReceiveAppendEntriesResult {
+  // success is true if the AppendEntries is not from a stale term, and the
+  // follower has an entry at prev_log_index that matches prev_log_term.
   bool success = false;
   bool demoted = false;
   uint64_t term = 0;
@@ -102,11 +116,11 @@ struct AppendEntriesResult {
   Role initial_role = Role::FOLLOWER;
   std::future<void> wal_future;
   std::vector<std::unique_ptr<Request>> entries_to_apply;
-  uint64_t conflicting_term;
-  uint64_t conflicting_index;
+  uint64_t conflicting_term = 0;
+  uint64_t conflicting_index = 0;
 };
 
-struct AppendEntriesResponseResult {
+struct ReceiveAppendEntriesResponseResult {
   bool demoted = false;
   uint64_t term = 0;
   Role initial_role = Role::FOLLOWER;
@@ -117,7 +131,7 @@ struct AppendEntriesResponseResult {
   int follower_id = -1;
 };
 
-struct RequestVoteResult {
+struct ReceiveRequestVoteResult {
   bool demoted = false;
   uint64_t term = 0;
   Role initial_role = Role::FOLLOWER;
@@ -126,7 +140,7 @@ struct RequestVoteResult {
   int voted_for = -1;
 };
 
-struct RequestVoteResponseResult {
+struct ReceiveRequestVoteResponseResult {
   bool demoted = false;
   bool elected = false;
   uint64_t term = 0;
@@ -149,11 +163,17 @@ struct RaftStatePatch {
   std::optional<uint64_t> last_committed;
   std::optional<Role> role;
 
+  std::optional<uint64_t> snapshot_last_index;
+  std::optional<uint64_t> snapshot_last_term;
+  std::optional<uint64_t> truncated_last_index;
+  std::optional<uint64_t> truncated_last_term;
+
   std::optional<std::vector<LogEntry>> log;
   std::optional<std::vector<FollowerProgressPatch>> progress;
   std::optional<std::vector<int>> votes;
   std::optional<bool> enable_batching;
   std::optional<uint64_t> snapshot_buffer_amount;
+  std::optional<size_t> max_in_flight_per_follower;
 };
 
 #endif
@@ -177,7 +197,7 @@ class Raft : public common::ProtocolBase {
   virtual bool ReceiveInstallSnapshotResponse(
       std::unique_ptr<InstallSnapshotResponse> isr);
   virtual void StartElection();
-  virtual void SendHeartBeat();
+  virtual void SendHeartbeat();
   virtual Role GetRoleSnapshot() const;
   virtual void SetRole(Role role);
   virtual void PrintDebugState() const;
@@ -238,13 +258,13 @@ class Raft : public common::ProtocolBase {
 
   ReceiveTransactionResult ReceiveTransactionLocked(
       const std::unique_ptr<Request>& req, const std::string& serialized);
-  AppendEntriesResult ReceiveAppendEntriesLocked(
+  ReceiveAppendEntriesResult ReceiveAppendEntriesLocked(
       const std::unique_ptr<AppendEntries>& ae);
-  AppendEntriesResponseResult ReceiveAppendEntriesResponseLocked(
+  ReceiveAppendEntriesResponseResult ReceiveAppendEntriesResponseLocked(
       const std::unique_ptr<AppendEntriesResponse>& aer);
-  RequestVoteResult ReceiveRequestVoteLocked(
+  ReceiveRequestVoteResult ReceiveRequestVoteLocked(
       const std::unique_ptr<RequestVote>& rv);
-  RequestVoteResponseResult ReceiveRequestVoteResponseLocked(
+  ReceiveRequestVoteResponseResult ReceiveRequestVoteResponseLocked(
       const std::unique_ptr<RequestVoteResponse>& rvr);
 
   virtual TermRelation TermCheckLocked(
@@ -257,7 +277,7 @@ class Raft : public common::ProtocolBase {
   virtual AeFields GatherAeFieldsLocked(
       int follower_id);  // Must be called under mutex
   std::vector<AeFields> GatherAeFieldsForBroadcastLocked(
-      bool heartBeat = false);  // Must be called under mutex
+      bool heartbeat = false);  // Must be called under mutex
   virtual void CreateAndSendAppendEntryMsg(const AeFields& fields);
   virtual LogEntry CreateLogEntry(const Entry& entry) const;
   virtual void ClearInFlightsLocked();
@@ -373,7 +393,7 @@ class Raft : public common::ProtocolBase {
   // for limiting AppendEntries batch sizing
   static constexpr size_t max_bytes_ = 64 * 1024 * 16 * 16;
   static constexpr size_t max_entries_ = 128 * 10; /*128;*/
-  static constexpr size_t max_in_flight_per_follower_ = 128;
+  size_t max_in_flight_per_follower_ = 128;
   static constexpr std::chrono::milliseconds ae_response_deadline_{
       1500};  // in milliseconds
   std::chrono::steady_clock::time_point
@@ -416,9 +436,22 @@ class Raft : public common::ProtocolBase {
       role_ = *patch.role;
     }
 
+    if (patch.snapshot_last_index) {
+      snapshot_last_index_ = *patch.snapshot_last_index;
+    }
+    if (patch.snapshot_last_term) {
+      snapshot_last_term_ = *patch.snapshot_last_term;
+    }
+    if (patch.truncated_last_index) {
+      truncated_last_index_ = *patch.truncated_last_index;
+    }
+    if (patch.truncated_last_term) {
+      truncated_last_term_ = *patch.truncated_last_term;
+    }
+
     if (patch.log) {
       log_ = *patch.log;
-      last_log_index_ = log_.size() - 1 + snapshot_last_index_;
+      last_log_index_ = log_.size() - 1 + truncated_last_index_;
     }
 
     if (patch.progress) {
@@ -454,6 +487,9 @@ class Raft : public common::ProtocolBase {
     }
     if (patch.snapshot_buffer_amount) {
       snapshot_buffer_amount_ = *patch.snapshot_buffer_amount;
+    }
+    if (patch.max_in_flight_per_follower) {
+      max_in_flight_per_follower_ = *patch.max_in_flight_per_follower;
     }
   }
 
@@ -525,7 +561,7 @@ class Raft : public common::ProtocolBase {
     return progress_;
   }
 
-  uint64_t GetHeartBeatsSentThisTerm() const {
+  uint64_t GetHeartbeatsSentThisTerm() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return heartbeats_sent_this_term_;
   }
@@ -556,6 +592,10 @@ class Raft : public common::ProtocolBase {
   }
 
   size_t GetMaxInFlightVecs() const { return max_in_flight_per_follower_; }
+
+  std::chrono::milliseconds GetAEResponseDeadline() const {
+    return ae_response_deadline_;
+  }
 
 #endif
 };

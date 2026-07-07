@@ -126,12 +126,18 @@ TEST_F(RaftTest, LeaderCatchesUpFollowerThatIsBehind) {
   ae_response.set_term(1);
   ae_response.set_id(2);
   ae_response.set_last_log_index(1);
+  ae_response.set_conflicting_index(0);
+  ae_response.set_conflicting_term(0);
 
   raft_->SetStateForTest({
       .current_term = 1,
       .commit_index = 0,
       .last_committed = 0,
       .role = Role::LEADER,
+      .snapshot_last_index = 0,
+      .snapshot_last_term = 0,
+      .truncated_last_index = 0,
+      .truncated_last_term = 0,
       .log = CreateLogEntries(
           {
               {1, "Transaction 1"},
@@ -163,22 +169,71 @@ TEST_F(RaftTest, FollowerIgnoresAppendEntriesResponse) {
   EXPECT_TRUE(success);
 }
 
-// Test 7: A leader ignores an AppendEntriesResponse from an outdated term.
+// Test 7: A leader ignores an AppendEntriesResponse from an outdated term. The
+// leader's state should not change.
 TEST_F(RaftTest, LeaderIgnoresAppendEntriesResponseFromOutdatedTerm) {
   EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
   EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
 
-  AppendEntriesResponse ae_response;
-  ae_response.set_term(1);
+  raft_->SetStateForTest(
+      {.current_term = 3,
+       .commit_index = 3,
+       .last_committed = 3,
+       .role = Role::LEADER,
+       .log = CreateLogEntries({{2, "Transaction 1"},
+                                {2, "Transaction 2"},
+                                {2, "Transaction 3"},
+                                {2, "Transaction 4"},
+                                {3, "RAFT_NO_OP"}},
+                               true),
+       CreateProgressPatch({.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+                            .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
+                            .states = std::vector<ProgressState>{
+                                ProgressState::PROBE, ProgressState::PROBE,
+                                ProgressState::PROBE, ProgressState::PROBE,
+                                ProgressState::PROBE}})});
 
-  raft_->SetStateForTest({
-      .current_term = 2,
-      .role = Role::LEADER,
-  });
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
 
-  bool success = raft_->ReceiveAppendEntriesResponse(
-      std::make_unique<AppendEntriesResponse>(ae_response));
-  EXPECT_TRUE(success);
+  AppendEntriesResponse aer;
+  aer.set_success(false);
+  aer.set_term(2);
+  aer.set_id(3);
+  aer.set_last_log_index(10);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  const auto& follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::PROBE);
+
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 2);
+            EXPECT_EQ(ae.prev_log_index(), 5);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 3);
+            EXPECT_EQ(ae.prev_log_index(), 5);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 4);
+            EXPECT_EQ(ae.prev_log_index(), 5);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }));
+
+  raft_->SendHeartbeat();
 }
 
 // Test 8: A leader does not advance its commit index from a previous term if it
@@ -464,7 +519,7 @@ TEST_F(RaftTest, FollowerGoesFromReplicateToProbeAfterFailure) {
        CreateProgressPatch(
            {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
             .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
-            .in_flight_vecs = in_flight_vecs,
+            .in_flight = in_flight_vecs,
             .states = std::vector<ProgressState>{
                 ProgressState::REPLICATE, ProgressState::REPLICATE,
                 ProgressState::REPLICATE, ProgressState::REPLICATE,
@@ -481,7 +536,7 @@ TEST_F(RaftTest, FollowerGoesFromReplicateToProbeAfterFailure) {
   raft_->ReceiveAppendEntriesResponse(
       std::make_unique<AppendEntriesResponse>(aer));
 
-  auto follower_progress = raft_->GetFollowerProgress();
+  const auto& follower_progress = raft_->GetFollowerProgress();
   EXPECT_EQ(follower_progress[3].state, ProgressState::PROBE);
   EXPECT_EQ(follower_progress[3].in_flight.size(), 0);
   EXPECT_TRUE(follower_progress[3].probe_in_flight);
@@ -561,8 +616,561 @@ TEST_F(RaftTest, FollowerRespondingToProbeWithSuccessTransitionsToReplicate) {
   raft_->ReceiveAppendEntriesResponse(
       std::make_unique<AppendEntriesResponse>(aer));
 
-  auto follower_progress = raft_->GetFollowerProgress();
+  const auto& follower_progress = raft_->GetFollowerProgress();
   EXPECT_EQ(follower_progress[3].state, ProgressState::REPLICATE);
+}
+
+// Test 19: A follower whose log is ahead does not crash the leader upon
+// failure. Note: There is no need to test the success case, because leader's
+// add a no-op entry at the start of their term. If a leader receives a
+// successful AER from a follower, it must have added at least the no-op at the
+// start of the term, meaning its log cannot be further ahead.
+TEST_F(RaftTest, FollowerFailureWhoseLogIsAheadDoesNotCrashSameTerm) {
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 3);
+            EXPECT_EQ(ae.prev_log_index(), 4);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }));
+
+  raft_->SetStateForTest(
+      {.current_term = 3,
+       .commit_index = 3,
+       .last_committed = 3,
+       .role = Role::LEADER,
+       .log = CreateLogEntries({{2, "Transaction 1"},
+                                {2, "Transaction 2"},
+                                {2, "Transaction 3"},
+                                {2, "Transaction 4"},
+                                {3, "RAFT_NO_OP"}},
+                               true),
+       CreateProgressPatch(
+           {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+            .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
+            .states = std::vector<ProgressState>{
+                ProgressState::PROBE, ProgressState::REPLICATE,
+                ProgressState::REPLICATE, ProgressState::REPLICATE,
+                ProgressState::PROBE}})});
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(false);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(10);
+  aer.set_conflicting_index(1);
+  aer.set_conflicting_term(2);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  const auto& follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::PROBE);
+}
+
+// Note for the following tests, conflictingIndex <= last_log_index
+
+// Test 20: Follower whose:
+// conflicting_index < truncated_last_index_
+// last_log_index < truncated_last_index_
+// gets a snapshot.
+TEST_F(RaftTest, FollowerConflictingIndexLastLogIndexCase1) {
+  EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
+
+  raft_->SetStateForTest({
+      .current_term = 3,
+      .commit_index = 3,
+      .last_committed = 3,
+      .role = Role::LEADER,
+      .snapshot_last_index = 3,
+      .snapshot_last_term = 2,
+      .truncated_last_index = 2,
+      .truncated_last_term = 2,
+      .log = CreateLogEntries(
+          {//{2, "Transaction 1"},  Truncated
+           //{2, "Transaction 2"},  Truncated
+           {2, "Transaction 3"},
+           {2, "Transaction 4"},
+           {3, "RAFT_NO_OP"}},
+          true),
+      CreateProgressPatch(
+          {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+           .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
+           .states = std::vector<ProgressState>{ProgressState::PROBE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::PROBE}}),
+  });
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(false);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(1);
+  aer.set_conflicting_index(1);
+  aer.set_conflicting_term(2);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  const auto& follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::SNAPSHOT);
+
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 2);
+            EXPECT_EQ(ae.prev_log_index(), 5);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 3);
+            EXPECT_EQ(
+                ae.prev_log_index(),
+                2);  // This value cannot be less than truncated_last_index
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 4);
+            EXPECT_EQ(ae.prev_log_index(), 5);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }));
+
+  raft_->SendHeartbeat();
+  auto follower_progress2 = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress2[3].state, ProgressState::SNAPSHOT);
+}
+
+// Test 21: Follower whose:
+// conflicting_index < truncated_last_index_
+// next_term_index > follower_last_log_index >= truncated_last_index_
+// gets a probe starting after their last_log_index.
+TEST_F(RaftTest, FollowerConflictingIndexLastLogIndexCase2) {
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 3);
+            EXPECT_EQ(ae.prev_log_index(), 2);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }));
+
+  raft_->SetStateForTest({
+      .current_term = 3,
+      .commit_index = 3,
+      .last_committed = 3,
+      .role = Role::LEADER,
+      .snapshot_last_index = 3,
+      .snapshot_last_term = 2,
+      .truncated_last_index = 2,
+      .truncated_last_term = 2,
+      .log = CreateLogEntries(
+          {//{2, "Transaction 1"},  Truncated
+           //{2, "Transaction 2"},  Truncated
+           {2, "Transaction 3"},
+           {2, "Transaction 4"},
+           {3, "RAFT_NO_OP"}},
+          true),
+      CreateProgressPatch(
+          {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+           .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
+           .states = std::vector<ProgressState>{ProgressState::PROBE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::PROBE}}),
+  });
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(false);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(2);
+  aer.set_conflicting_index(1);
+  aer.set_conflicting_term(2);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  const auto& follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::PROBE);
+}
+
+// Test 22: Follower whose
+// conflicting_index < truncated_last_index_
+// follower_last_log_index >= next_term_index
+// follower_last_log_index >= truncated_last_index_
+// gets a probe starting at the first index of the next term.
+TEST_F(RaftTest, FollowerConflictingIndexLastLogIndexCase3) {
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 3);
+            EXPECT_EQ(ae.prev_log_index(), 4);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }));
+
+  raft_->SetStateForTest({
+      .current_term = 3,
+      .commit_index = 3,
+      .last_committed = 3,
+      .role = Role::LEADER,
+      .snapshot_last_index = 3,
+      .snapshot_last_term = 2,
+      .truncated_last_index = 2,
+      .truncated_last_term = 2,
+      .log = CreateLogEntries(
+          {//{2, "Transaction 1"},  Truncated
+           //{2, "Transaction 2"},  Truncated
+           {2, "Transaction 3"},
+           {2, "Transaction 4"},
+           {3, "RAFT_NO_OP"}},
+          true),
+      CreateProgressPatch(
+          {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+           .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
+           .states = std::vector<ProgressState>{ProgressState::PROBE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::PROBE}}),
+  });
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(false);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(5);
+  aer.set_conflicting_index(1);
+  aer.set_conflicting_term(2);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  const auto& follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::PROBE);
+}
+
+// Test 23: Follower whose:
+// conflicting_term == 0
+// last_log_index < truncated_last_index_
+// gets a snapshot.
+TEST_F(RaftTest, FollowerConflictingTermZeroNeedsSnapshot) {
+  EXPECT_CALL(mock_call, Call(_, _, _)).Times(0);
+
+  raft_->SetStateForTest({
+      .current_term = 3,
+      .commit_index = 3,
+      .last_committed = 3,
+      .role = Role::LEADER,
+      .snapshot_last_index = 3,
+      .snapshot_last_term = 2,
+      .truncated_last_index = 2,
+      .truncated_last_term = 2,
+      .log = CreateLogEntries(
+          {//{2, "Transaction 1"},  Truncated
+           //{2, "Transaction 2"},  Truncated
+           {2, "Transaction 3"},
+           {2, "Transaction 4"},
+           {3, "RAFT_NO_OP"}},
+          true),
+      CreateProgressPatch(
+          {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+           .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
+           .states = std::vector<ProgressState>{ProgressState::PROBE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::PROBE}}),
+  });
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(false);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(1);
+  aer.set_conflicting_index(0);
+  aer.set_conflicting_term(0);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  const auto& follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::SNAPSHOT);
+}
+
+// Test 24: Follower whose:
+// conflicting_term == 0
+// last_log_index >= truncated_last_index_
+// gets a probe starting right after their last_log_index, no snapshot.
+TEST_F(RaftTest, FollowerConflictingTermZeroNoSnapshot) {
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 3);
+            EXPECT_EQ(ae.prev_log_index(), 4);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }));
+
+  raft_->SetStateForTest({
+      .current_term = 3,
+      .commit_index = 3,
+      .last_committed = 3,
+      .role = Role::LEADER,
+      .snapshot_last_index = 3,
+      .snapshot_last_term = 2,
+      .truncated_last_index = 2,
+      .truncated_last_term = 2,
+      .log = CreateLogEntries(
+          {//{2, "Transaction 1"},  Truncated
+           //{2, "Transaction 2"},  Truncated
+           {2, "Transaction 3"},
+           {2, "Transaction 4"},
+           {3, "RAFT_NO_OP"}},
+          true),
+      CreateProgressPatch(
+          {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+           .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
+           .states = std::vector<ProgressState>{ProgressState::PROBE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::PROBE}}),
+  });
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(false);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(4);
+  aer.set_conflicting_index(0);
+  aer.set_conflicting_term(0);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  const auto& follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::PROBE);
+}
+
+// Test 25: Follower whose:
+// conflicting_index > truncated_last_index_
+// gets a probe starting at the first index of the next term.
+TEST_F(RaftTest, FollowerConflictingIndexAboveTruncatedIndex) {
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 3);
+            EXPECT_EQ(ae.prev_log_index(), 4);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }));
+
+  raft_->SetStateForTest({
+      .current_term = 3,
+      .commit_index = 3,
+      .last_committed = 3,
+      .role = Role::LEADER,
+      .snapshot_last_index = 3,
+      .snapshot_last_term = 2,
+      .truncated_last_index = 2,
+      .truncated_last_term = 2,
+      .log = CreateLogEntries(
+          {//{2, "Transaction 1"},  Truncated
+           //{2, "Transaction 2"},  Truncated
+           {2, "Transaction 3"},
+           {2, "Transaction 4"},
+           {3, "RAFT_NO_OP"}},
+          true),
+      CreateProgressPatch(
+          {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+           .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
+           .states = std::vector<ProgressState>{ProgressState::PROBE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::PROBE}}),
+  });
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(false);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(4);
+  aer.set_conflicting_index(4);
+  aer.set_conflicting_term(2);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  const auto& follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::PROBE);
+}
+
+// Test 26: Follower whose:
+// conflicting_index <= truncated_last_index_
+// conflicting_term < truncated_last_term_
+// gets a snapshot.
+TEST_F(RaftTest, FollowerConflictingIndexTruncatedTermMismatch) {
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 3);
+            EXPECT_EQ(ae.prev_log_index(), 2);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }));
+
+  raft_->SetStateForTest({
+      .current_term = 3,
+      .commit_index = 3,
+      .last_committed = 3,
+      .role = Role::LEADER,
+      .snapshot_last_index = 3,
+      .snapshot_last_term = 2,
+      .truncated_last_index = 2,
+      .truncated_last_term = 2,
+      .log = CreateLogEntries(
+          {//{2, "Transaction 1"},  Truncated
+           //{2, "Transaction 2"},  Truncated
+           {2, "Transaction 3"},
+           {2, "Transaction 4"},
+           {3, "RAFT_NO_OP"}},
+          true),
+      CreateProgressPatch(
+          {.next_index = std::vector<uint64_t>{1, 6, 6, 6, 6},
+           .match_index = std::vector<uint64_t>{0, 5, 5, 0, 0},
+           .states = std::vector<ProgressState>{ProgressState::PROBE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::PROBE}}),
+  });
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(false);
+  aer.set_term(3);
+  aer.set_id(3);
+  aer.set_last_log_index(2);
+  aer.set_conflicting_index(2);
+  aer.set_conflicting_term(1);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  const auto& follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::SNAPSHOT);
+}
+
+// Test 27: Leader receives delayed success response from follower whose next
+// index to send has already been truncated. Upon the next heartbeat, it cannot
+// use a prev_log_index lower than truncated_last_index, so the follower will
+// respond with success == false, which will trigger a snapshot.
+TEST_F(RaftTest, LeaderReceivesDelayedAERSuccessAndSendsSnapshot) {
+  EXPECT_CALL(mock_call, Call(_, _, _))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 2);
+            EXPECT_EQ(ae.prev_log_index(), 4);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 3);
+            EXPECT_EQ(ae.prev_log_index(), 2);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }))
+      .WillOnce(::testing::Invoke(
+          [](int type, const google::protobuf::Message& msg, int node_id) {
+            const auto& ae = dynamic_cast<const AppendEntries&>(msg);
+            EXPECT_EQ(node_id, 4);
+            EXPECT_EQ(ae.prev_log_index(), 4);
+            EXPECT_EQ(ae.entries().size(), 0);
+            return 0;
+          }));
+
+  raft_->SetStateForTest({
+      .current_term = 2,
+      .commit_index = 3,
+      .last_committed = 3,
+      .role = Role::LEADER,
+      .snapshot_last_index = 3,
+      .snapshot_last_term = 2,
+      .truncated_last_index = 2,
+      .truncated_last_term = 2,
+      .log = CreateLogEntries(
+          {//{2, "Transaction 1"},  Truncated
+           //{2, "Transaction 2"},  Truncated
+           {2, "Transaction 3"},
+           {2, "Transaction 4"}},
+          true),
+      CreateProgressPatch(
+          {.next_index = std::vector<uint64_t>{1, 5, 5, 3, 5},
+           .match_index = std::vector<uint64_t>{0, 4, 4, 0, 0},
+           .states = std::vector<ProgressState>{ProgressState::PROBE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::REPLICATE,
+                                                ProgressState::PROBE}}),
+  });
+
+  EXPECT_CALL(*leader_election_manager_, OnRoleChange()).Times(0);
+
+  AppendEntriesResponse aer;
+  aer.set_success(true);
+  aer.set_term(2);
+  aer.set_id(3);
+  aer.set_last_log_index(1);
+  aer.set_conflicting_index(0);
+  aer.set_conflicting_term(0);
+
+  raft_->ReceiveAppendEntriesResponse(
+      std::make_unique<AppendEntriesResponse>(aer));
+
+  // Follower 3's next_index will be behind truncated_last_index, so nothing
+  // will be sent out until the next heartbeat.
+
+  raft_->SendHeartbeat();
+  const auto& follower_progress = raft_->GetFollowerProgress();
+  EXPECT_EQ(follower_progress[3].state, ProgressState::SNAPSHOT);
 }
 
 }  // namespace raft
