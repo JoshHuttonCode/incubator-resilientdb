@@ -1,3 +1,4 @@
+#!/bin/sh
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -17,50 +18,90 @@
 # under the License.
 #
 
-#!/bin/bash
+# Abort on the first failing command so a broken install cannot report success.
+set -eu
 
+# Bazelisk release to install. Checksums are the values published alongside the
+# release as bazelisk-linux-<arch>.sha256. Bump all three together.
+# These cover the Bazelisk launcher itself. Bazelisk then fetches the Bazel
+# release named in .bazelversion, which since v1.29.0 it authenticates with an
+# embedded verification key rather than against a hash recorded here.
+BAZELISK_VERSION="v1.29.0"
+BAZELISK_SHA256_amd64="5a408715e932c0250d28bd84555f12edbf70117de42f9181691c736eacc4a992"
+BAZELISK_SHA256_arm64="e20e8b0f4f240091b7a55bf17b9398bd4f40ee70ae0208dff95dd4c445fb4010"
+BAZEL_BIN="/usr/local/bin/bazel"
 
-sudo apt update
-sudo apt install apt-transport-https curl gnupg -y
-sudo apt-get install protobuf-compiler -y
-sudo apt-get install rapidjson-dev -y
+# Run from the checkout root so Bazelisk resolves this repository's
+# .bazelversion rather than whatever happens to be in the caller's directory.
+unset CDPATH
+SCRIPT_DIR=$(cd -- "$(dirname -- "$0")" && pwd)
+cd "$SCRIPT_DIR"
 
-curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
-sudo mv bazel.gpg /etc/apt/trusted.gpg.d/ 
-echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
-sudo apt update && sudo apt install bazel=6.0.0 -y
-sudo apt install clang-format -y
-rm $PWD/.git/hooks/pre-push
-ln -s $PWD/hooks/pre-push $PWD/.git/hooks/pre-push
+# Containers and cloud-init run this as root, where sudo is usually not
+# installed. Everywhere else it is needed to install packages.
+if [ "$(id -u)" -eq 0 ]; then
+  SUDO=""
+else
+  SUDO="sudo"
+fi
 
-bazel --version
-ret=$?
+# The Bazel apt repository only publishes amd64 packages, so Bazelisk is used
+# instead. Bazelisk reads .bazelversion and fetches that exact Bazel release.
+# Bazelisk itself only publishes linux-amd64 and linux-arm64, so those are the
+# architectures this script can install; anything else stops with a clear
+# message rather than part way through.
+ARCH=$(dpkg --print-architecture)
+case "$ARCH" in
+  amd64) BAZELISK_SHA256="$BAZELISK_SHA256_amd64" ;;
+  arm64) BAZELISK_SHA256="$BAZELISK_SHA256_arm64" ;;
+  *)
+    echo "INSTALL.sh: unsupported architecture '$ARCH' (expected amd64 or arm64)" >&2
+    exit 1
+    ;;
+esac
 
-if [[ $ret != "0" ]]; then
+$SUDO env DEBIAN_FRONTEND=noninteractive apt-get update
+$SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  build-essential \
+  ca-certificates \
+  clang-format \
+  curl \
+  default-jre-headless \
+  protobuf-compiler \
+  python3-dev \
+  rapidjson-dev \
+  unzip \
+  zip
 
-sudo apt-get install build-essential openjdk-11-jdk zip unzip -y
-rm bazel-6.0.0-dist.zip
-rm -rf bazel_build
-wget wget https://releases.bazel.build/6.0.0/release/bazel-6.0.0-dist.zip
-mkdir -p bazel_build
-mv bazel-6.0.0-dist.zip bazel_build/
-cd bazel_build
+# Download as the invoking user, verify against the published checksum, and
+# only then install over the system binary. Installing straight from curl would
+# leave a truncated executable behind if the transfer were interrupted.
+STAGE_DIR=$(mktemp -d)
+cleanup() {
+  status=$?
+  trap - EXIT
+  rm -rf "$STAGE_DIR"
+  exit "$status"
+}
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-unzip bazel-6.0.0-dist.zip
+curl -fsSL -o "$STAGE_DIR/bazelisk" \
+  "https://github.com/bazelbuild/bazelisk/releases/download/${BAZELISK_VERSION}/bazelisk-linux-${ARCH}"
+echo "${BAZELISK_SHA256}  ${STAGE_DIR}/bazelisk" | sha256sum -c -
+$SUDO install -m 0755 "$STAGE_DIR/bazelisk" "$BAZEL_BIN"
 
-export JAVA_HOME='/usr/lib/jvm/java-1.11.0-openjdk-arm64/'
-env EXTRA_BAZEL_ARGS="--host_javabase=@local_jdk//:jdk" bash ./compile.sh
-sudo cp output/bazel /usr/local/bin/
-cd ..
-rm -rf bazel_build
+# Call the installed binary directly; an unrelated bazel earlier in PATH would
+# otherwise decide which Bazel the rest of this script uses.
+"$BAZEL_BIN" --version
 
+# The pre-push hook is optional; only link it when it is present.
+if [ -f "$SCRIPT_DIR/hooks/pre-push" ] && [ -d "$SCRIPT_DIR/.git/hooks" ]; then
+  rm -f "$SCRIPT_DIR/.git/hooks/pre-push"
+  ln -s "$SCRIPT_DIR/hooks/pre-push" "$SCRIPT_DIR/.git/hooks/pre-push"
 fi
 
 # install buildifier
-bazel build @com_github_bazelbuild_buildtools//buildifier:buildifier
-
-sudo apt-get install python3.10-dev -y
-sudo apt-get install python3-dev -y
-
-
+"$BAZEL_BIN" build @com_github_bazelbuild_buildtools//buildifier:buildifier

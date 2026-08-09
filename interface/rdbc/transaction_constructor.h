@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "absl/status/statusor.h"
 #include "interface/rdbc/net_channel.h"
 #include "platform/config/resdb_config.h"

@@ -21,6 +21,7 @@
 
 #include <semaphore.h>
 
+#include <cstdint>
 #include <future>
 #include <queue>
 

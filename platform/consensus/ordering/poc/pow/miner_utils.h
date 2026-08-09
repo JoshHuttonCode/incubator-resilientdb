@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "platform/consensus/ordering/poc/proto/pow.pb.h"
 
 namespace resdb {

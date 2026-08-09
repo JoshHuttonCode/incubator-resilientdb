@@ -124,7 +124,9 @@ int main(int argc, char** argv) {
   std::string sql;
   std::string client_config_file;
   int top = 0;
-  char c;
+  // getopt_long returns int and signals the end of the options with -1. Storing
+  // that in a char loops forever where char is unsigned, as it is on arm64.
+  int c;
   std::string cmd;
 
   if (argc >= 3) {

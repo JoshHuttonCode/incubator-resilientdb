@@ -21,6 +21,8 @@
 
 #include <semaphore.h>
 
+#include <cstdint>
+
 #include "common/crypto/signature_verifier.h"
 #include "platform/config/resdb_config.h"
 #include "platform/consensus/execution/system_info.h"

@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "platform/common/queue/batch_queue.h"
 #include "platform/config/resdb_config.h"
 #include "platform/consensus/execution/duplicate_manager.h"

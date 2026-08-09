@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "absl/status/statusor.h"
 #include "executor/utxo/manager/tx_mempool.h"
 #include "executor/utxo/manager/wallet.h"

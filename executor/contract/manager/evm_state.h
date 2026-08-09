@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "eEVM/globalstate.h"
 
 namespace resdb {

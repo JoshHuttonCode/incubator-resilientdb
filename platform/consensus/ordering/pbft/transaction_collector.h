@@ -20,6 +20,7 @@
 #pragma once
 
 #include <bitset>
+#include <cstdint>
 
 #include "platform/consensus/execution/transaction_executor.h"
 #include "platform/networkstrate/server_comm.h"

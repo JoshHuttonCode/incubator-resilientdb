@@ -22,6 +22,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "hedron_compile_commands",
+    sha256 = "658122cfb1f25be76ea212b00f5eb047d8e2adc8bcf923b918461f2b1e37cdf2",
     strip_prefix = "bazel-compile-commands-extractor-4f28899228fb3ad0126897876f147ca15026151e",
     #Replace the commit hash (4f28899228fb3ad0126897876f147ca15026151e) with the latest commit hash from the repo
     url = "https://github.com/hedronvision/bazel-compile-commands-extractor/archive/4f28899228fb3ad0126897876f147ca15026151e.tar.gz",
@@ -111,12 +112,13 @@ http_archive(
     urls = ["https://github.com/google/glog/archive/v0.5.0.zip"],
 )
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
-git_repository(
+# Fetched as a checksummed archive rather than by git tag: a tag can be moved
+# to a different commit upstream, which would silently change what is built.
+http_archive(
     name = "com_google_protobuf",
-    remote = "https://github.com/protocolbuffers/protobuf",
-    tag = "v3.10.0",
+    sha256 = "758249b537abba2f21ebc2d02555bf080917f0f2f88f4cbe2903e0e28c4187ed",
+    strip_prefix = "protobuf-3.10.0",
+    urls = ["https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.10.0.tar.gz"],
 )
 
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
@@ -200,8 +202,7 @@ http_archive(
     # This zip is just flat: duckdb.cpp, duckdb.hpp, duckdb.h at the root.
     # So no strip_prefix is needed.
     build_file = "//third_party:duckdb.BUILD",
-    # Optional: you can add sha256 once Bazel prints it for you.
-    # sha256 = "<FILL_ME_FROM_BAZEL_ERROR>",
+    sha256 = "d1efda5fabc198d2099109f2d6a21392a7ca3888afbafe8573abcb1b09c6f15a",
 )
 
 
@@ -233,6 +234,7 @@ http_archive(
 
 http_archive(
     name = "pybind11_bazel",
+    sha256 = "044d334a269e03edf4c7f8a3315d1dbf59177b8ddf1c38178bcc72cc73a93aba",
     strip_prefix = "pybind11_bazel-2.11.1.bzl.1",
     urls = ["https://github.com/pybind/pybind11_bazel/archive/refs/tags/v2.11.1.bzl.1.zip"],
 )

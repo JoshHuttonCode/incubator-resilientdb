@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "platform/config/resdb_config.h"
 
 namespace resdb {

@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "absl/status/statusor.h"
 #include "chain/storage/storage.h"
 #include "eEVM/opcode.h"

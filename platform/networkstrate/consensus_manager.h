@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <thread>
 
 #include "platform/common/queue/blocking_queue.h"

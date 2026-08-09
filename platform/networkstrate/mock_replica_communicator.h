@@ -21,6 +21,8 @@
 
 #include <gmock/gmock.h>
 
+#include <cstdint>
+
 #include "platform/networkstrate/replica_communicator.h"
 
 namespace resdb {

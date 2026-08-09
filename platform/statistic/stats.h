@@ -22,6 +22,7 @@
 #include <crow.h>
 
 #include <chrono>
+#include <cstdint>
 #include <future>
 #include <nlohmann/json.hpp>
 

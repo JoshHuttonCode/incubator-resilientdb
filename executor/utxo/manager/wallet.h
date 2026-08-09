@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "proto/utxo/utxo.pb.h"
 
 namespace resdb {

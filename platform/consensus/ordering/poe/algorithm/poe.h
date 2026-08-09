@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <deque>
 #include <map>
 #include <queue>

@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "absl/status/statusor.h"
 #include "proto/utxo/utxo.pb.h"
 

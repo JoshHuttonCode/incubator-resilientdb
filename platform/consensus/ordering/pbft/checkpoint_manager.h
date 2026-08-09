@@ -21,6 +21,8 @@
 
 #include <semaphore.h>
 
+#include <cstdint>
+
 #include "chain/state/chain_state.h"
 #include "common/crypto/signature_verifier.h"
 #include "interface/common/resdb_txn_accessor.h"

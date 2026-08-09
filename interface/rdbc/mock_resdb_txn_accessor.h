@@ -21,6 +21,8 @@
 
 #include <gmock/gmock.h>
 
+#include <cstdint>
+
 #include "platform/interface/resdb_txn_accessor.h"
 
 namespace resdb {

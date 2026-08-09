@@ -18,6 +18,7 @@
  */
 
 #pragma once
+#include <cstdint>
 #include <thread>
 
 #include "interface/rdbc/net_channel.h"

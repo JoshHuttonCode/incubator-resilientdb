@@ -20,6 +20,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <cstdint>
 
 #include "platform/config/resdb_poc_config.h"
 #include "platform/consensus/ordering/poc/proto/pow.pb.h"

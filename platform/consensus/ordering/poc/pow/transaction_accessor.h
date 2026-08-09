@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <thread>
 
 #include "interface/common/resdb_txn_accessor.h"

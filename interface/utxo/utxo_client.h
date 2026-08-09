@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "interface/rdbc/transaction_constructor.h"
 #include "proto/utxo/utxo.pb.h"
 

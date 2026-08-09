@@ -18,6 +18,7 @@
  */
 
 #pragma once
+#include <cstdint>
 #include <mutex>
 #include <queue>
 #include <unordered_map>

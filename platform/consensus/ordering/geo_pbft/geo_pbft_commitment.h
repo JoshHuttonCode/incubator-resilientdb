@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "platform/config/resdb_config.h"
 #include "platform/consensus/execution/geo_global_executor.h"
 #include "platform/consensus/execution/system_info.h"

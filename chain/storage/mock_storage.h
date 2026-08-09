@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "chain/storage/storage.h"
 #include "gmock/gmock.h"
 

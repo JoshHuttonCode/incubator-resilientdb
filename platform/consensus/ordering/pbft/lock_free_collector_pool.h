@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include "platform/consensus/ordering/pbft/transaction_collector.h"

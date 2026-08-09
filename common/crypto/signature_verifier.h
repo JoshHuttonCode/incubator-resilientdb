@@ -22,6 +22,7 @@
 #include <cryptopp/filters.h>
 #include <cryptopp/xed25519.h>
 
+#include <cstdint>
 #include <shared_mutex>
 #include <string>
 

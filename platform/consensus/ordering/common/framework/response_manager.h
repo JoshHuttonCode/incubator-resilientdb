@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "platform/config/resdb_config.h"
 #include "platform/consensus/ordering/common/framework/transaction_utils.h"
 #include "platform/networkstrate/replica_communicator.h"

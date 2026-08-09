@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "executor/common/transaction_manager.h"
 #include "platform/consensus/ordering/common/framework/consensus.h"
 #include "platform/consensus/ordering/poe/algorithm/poe.h"

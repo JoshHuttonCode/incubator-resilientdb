@@ -21,6 +21,8 @@
 
 #include <gmock/gmock.h>
 
+#include <cstdint>
+
 #include "platform/consensus/ordering/pbft/checkpoint_manager.h"
 
 namespace resdb {

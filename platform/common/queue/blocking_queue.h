@@ -22,6 +22,7 @@
 #include <glog/logging.h>
 
 #include <condition_variable>
+#include <cstdint>
 #include <queue>
 
 #include "absl/status/statusor.h"

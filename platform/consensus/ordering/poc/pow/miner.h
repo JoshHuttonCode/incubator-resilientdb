@@ -18,6 +18,9 @@
  */
 
 #pragma once
+
+#include <cstdint>
+
 #include "absl/status/status.h"
 #include "platform/config/resdb_poc_config.h"
 #include "platform/consensus/ordering/poc/proto/pow.pb.h"

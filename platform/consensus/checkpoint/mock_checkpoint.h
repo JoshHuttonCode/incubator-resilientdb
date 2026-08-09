@@ -21,6 +21,8 @@
 
 #include <gmock/gmock.h>
 
+#include <cstdint>
+
 #include "platform/consensus/checkpoint/checkpoint.h"
 
 namespace resdb {

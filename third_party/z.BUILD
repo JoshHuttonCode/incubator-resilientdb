@@ -29,6 +29,11 @@ cc_library(
     copts = [
         "-w",
         "-Dverbose=-1",
+        # zlib's ./configure normally sets this in zconf.h. Bazel builds the
+        # sources directly, so without it zconf.h skips <unistd.h> and the gz*
+        # sources call write()/close()/lseek() undeclared. That is an error
+        # rather than a warning from GCC 14 on, and -w does not suppress it.
+        "-DZ_HAVE_UNISTD_H",
     ],
     includes = ["."],
 )

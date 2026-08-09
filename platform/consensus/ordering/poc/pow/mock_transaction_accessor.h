@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "gmock/gmock.h"
 #include "platform/consensus/ordering/poc/pow/transaction_accessor.h"
 

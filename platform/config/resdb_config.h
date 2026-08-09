@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "common/proto/signature_info.pb.h"
 #include "platform/proto/replica_info.pb.h"
 

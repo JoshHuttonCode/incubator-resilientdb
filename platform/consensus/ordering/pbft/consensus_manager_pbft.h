@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "executor/common/custom_query.h"
 #include "platform/config/resdb_config.h"
 #include "platform/consensus/ordering/pbft/checkpoint_manager.h"

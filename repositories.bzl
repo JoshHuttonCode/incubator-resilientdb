@@ -22,6 +22,16 @@ load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 all_content = """filegroup(name = "all_srcs", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
 
 def nexres_repositories():
+    # Declared here so the version is chosen deliberately. Abseil needs
+    # config_setting_group from lib/selects.bzl, which the skylib that
+    # protobuf 3.10 pins does not have; without this the build only works
+    # because rules_foreign_cc happens to register 1.0.3 first.
+    maybe(
+        http_archive,
+        name = "bazel_skylib",
+        sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
+        urls = ["https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz"],
+    )
     maybe(
         http_archive,
         name = "eEVM",
@@ -42,6 +52,7 @@ def nexres_repositories():
     maybe(
         http_archive,
         name = "com_github_nelhage_rules_boost",
+        sha256 = "5ea00abc70cdf396a23fb53201db19ebce2837d28887a08544429d27783309ed",
         strip_prefix = "rules_boost-96e9b631f104b43a53c21c87b01ac538ad6f3b48",
         url = "https://github.com/nelhage/rules_boost/archive/96e9b631f104b43a53c21c87b01ac538ad6f3b48.tar.gz",
     )
@@ -56,8 +67,13 @@ def nexres_repositories():
     maybe(
         http_archive,
         name = "com_google_absl",
-        strip_prefix = "abseil-cpp-20211102.0",
-        urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20211102.0.zip"],
+        # 20250127.0 and newer select on @rules_cc//cc/compiler, which the
+        # rules_cc bundled with Bazel 6.0.0 does not provide, and fail during
+        # analysis. 20240722.2 builds with Bazel 6.0.0 and carries the
+        # <cstdint> includes that GCC 13+ requires.
+        sha256 = "f43db925dcfb480e49019f25094ba26ac9ff55b37ebeceff3637575b4b07b382",
+        strip_prefix = "abseil-cpp-20240722.2",
+        urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20240722.2.zip"],
     )
     maybe(
         http_archive,
@@ -87,7 +103,9 @@ def nexres_repositories():
         sha256 = "91844808532e5ce316b3c010929493c0244f3d37593afd6de04f71821d5136d9",
         strip_prefix = "zlib-1.2.12",
         urls = [
-            "https://zlib.net/zlib-1.2.12.tar.gz",
+            # zlib.net serves only the current release from the top level and
+            # moves older ones under fossils/, so the unprefixed URL 404s.
+            "https://zlib.net/fossils/zlib-1.2.12.tar.gz",
             "https://storage.googleapis.com/bazel-mirror/zlib.net/zlib-1.2.12.tar.gz",
         ],
     )

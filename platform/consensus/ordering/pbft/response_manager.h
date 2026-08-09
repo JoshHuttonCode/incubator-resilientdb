@@ -20,6 +20,8 @@
 #pragma once
 #include <semaphore.h>
 
+#include <cstdint>
+
 #include "platform/config/resdb_config.h"
 #include "platform/consensus/ordering/pbft/lock_free_collector_pool.h"
 #include "platform/consensus/ordering/pbft/transaction_utils.h"
