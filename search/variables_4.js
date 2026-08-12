@@ -13,6 +13,7 @@ var searchData=
   ['default_5ftemplate_10',['DEFAULT_TEMPLATE',['../d8/dc3/namespaceupdate__mdx__section.html#afaaddb9c6b8f0d2882bba47d9951a82d',1,'update_mdx_section']]],
   ['delete_5fresponse_11',['delete_response',['../df/d04/namespacetest.html#af4407df25a9058783c2126dcc09db7a7',1,'test']]],
   ['description_12',['description',['../dd/dc4/namespacesetup.html#aedf461ec52a946bda975938ba0b93ec0',1,'setup']]],
-  ['driver_13',['driver',['../df/dc6/classresdb__driver_1_1driver_1_1NamespacedDriver.html#a22e2a9d75d81e2a372faa3a7862e12fe',1,'resdb_driver::driver::NamespacedDriver']]],
-  ['duplicate_5fmanager_5f_14',['duplicate_manager_',['../dd/d4b/classresdb_1_1Commitment.html#af38e8574b68da0c20576d31ad60e5ef8',1,'resdb::Commitment::duplicate_manager_'],['../d1/db2/classresdb_1_1ViewChangeManager.html#a10f5e377daad2b2fbb2c0394f71c8d8c',1,'resdb::ViewChangeManager::duplicate_manager_']]]
+  ['developer_5fguides_13',['developer_guides',['../db/d25/classResilientDBKnowledgeBase_1_1ResilientDBKnowledgeBase.html#ab4f39571d3152f47e043bd3d2ca2ca03',1,'ResilientDBKnowledgeBase::ResilientDBKnowledgeBase']]],
+  ['driver_14',['driver',['../df/dc6/classresdb__driver_1_1driver_1_1NamespacedDriver.html#a22e2a9d75d81e2a372faa3a7862e12fe',1,'resdb_driver::driver::NamespacedDriver']]],
+  ['duplicate_5fmanager_5f_15',['duplicate_manager_',['../dd/d4b/classresdb_1_1Commitment.html#af38e8574b68da0c20576d31ad60e5ef8',1,'resdb::Commitment::duplicate_manager_'],['../d1/db2/classresdb_1_1ViewChangeManager.html#a10f5e377daad2b2fbb2c0394f71c8d8c',1,'resdb::ViewChangeManager::duplicate_manager_']]]
 ];

@@ -14,6 +14,6 @@ var searchData=
   ['spinlockset_11',['SpinLockSet',['../d4/d35/classresdb_1_1SpinLockSet.html',1,'resdb']]],
   ['startuperror_12',['StartupError',['../dc/dc8/classresdb__driver_1_1exceptions_1_1StartupError.html',1,'resdb_driver.exceptions.StartupError'],['../de/d19/classresdb__validator_1_1exceptions_1_1StartupError.html',1,'resdb_validator.exceptions.StartupError']]],
   ['stats_13',['Stats',['../de/d0d/classresdb_1_1Stats.html',1,'resdb::Stats'],['../db/df7/classStats.html',1,'Stats']]],
-  ['storage_14',['Storage',['../d2/d14/classresdb_1_1Storage.html',1,'resdb']]],
+  ['storage_14',['Storage',['../d2/d14/classresdb_1_1Storage.html',1,'resdb::Storage'],['../dd/d5e/classStorage.html',1,'Storage']]],
   ['systeminfo_15',['SystemInfo',['../d9/d27/classresdb_1_1SystemInfo.html',1,'resdb']]]
 ];

@@ -1,7 +1,7 @@
 var searchData=
 [
   ['max_5famount_0',['MAX_AMOUNT',['../d0/de3/classresdb__driver_1_1transaction_1_1Output.html#af126e29d8b8fa71decf7e6d2799d5bcf',1,'resdb_driver.transaction.Output.MAX_AMOUNT'],['../d0/da1/classresdb__validator_1_1transaction_1_1Output.html#a0426a242fe78248f5aceb4aaf33ac043',1,'resdb_validator.transaction.Output.MAX_AMOUNT']]],
-  ['max_5fhistory_5f_1',['max_history_',['../d2/d14/classresdb_1_1Storage.html#a7c05a17bf7f3bd5a0af88d1cce8f4ff9',1,'resdb::Storage']]],
+  ['max_5fhistory_5f_1',['max_history_',['../d2/d14/classresdb_1_1Storage.html#a7c05a17bf7f3bd5a0af88d1cce8f4ff9',1,'resdb::Storage::max_history_'],['../dd/d5e/classStorage.html#a7c05a17bf7f3bd5a0af88d1cce8f4ff9',1,'Storage::max_history_']]],
   ['max_5fpoll_5fattempts_2',['MAX_POLL_ATTEMPTS',['../d2/d5e/classconfig_1_1Config.html#a5c72964e653cf052c967a4cc4e5492db',1,'config::Config']]],
   ['max_5fretry_5ftime_5f_3',['max_retry_time_',['../de/dc3/classresdb_1_1NetChannel.html#aa6c1a78d7bc59574c32eae48d430b052',1,'resdb::NetChannel']]],
   ['max_5fseq_5f_4',['max_seq_',['../dc/db0/classresdb_1_1CheckPointManager.html#aa4a68f9a84e634cd3636d722e2f3f7a0',1,'resdb::CheckPointManager::max_seq_'],['../d1/d44/classresdb_1_1Recovery.html#acbb65b4b6588f9a694258a7241efcb0d',1,'resdb::Recovery::max_seq_']]],

@@ -7,7 +7,7 @@ var searchData=
   ['send_5fthread_5f_4',['send_thread_',['../db/deb/classresdb_1_1common_1_1Consensus.html#a44099ddb54b9217b365b4653724c1581',1,'resdb::common::Consensus']]],
   ['sender_5fckpt_5f_5',['sender_ckpt_',['../dc/db0/classresdb_1_1CheckPointManager.html#a1595d057e150d0c0d0bf777873adf9b4',1,'resdb::CheckPointManager']]],
   ['sent_5ftransfer_5ftx_6',['sent_transfer_tx',['../de/d3b/namespacetest__driver.html#ae7299da90ca290746cf92ad5d6ad2567',1,'test_driver.sent_transfer_tx'],['../db/d31/namespacetest__driver__2.html#a1d75d377bace665a9e7dd8b2a65ec4ad',1,'test_driver_2.sent_transfer_tx'],['../d5/de3/namespacetest__sdk.html#a38190e1e5d2c20c211d299ff74823331',1,'test_sdk.sent_transfer_tx'],['../d7/d62/namespacetest__update__metadata.html#a1bc96c70b9a50c3898345381d136daf4',1,'test_update_metadata.sent_transfer_tx']]],
-  ['sentence_5ftransformer_5favailable_7',['SENTENCE_TRANSFORMER_AVAILABLE',['../d9/db1/namespaceserver.html#a8ba2c7e768e6cb4bbd2d2eb51e908e47',1,'server']]],
+  ['sentence_5ftransformer_5favailable_7',['SENTENCE_TRANSFORMER_AVAILABLE',['../d9/db1/namespaceserver.html#a1ee86b1f9d06fbc17ba0e00a0ac9abbc',1,'server']]],
   ['sentencetransformer_8',['SentenceTransformer',['../d9/db1/namespaceserver.html#a0861a98565bea85ee1995930c0e4c365',1,'server']]],
   ['seq_5f_9',['seq_',['../df/d01/classresdb_1_1TransactionManager.html#a9544cb0e74983efb6471de9bab9f9e2f',1,'resdb::TransactionManager']]],
   ['seq_5fmutex_5f_10',['seq_mutex_',['../dc/db0/classresdb_1_1CheckPointManager.html#abc1e481213c637249ec3df6192b03514',1,'resdb::CheckPointManager']]],

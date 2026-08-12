@@ -1,8 +1,11 @@
 var classresdb_1_1storage_1_1MemoryDB =
 [
     [ "MemoryDB", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#a0dc9b3a6a890cd54a9c493103013ec09", null ],
+    [ "CreateCompositeKey", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#a0f9bcc201aa16db36a7a4228a5c5dff8", null ],
+    [ "DeleteCompositeKey", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#a783423dbcc577b87117e0230f2ccd46c", null ],
     [ "GetAllItems", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#a857c8a316b485f42bc22e96566c00cc4", null ],
     [ "GetAllItemsWithSeq", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#a951b4341adc7da44ef3dd228626fc53d", null ],
+    [ "GetByCompositeKeyPrefix", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#a425f02123492a4202afd9a5f2f78bfe1", null ],
     [ "GetHistory", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#a5cf374e364ea0ed65c12721b11654430", null ],
     [ "GetKeyRange", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#af1fb8cea5ed91abf154ce4fdb40f2a74", null ],
     [ "GetRange", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#a68ff0bb9ae084d1b8be024def1b7a398", null ],
@@ -12,5 +15,6 @@ var classresdb_1_1storage_1_1MemoryDB =
     [ "GetValueWithVersion", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#af0eb0bfb5573018d511fe66994244bfa", null ],
     [ "SetValue", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#abef9cd0ffd55a2ef9edf54b4e543cf73", null ],
     [ "SetValueWithSeq", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#a584371a67527f17d56305d90354d37eb", null ],
-    [ "SetValueWithVersion", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#abcc808471821089bd071f53764abbcde", null ]
+    [ "SetValueWithVersion", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#abcc808471821089bd071f53764abbcde", null ],
+    [ "UpdateCompositeKey", "da/d75/classresdb_1_1storage_1_1MemoryDB.html#a1c7133f037afad0e007a0f1f2f7eb336", null ]
 ];

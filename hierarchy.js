@@ -278,6 +278,12 @@ var hierarchy =
       [ "resdb::storage::MemoryDB", "da/d75/classresdb_1_1storage_1_1MemoryDB.html", null ],
       [ "resdb::storage::ResLevelDB", "d3/d39/classresdb_1_1storage_1_1ResLevelDB.html", null ]
     ] ],
+    [ "Storage", "dd/d5e/classStorage.html", [
+      [ "resdb::MockStorage", "de/d28/classresdb_1_1MockStorage.html", null ],
+      [ "resdb::storage::DuckDB", "d2/d2d/classresdb_1_1storage_1_1DuckDB.html", null ],
+      [ "resdb::storage::MemoryDB", "da/d75/classresdb_1_1storage_1_1MemoryDB.html", null ],
+      [ "resdb::storage::ResLevelDB", "d3/d39/classresdb_1_1storage_1_1ResLevelDB.html", null ]
+    ] ],
     [ "resdb::SystemInfo", "d9/d27/classresdb_1_1SystemInfo.html", null ],
     [ "Test", null, [
       [ "resdb::ResDBTest", "dd/d33/classresdb_1_1ResDBTest.html", null ]

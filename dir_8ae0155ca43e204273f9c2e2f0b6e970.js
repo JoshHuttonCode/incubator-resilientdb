@@ -1,5 +1,8 @@
 var dir_8ae0155ca43e204273f9c2e2f0b6e970 =
 [
+    [ "composite_key_codec.cpp", "d6/d48/composite__key__codec_8cpp.html", "d6/d48/composite__key__codec_8cpp" ],
+    [ "composite_key_codec.h", "d3/d3f/composite__key__codec_8h.html", "d3/d3f/composite__key__codec_8h" ],
+    [ "composite_key_codec_test.cpp", "d2/da7/composite__key__codec__test_8cpp.html", "d2/da7/composite__key__codec__test_8cpp" ],
     [ "duckdb.cpp", "de/d88/duckdb_8cpp.html", "de/d88/duckdb_8cpp" ],
     [ "duckdb.h", "df/dd2/duckdb_8h.html", "df/dd2/duckdb_8h" ],
     [ "duckdb_test.cpp", "d0/d06/duckdb__test_8cpp.html", "d0/d06/duckdb__test_8cpp" ],

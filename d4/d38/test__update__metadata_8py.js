@@ -8,10 +8,10 @@ var test__update__metadata_8py =
     [ "test_update_metadata.fulfilled_transfer_tx", "d7/d62/namespacetest__update__metadata.html#a887906ee38b5e5762d74ff8b02cf8b1f", null ],
     [ "test_update_metadata.game_boy_token", "d7/d62/namespacetest__update__metadata.html#a55e4aebdf82854d9b615a1fff09b3181", null ],
     [ "test_update_metadata.output", "d7/d62/namespacetest__update__metadata.html#af8ec452f26f8d65e5a3b9be8e98e81ed", null ],
-    [ "test_update_metadata.output_index", "d7/d62/namespacetest__update__metadata.html#a2dcefd69fdac67430dc0d7624431c904", null ],
+    [ "test_update_metadata.output_index", "d7/d62/namespacetest__update__metadata.html#a8c407de3757eea058580e7177b5809e1", null ],
     [ "test_update_metadata.prepared_token_tx", "d7/d62/namespacetest__update__metadata.html#afe3c73d56ca177442590ad77428012d4", null ],
     [ "test_update_metadata.prepared_transfer_tx", "d7/d62/namespacetest__update__metadata.html#a3964826a747fe1d71e2dd0e16a045719", null ],
     [ "test_update_metadata.sent_transfer_tx", "d7/d62/namespacetest__update__metadata.html#a1bc96c70b9a50c3898345381d136daf4", null ],
-    [ "test_update_metadata.transfer_asset", "d7/d62/namespacetest__update__metadata.html#a9ae971a8edb108c86bd7013dff5c655c", null ],
-    [ "test_update_metadata.transfer_input", "d7/d62/namespacetest__update__metadata.html#abb71e53e3ff513f13b209f3cad535133", null ]
+    [ "test_update_metadata.transfer_asset", "d7/d62/namespacetest__update__metadata.html#a7f3eac6ded011ff248eecd52a180c372", null ],
+    [ "test_update_metadata.transfer_input", "d7/d62/namespacetest__update__metadata.html#af0e6c7320463f4ee350c35f78fbc9f20", null ]
 ];

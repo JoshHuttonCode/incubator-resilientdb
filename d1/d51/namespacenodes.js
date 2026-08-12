@@ -6,6 +6,6 @@ var namespacenodes =
     [ "OrderChapters", "d9/db0/classnodes_1_1OrderChapters.html", "d9/db0/classnodes_1_1OrderChapters" ],
     [ "WriteChapters", "d0/d01/classnodes_1_1WriteChapters.html", "d0/d01/classnodes_1_1WriteChapters" ],
     [ "CombineTutorial", "d3/dcb/classnodes_1_1CombineTutorial.html", "d3/dcb/classnodes_1_1CombineTutorial" ],
-    [ "fix_mermaid_syntax", "d1/d51/namespacenodes.html#a3e64756671fdccb0cebbe0b22777e4c9", null ],
-    [ "get_content_for_indices", "d1/d51/namespacenodes.html#a9cf31736670a5ddcb67f9b8a3f9f6b5e", null ]
+    [ "fix_mermaid_syntax", "d1/d51/namespacenodes.html#a20eae6414a2bbafe19568eee17713307", null ],
+    [ "get_content_for_indices", "d1/d51/namespacenodes.html#a94dd5976c5537cdf928e77abcc55e517", null ]
 ];

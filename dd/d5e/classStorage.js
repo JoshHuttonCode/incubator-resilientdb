@@ -1,0 +1,26 @@
+var classStorage =
+[
+    [ "Storage", "dd/d5e/classStorage.html#a043b87c929e00dd9cce9366f1d3c38c9", null ],
+    [ "~Storage", "dd/d5e/classStorage.html#a6890672501d28f0ede54be1236f10a28", null ],
+    [ "CreateCompositeKey", "dd/d5e/classStorage.html#ab41c72565ecc48f28db9f7ce86db5d9f", null ],
+    [ "DeleteCompositeKey", "dd/d5e/classStorage.html#a21e4cfa67e0947dab76cbf62d7ab7cfa", null ],
+    [ "ExecuteSQL", "dd/d5e/classStorage.html#a9ff13edc34fcbceed6c284e133b230ef", null ],
+    [ "Flush", "dd/d5e/classStorage.html#a2b7bfb9558caf0cd20bc4bdc35b1afe6", null ],
+    [ "GetAllItems", "dd/d5e/classStorage.html#aa34343e63f038d4c7f08d993453d1b5f", null ],
+    [ "GetAllItemsWithSeq", "dd/d5e/classStorage.html#ae458e8556b3d11a9423096b98fa48a88", null ],
+    [ "GetByCompositeKeyPrefix", "dd/d5e/classStorage.html#a0a7538bd443fe58e1a6943940a44845f", null ],
+    [ "GetHistory", "dd/d5e/classStorage.html#a0fae8ec0b5a9b8fb95f5c8b7492e7fad", null ],
+    [ "GetKeyRange", "dd/d5e/classStorage.html#ac12cbf01977b673a990b54951e36d685", null ],
+    [ "GetLastCheckpoint", "dd/d5e/classStorage.html#a79d8893e0ad7d3160e4807428981bdaa", null ],
+    [ "GetRange", "dd/d5e/classStorage.html#a4f2a7fe32638e6b4a5a1e2597913a378", null ],
+    [ "GetTopHistory", "dd/d5e/classStorage.html#a0a71db9aedf6e52e752e46d29f219d45", null ],
+    [ "GetValue", "dd/d5e/classStorage.html#a8d2a1873cd805da6a6adde8ad11a9b25", null ],
+    [ "GetValueWithSeq", "dd/d5e/classStorage.html#a9a219bbb5e648b65c6815755596ba532", null ],
+    [ "GetValueWithVersion", "dd/d5e/classStorage.html#afbaeab5c3ea6f88ae482fbb406a34f14", null ],
+    [ "SetMaxHistoryNum", "dd/d5e/classStorage.html#a13d2ba17caecac1d258835cdaa4f633a", null ],
+    [ "SetValue", "dd/d5e/classStorage.html#a25813c70209abf748b0e2532132999b9", null ],
+    [ "SetValueWithSeq", "dd/d5e/classStorage.html#a1aa0042ca37ef16ef12a2a153327e377", null ],
+    [ "SetValueWithVersion", "dd/d5e/classStorage.html#a11e69abb13d31483642a2b03679394c7", null ],
+    [ "UpdateCompositeKey", "dd/d5e/classStorage.html#a63dfbcfd287914fed05ea06fee6b2bdf", null ],
+    [ "max_history_", "dd/d5e/classStorage.html#a7c05a17bf7f3bd5a0af88d1cce8f4ff9", null ]
+];

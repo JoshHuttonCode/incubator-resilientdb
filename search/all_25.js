@@ -52,7 +52,7 @@ var searchData=
   ['_7esocket_49',['~Socket',['../d0/d29/classresdb_1_1Socket.html#a91e19f6e5b9513678981053fc6a3af76',1,'resdb::Socket']]],
   ['_7espinlockset_50',['~SpinLockSet',['../d4/d35/classresdb_1_1SpinLockSet.html#acc3dc2a41750cbcd78fcf7fd1f5c4b96',1,'resdb::SpinLockSet']]],
   ['_7estats_51',['~Stats',['../de/d0d/classresdb_1_1Stats.html#a834d3cec4dfb02876b510d7fc6fea4cf',1,'resdb::Stats::~Stats()'],['../db/df7/classStats.html#a834d3cec4dfb02876b510d7fc6fea4cf',1,'Stats::~Stats()']]],
-  ['_7estorage_52',['~Storage',['../d2/d14/classresdb_1_1Storage.html#a6890672501d28f0ede54be1236f10a28',1,'resdb::Storage']]],
+  ['_7estorage_52',['~Storage',['../d2/d14/classresdb_1_1Storage.html#a6890672501d28f0ede54be1236f10a28',1,'resdb::Storage::~Storage()'],['../dd/d5e/classStorage.html#a6890672501d28f0ede54be1236f10a28',1,'Storage::~Storage()']]],
   ['_7esysteminfo_53',['~SystemInfo',['../d9/d27/classresdb_1_1SystemInfo.html#a3ae5c30ab977c21d79f2f07c6444e787',1,'resdb::SystemInfo']]],
   ['_7etcpsocket_54',['~TcpSocket',['../d4/de5/classresdb_1_1TcpSocket.html#a2ec96205c1d63802dd1b268e7f72aecf',1,'resdb::TcpSocket']]],
   ['_7etransaction_55',['~Transaction',['../d8/d15/classresdb_1_1utxo_1_1Transaction.html#aeb24bbaa077dde47e6eb182863f1639f',1,'resdb::utxo::Transaction::~Transaction()'],['../df/d28/classTransaction.html#aeb24bbaa077dde47e6eb182863f1639f',1,'Transaction::~Transaction()']]],

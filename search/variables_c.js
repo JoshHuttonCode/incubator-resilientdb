@@ -6,7 +6,7 @@ var searchData=
   ['last_5fhash_5f_3',['last_hash_',['../dc/db0/classresdb_1_1CheckPointManager.html#a2a8a348564c99016087603e1a645904e',1,'resdb::CheckPointManager']]],
   ['last_5fseq_5f_4',['last_seq_',['../dc/db0/classresdb_1_1CheckPointManager.html#a79ba1122cbc6fb7b632140cdcddc645f',1,'resdb::CheckPointManager']]],
   ['last_5fupdate_5ftime_5f_5',['last_update_time_',['../dc/db0/classresdb_1_1CheckPointManager.html#a5cea7f2be7b77736b222bfa4d7d60c33',1,'resdb::CheckPointManager']]],
-  ['lat_6',['lat',['../d8/d54/namespacecalculate__result.html#a68bd4e286bf291c86318989ef8c2f922',1,'calculate_result']]],
+  ['lat_6',['lat',['../d8/d54/namespacecalculate__result.html#af6711388b9ec7a6db3c76cfbfde76851',1,'calculate_result']]],
   ['level_7',['level',['../d7/d70/namespaceresilient__python__cache_1_1cache.html#a2ffd04c52c557ee2bffcd2fe8449182b',1,'resilient_python_cache::cache']]],
   ['level_5fdb_5fapprox_5fmem_5fsize_5f_8',['level_db_approx_mem_size_',['../df/dd9/structresdb_1_1VisualData.html#a4840807d75e46fb876291eeaec6e2e47',1,'resdb::VisualData']]],
   ['level_5fdb_5fstats_5f_9',['level_db_stats_',['../df/dd9/structresdb_1_1VisualData.html#a902b27f22ef17d3e5b2525b2cb2ac63e',1,'resdb::VisualData']]],

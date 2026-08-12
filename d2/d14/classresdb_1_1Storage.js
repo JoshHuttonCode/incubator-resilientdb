@@ -2,10 +2,13 @@ var classresdb_1_1Storage =
 [
     [ "Storage", "d2/d14/classresdb_1_1Storage.html#a043b87c929e00dd9cce9366f1d3c38c9", null ],
     [ "~Storage", "d2/d14/classresdb_1_1Storage.html#a6890672501d28f0ede54be1236f10a28", null ],
+    [ "CreateCompositeKey", "d2/d14/classresdb_1_1Storage.html#ab41c72565ecc48f28db9f7ce86db5d9f", null ],
+    [ "DeleteCompositeKey", "d2/d14/classresdb_1_1Storage.html#a21e4cfa67e0947dab76cbf62d7ab7cfa", null ],
     [ "ExecuteSQL", "d2/d14/classresdb_1_1Storage.html#a9ff13edc34fcbceed6c284e133b230ef", null ],
     [ "Flush", "d2/d14/classresdb_1_1Storage.html#a2b7bfb9558caf0cd20bc4bdc35b1afe6", null ],
     [ "GetAllItems", "d2/d14/classresdb_1_1Storage.html#aa34343e63f038d4c7f08d993453d1b5f", null ],
     [ "GetAllItemsWithSeq", "d2/d14/classresdb_1_1Storage.html#ae458e8556b3d11a9423096b98fa48a88", null ],
+    [ "GetByCompositeKeyPrefix", "d2/d14/classresdb_1_1Storage.html#a0a7538bd443fe58e1a6943940a44845f", null ],
     [ "GetHistory", "d2/d14/classresdb_1_1Storage.html#a0fae8ec0b5a9b8fb95f5c8b7492e7fad", null ],
     [ "GetKeyRange", "d2/d14/classresdb_1_1Storage.html#ac12cbf01977b673a990b54951e36d685", null ],
     [ "GetLastCheckpoint", "d2/d14/classresdb_1_1Storage.html#a79d8893e0ad7d3160e4807428981bdaa", null ],
@@ -18,5 +21,6 @@ var classresdb_1_1Storage =
     [ "SetValue", "d2/d14/classresdb_1_1Storage.html#a25813c70209abf748b0e2532132999b9", null ],
     [ "SetValueWithSeq", "d2/d14/classresdb_1_1Storage.html#a1aa0042ca37ef16ef12a2a153327e377", null ],
     [ "SetValueWithVersion", "d2/d14/classresdb_1_1Storage.html#a11e69abb13d31483642a2b03679394c7", null ],
+    [ "UpdateCompositeKey", "d2/d14/classresdb_1_1Storage.html#a63dfbcfd287914fed05ea06fee6b2bdf", null ],
     [ "max_history_", "d2/d14/classresdb_1_1Storage.html#a7c05a17bf7f3bd5a0af88d1cce8f4ff9", null ]
 ];

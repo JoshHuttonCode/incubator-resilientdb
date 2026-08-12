@@ -66,27 +66,28 @@ var NAVTREEINDEX =
 "annotated.html",
 "d0/ded/classresdb_1_1ConsensusManagerPBFT.html#abc117418c5375d245e128db2b8dab58a",
 "d1/db2/classresdb_1_1ViewChangeManager.html#a4573a1cac52997a528c00ce4fbf3c8d6",
-"d2/dc4/namespaceresdb__driver_1_1driver__experiment.html#ae261520341e73d05bc24d079fa742ee9",
-"d3/d76/common_2transaction__utils_8cpp.html",
-"d4/d30/utxo__service_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627",
-"d5/d10/namespaceresdb.html#a20a9c64f3963cdec2d8dfcb221b6a223",
-"d5/d3e/classresdb_1_1LRUCache.html#a1886dafde65024014deea676a1a8904c",
-"d6/d29/classresdb_1_1common_1_1PerformanceManager.html#acf034ccebe89638b2b14658c64063234",
-"d7/d61/classresdb__driver_1_1validate_1_1Transaction.html",
-"d8/d22/classresdb_1_1ChainState.html#ae6d91051041bc70827fe74320ac0e3f4",
-"d9/d27/classresdb_1_1SystemInfo.html",
-"da/d19/classresdb_1_1ConsensusManager.html",
-"da/d86/classresdb_1_1ResDBPoCConfig.html#ad2260792dfda1c98e62e5ec63a6dce19",
-"db/d84/classknowledge__graph__builder_1_1KnowledgeGraphBuilder.html#ae699f439d64511e43d079d2307ae877a",
-"dc/d03/classresdb__driver_1_1connection_1_1Connection.html#abd2956be6c20d54a8112a458487e4c02",
-"dc/db0/classresdb_1_1CheckPointManager.html#a5395376992e5b027ce749b7b3618e4ec",
-"dd/d68/mock__geo__global__executor_8h_source.html",
-"de/d28/classresdb_1_1MockStorage.html#a6e899dcb4fb251758208d6a57819f340",
-"de/dc3/classresdb_1_1NetChannel.html#a01fbbb250aeec03bd9586d5cf58638ba",
-"df/da0/contract__service__tools_8cpp.html#a3649c66636caa9737735d14d4737bbb7",
-"dir_79e5ac5063a7711f70bcf86e07145342.html"
+"d2/db9/classresdb__driver_1_1exceptions_1_1SchemaValidationError.html",
+"d3/d5e/classresdb_1_1ReplicaCommunicator.html#a8cb7f41342adcd8939a378532e055bfa",
+"d4/d2d/classresdb_1_1ServiceNetwork.html#a3dbdad010f6e3ec5b4f3207c9b2d1123",
+"d4/deb/classresdb__validator_1_1exceptions_1_1MultipleInputsError.html",
+"d5/d37/classresdb__driver_1_1transaction_1_1Transaction.html#a7f2efd9dbbb7c7c81d99225538e36dff",
+"d6/d06/classResDBConfig.html#a9442c8816ec1183a61b8278e0fa1ff1a",
+"d7/d2a/namespaceresdb__driver_1_1utils.html#ac56bcfe8355fc848e4becfa6be57c46c",
+"d7/dfe/resdb__sdk_8py_source.html",
+"d8/df0/print__sample_8py_source.html",
+"d9/dcd/endpoint__test_8py_source.html",
+"da/d81/contract__service_8cpp_source.html",
+"db/d25/classResilientDBKnowledgeBase_1_1ResilientDBKnowledgeBase.html#ac4c421d41cbd9eb194dfac7fa0acdc7f",
+"db/deb/classresdb_1_1common_1_1Consensus.html#aee600d5eadfc4c207640f1bec592f37d",
+"dc/da3/classresdb_1_1common_1_1ProtocolBase.html#ae14f2091b62e5b0fd198daf71be2146f",
+"dd/d33/classresdb_1_1ResDBTest.html#a940df83b8e569b8977be4b9f2a748d6e",
+"de/d0b/classresdb_1_1TransactionAccessor.html#aa784258b42381eec55d27b1b593c3979",
+"de/d4d/classresdb__validator_1_1lib_1_1ResDB.html#aa5457e5dfbf333fb039f812116ab31f2",
+"df/d28/classTransaction.html#a8f9a773d8da46dc0e48c69a148924328",
+"df/dd9/structresdb_1_1VisualData.html#af9a91268c2ff4c66078106a5d5dbc27b",
+"functions_vars_m.html"
 ];
 
-var SYNCONMSG = 'click to disable panel synchronization';
-var SYNCOFFMSG = 'click to enable panel synchronization';
-var LISTOFALLMEMBERS = 'List of all members';
+const SYNCONMSG = 'click to disable panel synchronization';
+const SYNCOFFMSG = 'click to enable panel synchronization';
+const LISTOFALLMEMBERS = 'List of all members';
