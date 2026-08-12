@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <future>
 
+#include "common/utils/semaphore.h"
 #include "platform/config/resdb_config.h"
 #include "platform/consensus/ordering/common/framework/transaction_utils.h"
 #include "platform/networkstrate/replica_communicator.h"
@@ -94,6 +95,11 @@ class PerformanceManager {
   std::atomic<int> primary_;
   std::atomic<int> local_id_;
   std::atomic<int> sum_;
+  int num_consumer_threads_ = 4;
+  int num_producer_threads_ = 4;
+
+  static constexpr int max_batch_queue_depth = 2000000;
+  Semaphore batch_queue_slots_available_{max_batch_queue_depth};
 };
 
 }  // namespace common

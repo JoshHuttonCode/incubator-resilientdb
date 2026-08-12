@@ -71,6 +71,9 @@ class LeaderElectionManager {
   uint64_t known_role_epoch_;  // Protected by cv_mutex_
   std::mutex cv_mutex_;
   std::condition_variable cv_;
+  // If this variable is false, heartbeats will still be sent, all tracking will
+  // be done, but followers will not start an election their randomized election
+  // timeout occurs.
   bool enable_viewchange_;
 };
 

@@ -74,10 +74,8 @@ void LeaderElectionManager::MayStart() {
 
   enable_viewchange_ = config_.GetConfigData().enable_viewchange();
 
-  if (enable_viewchange_) {
-    server_checking_timeout_thread_ =
-        std::thread(&LeaderElectionManager::MonitoringElectionTimeout, this);
-  }
+  server_checking_timeout_thread_ =
+      std::thread(&LeaderElectionManager::MonitoringElectionTimeout, this);
 }
 
 void LeaderElectionManager::SetRaft(raft::Raft* raft) { raft_ = raft; }
@@ -230,7 +228,7 @@ void LeaderElectionManager::MonitoringElectionTimeout() {
       raft_->SendHeartbeat();
     }
     // Followers and Candidates start an election.
-    else {
+    else if (enable_viewchange_) {
       LOG(INFO) << __FUNCTION__ << ": Heartbeat timed out after "
                 << timeout_ms_.load() << " ms";
       raft_->StartElection();

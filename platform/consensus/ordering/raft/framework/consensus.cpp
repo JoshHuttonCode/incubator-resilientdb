@@ -69,7 +69,7 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
     // LOG(ERROR) << "Received AppendEntriesMsg";
     std::unique_ptr<AppendEntries> txn = std::make_unique<AppendEntries>();
     if (!txn->ParseFromString(request->data())) {
-      LOG(ERROR) << "parse proposal fail";
+      LOG(ERROR) << "parse AppendEntries fail";
       assert(1 == 0);
       return -1;
     }
@@ -79,7 +79,7 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
     std::unique_ptr<AppendEntriesResponse> AppendEntriesResponse =
         std::make_unique<resdb::raft::AppendEntriesResponse>();
     if (!AppendEntriesResponse->ParseFromString(request->data())) {
-      LOG(ERROR) << "parse proposal fail";
+      LOG(ERROR) << "parse AppendEntriesResponse fail";
       assert(1 == 0);
       return -1;
     }
@@ -89,7 +89,7 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
     std::unique_ptr<RequestVote> rv =
         std::make_unique<resdb::raft::RequestVote>();
     if (!rv->ParseFromString(request->data())) {
-      LOG(ERROR) << "parse proposal fail";
+      LOG(ERROR) << "parse RequestVote fail";
       assert(1 == 0);
       return -1;
     }
@@ -99,7 +99,7 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
     std::unique_ptr<RequestVoteResponse> rvr =
         std::make_unique<resdb::raft::RequestVoteResponse>();
     if (!rvr->ParseFromString(request->data())) {
-      LOG(ERROR) << "parse proposal fail";
+      LOG(ERROR) << "parse RequestVoteResponse fail";
       assert(1 == 0);
       return -1;
     }
@@ -110,7 +110,7 @@ int Consensus::ProcessCustomConsensus(std::unique_ptr<Request> request) {
     std::unique_ptr<DirectToLeader> dtl =
         std::make_unique<resdb::raft::DirectToLeader>();
     if (!dtl->ParseFromString(request->data())) {
-      LOG(ERROR) << "parse proposal fail";
+      LOG(ERROR) << "parse DirectToLeader fail";
       assert(1 == 0);
       return -1;
     }
