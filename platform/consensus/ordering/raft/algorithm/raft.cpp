@@ -369,6 +369,14 @@ bool Raft::ReceiveTransaction(std::unique_ptr<Request> req) {
       int id = client.id();
       SendMessage(DirectToLeaderMsg, dtl, id);
     }
+
+    Request rejection;
+    rejection.set_type(Request::TYPE_RESPONSE);
+    rejection.set_ret(-2);
+    rejection.set_sender_id(config_.GetSelfInfo().id());
+    rejection.set_proxy_id(req->proxy_id());
+    replica_communicator_->SendMessage(rejection, req->proxy_id());
+
     return false;
   }
   for (const auto& msg : transaction_result.messages) {
@@ -1201,13 +1209,17 @@ AeFields Raft::GatherAeFieldsLocked(int follower_id) {
   // If a follower is behind, still send entries to catch them up.
   uint32_t msg_bytes = max_header_bytes_;
   const uint64_t first_new = progress_[follower_id].next_index;
-  const uint64_t limit =
-      std::min(last_log_index_, (first_new + max_entries_) - 1);
+  uint64_t limit = std::min(last_log_index_, (first_new + max_entries_) - 1);
+  if (do_not_limit_in_flight_messages_) {
+    limit = last_log_index_;
+  }
   for (uint64_t i = first_new; i <= limit; ++i) {
     msg_bytes += GetLogEntryAtIndex(i).GetSerializedSize();
     // Always include at least 1 entry, after that limit by max_bytes_.
-    if (i != first_new && msg_bytes >= max_bytes_) {
-      break;
+    if (!do_not_limit_in_flight_messages_) {
+      if (i != first_new && msg_bytes >= max_bytes_) {
+        break;
+      }
     }
     LogEntry entry;
     entry.entry = GetLogEntryAtIndex(i).entry;
@@ -1371,6 +1383,9 @@ bool Raft::CanSendLocked(int follower_id) const {
       // While probing, only allow one in flight message.
       return !follower_progress.probe_in_flight;
     case ProgressState::REPLICATE:
+      if (do_not_limit_in_flight_messages_) {
+        return true;
+      }
       // Only send an entry if the follower is under the in flight limit.
       return (follower_progress.in_flight.size() < max_in_flight_per_follower_);
     case ProgressState::SNAPSHOT:

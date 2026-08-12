@@ -52,6 +52,128 @@ enum class Role { FOLLOWER, CANDIDATE, LEADER };
 enum class TermRelation { STALE, CURRENT, NEW };
 enum class ProgressState { PROBE, REPLICATE, SNAPSHOT };
 
+#define RAFT_DEBUG
+
+#ifdef RAFT_DEBUG
+#include <sys/resource.h>
+#include <sys/sysinfo.h>
+#include <unistd.h>
+
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cstdint>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <mutex>
+#include <sstream>
+#include <string>
+
+class ResourceMonitor {
+ public:
+  ResourceMonitor() : last_(TakeSample()) {}
+
+  std::string GetPageFaults() {
+    struct rusage usage;
+    std::ostringstream ss;
+    if (getrusage(RUSAGE_SELF, &usage) == 0) {
+      // ru_minflt: Minor faults (no disk I/O, e.g., lazy memory allocation)
+      // ru_majflt: Major faults (required loading data from storage drive)
+      ss << "Minor Page Faults: " << usage.ru_minflt << "\n";
+      ss << "Major Page Faults: " << usage.ru_majflt << "\n";
+    }
+
+    return ss.str();
+  }
+
+  std::string GetStatus() {
+    Sample current = TakeSample();
+
+    double elapsed =
+        std::chrono::duration<double>(current.wall - last_.wall).count();
+
+    double cpu = 0.0;
+    if (elapsed > 0) {
+      cpu = 100.0 *
+            ((current.cpu_ticks - last_.cpu_ticks) /
+             static_cast<double>(ticks_per_second_)) /
+            elapsed;
+    }
+
+    last_ = current;
+
+    double loads[3] = {0};
+    getloadavg(loads, 3);
+
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(1);
+    ss << "CPU=" << cpu << "% "
+       << "RSS=" << current.rss_mb << "MB "
+       << "VM=" << current.vm_mb << "MB "
+       << "Threads=" << current.threads << " "
+       << "LoadAvg=" << loads[0] << " " << GetPageFaults();
+
+    return ss.str();
+  }
+
+ private:
+  struct Sample {
+    long cpu_ticks = 0;
+    size_t rss_mb = 0;
+    size_t vm_mb = 0;
+    int threads = 0;
+    std::chrono::steady_clock::time_point wall;
+  };
+
+  Sample last_;
+  const long ticks_per_second_ = sysconf(_SC_CLK_TCK);
+
+  Sample TakeSample() {
+    Sample s;
+    s.wall = std::chrono::steady_clock::now();
+
+    // Read utime/stime from /proc/self/stat
+    {
+      std::ifstream stat("/proc/self/stat");
+      std::string tmp;
+
+      for (int i = 0; i < 13; ++i) stat >> tmp;
+
+      long utime, stime;
+      stat >> utime >> stime;
+      s.cpu_ticks = utime + stime;
+    }
+
+    // Read memory/thread info
+    {
+      std::ifstream status("/proc/self/status");
+      std::string key;
+
+      while (status >> key) {
+        if (key == "VmRSS:") {
+          size_t kb;
+          status >> kb;
+          s.rss_mb = kb / 1024;
+        } else if (key == "VmSize:") {
+          size_t kb;
+          status >> kb;
+          s.vm_mb = kb / 1024;
+        } else if (key == "Threads:") {
+          status >> s.threads;
+        }
+
+        std::string line;
+        std::getline(status, line);
+      }
+    }
+
+    return s;
+  }
+};
+
+#endif
+
 class LogEntry {
  public:
   Entry entry;
@@ -394,8 +516,11 @@ class Raft : public common::ProtocolBase {
   static constexpr size_t max_bytes_ = 64 * 1024 * 16 * 16;
   static constexpr size_t max_entries_ = 128 * 10; /*128;*/
   size_t max_in_flight_per_follower_ = 128;
+  // Set this to true to ignore the above restrictions on messages sent to
+  // followers.
+  bool do_not_limit_in_flight_messages_ = false;
   static constexpr std::chrono::milliseconds ae_response_deadline_{
-      1500};  // in milliseconds
+      1500000};  // in milliseconds
   std::chrono::steady_clock::time_point
       timestamp_since_last_transaction_batch_ =
           std::chrono::steady_clock::now();

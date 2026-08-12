@@ -42,7 +42,7 @@ PerformanceManager::PerformanceManager(
           .public_key()
           .public_key_info()
           .type() == CertificateKeyInfo::CLIENT) {
-    for (int i = 0; i < 1; ++i) {
+    for (int i = 0; i < num_consumer_threads_; ++i) {
       user_req_thread_[i] =
           std::thread(&PerformanceManager::BatchProposeMsg, this);
     }
@@ -60,7 +60,7 @@ PerformanceManager::PerformanceManager(
 
 PerformanceManager::~PerformanceManager() {
   stop_ = true;
-  for (int i = 0; i < 16; ++i) {
+  for (int i = 0; i < num_consumer_threads_; ++i) {
     if (user_req_thread_[i].joinable()) {
       user_req_thread_[i].join();
     }
@@ -98,17 +98,22 @@ int PerformanceManager::StartEval() {
     return 0;
   }
   eval_started_ = true;
-  std::thread([&]() {
-    for (int i = 0; i < 100000000; ++i) {
-      std::unique_ptr<QueueItem> queue_item = std::make_unique<QueueItem>();
-      queue_item->context = nullptr;
-      queue_item->user_request = GenerateUserRequest();
-      batch_queue_.Push(std::move(queue_item));
-      if (i == 2000000) {
-        eval_ready_promise_.set_value(true);
+  for (int thread_index = 0; thread_index < num_producer_threads_;
+       ++thread_index) {
+    std::thread([this, thread_index]() {
+      for (int i = thread_index; i < 100000000; i += num_producer_threads_) {
+        batch_queue_slots_available_.Acquire();
+
+        std::unique_ptr<QueueItem> queue_item = std::make_unique<QueueItem>();
+        queue_item->context = nullptr;
+        queue_item->user_request = GenerateUserRequest();
+        batch_queue_.Push(std::move(queue_item));
+        if (i == (2000000 / num_producer_threads_)) {
+          eval_ready_promise_.set_value(true);
+        }
       }
-    }
-  }).detach();
+    }).detach();
+  }
   return 0;
 }
 
@@ -216,6 +221,7 @@ int PerformanceManager::BatchProposeMsg() {
         }
         continue;
       }
+      batch_queue_slots_available_.Release();
       batch_req.push_back(std::move(item));
       if (batch_req.size() < config_.ClientBatchNum()) {
         continue;
