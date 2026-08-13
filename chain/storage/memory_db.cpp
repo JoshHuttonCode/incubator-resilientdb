@@ -231,6 +231,7 @@ int MemoryDB::UpdateCompositeKey(const std::string& old_composite_key,
   ck_map_.erase(old_composite_key);
   ck_map_[new_composite_key] = "";
   return 0;
+}
 
 void MemoryDB::Clear() {
   kv_map_.clear();
