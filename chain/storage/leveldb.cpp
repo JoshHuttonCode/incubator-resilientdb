@@ -497,6 +497,7 @@ std::vector<std::string> ResLevelDB::GetByCompositeKeyPrefix(
     out.emplace_back(key.data(), key.size());
   }
   return out;
+}
 
 // Iterate every key and batch-delete it, then flush to disk.
 void ResLevelDB::Clear() {
