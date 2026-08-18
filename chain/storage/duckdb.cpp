@@ -113,13 +113,5 @@ std::string DuckDB::ExecuteSQL(const std::string& sql_string){
     }
 }
 
-void DuckDB::Clear() {
-  try {
-    conn_->Query("DELETE FROM kvstore");
-  } catch (const std::exception& e) {
-    LOG(ERROR) << "DuckDB::Clear failed: " << e.what();
-  }
-}
-
 }  // namespace storage
 }  // namespace resdb

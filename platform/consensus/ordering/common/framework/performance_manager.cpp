@@ -108,7 +108,10 @@ int PerformanceManager::StartEval() {
         queue_item->context = nullptr;
         queue_item->user_request = GenerateUserRequest();
         batch_queue_.Push(std::move(queue_item));
-        if (i == (2000000 / num_producer_threads_)) {
+
+        int64_t pushed_count =
+            eval_ready_counter_.fetch_add(1, std::memory_order_relaxed) + 1;
+        if (pushed_count == 2000000) {
           eval_ready_promise_.set_value(true);
         }
       }

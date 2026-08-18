@@ -512,6 +512,10 @@ void ResLevelDB::Clear() {
   db_->Write(opts, &batch);
   // Clear any unflushed in-memory batch.
   batch_.Clear();
+
+  if (block_cache_) {
+    block_cache_->Flush();
+  }
 }
 
 }  // namespace storage

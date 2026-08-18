@@ -72,7 +72,7 @@ class Storage {
 
   // Atomically remove all keys from the store.
   // Used by Raft snapshot installation to reset state before replaying.
-  virtual void Clear() = 0;
+  virtual void Clear() {};
 
   virtual bool Flush(bool should_sync = false) { return true; };
 

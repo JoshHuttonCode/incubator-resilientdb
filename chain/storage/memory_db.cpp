@@ -237,6 +237,7 @@ void MemoryDB::Clear() {
   kv_map_.clear();
   kv_map_with_v_.clear();
   kv_map_with_seq_.clear();
+  ck_map_.clear();
 }
 
 }  // namespace storage

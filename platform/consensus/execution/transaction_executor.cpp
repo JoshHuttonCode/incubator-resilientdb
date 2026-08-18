@@ -240,19 +240,6 @@ void TransactionExecutor::ExecuteMessageOutOfOrder() {
 }
 
 void TransactionExecutor::OnlyExecute(std::unique_ptr<Request> request) {
-  // Added in case Raft ever supports out of ordering
-  if (request->data() == "RAFT_NO_OP") {
-    WaitForExecute(request->seq());
-    if (last_seq_ == 0) {
-      last_seq_ = request->seq();
-    } else {
-      last_seq_++;
-    }
-    FinishExecute(request->seq());
-    global_stats_->IncExecuteDone();
-    return;
-  }
-
   // Only Execute the request.
   BatchUserRequest batch_request;
   if (!batch_request.ParseFromString(request->data())) {

@@ -74,7 +74,9 @@ class PerformanceManager {
 
  private:
   LockFreeQueue<QueueItem> batch_queue_;
-  std::thread user_req_thread_[16];
+  static constexpr int num_producer_threads_ = 1;
+  static constexpr int num_consumer_threads_ = 1;
+  std::thread user_req_thread_[num_consumer_threads_];
   std::atomic<bool> stop_;
   Stats* global_stats_;
   std::atomic<int> send_num_;
@@ -85,6 +87,7 @@ class PerformanceManager {
   std::function<std::string()> data_func_;
   std::future<bool> eval_ready_future_;
   std::promise<bool> eval_ready_promise_;
+  std::atomic<int64_t> eval_ready_counter_{0};
   std::atomic<bool> eval_started_;
   std::atomic<int> fail_num_;
   static const int response_set_size_ = 6000000;
@@ -95,8 +98,6 @@ class PerformanceManager {
   std::atomic<int> primary_;
   std::atomic<int> local_id_;
   std::atomic<int> sum_;
-  int num_consumer_threads_ = 4;
-  int num_producer_threads_ = 4;
 
   static constexpr int max_batch_queue_depth = 2000000;
   Semaphore batch_queue_slots_available_{max_batch_queue_depth};
