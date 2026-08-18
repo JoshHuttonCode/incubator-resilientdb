@@ -26,10 +26,8 @@ cc_binary(
     srcs = ["kv_service.cpp"],
     copts = select({
         "//chain/storage/setting:enable_leveldb_setting": ["-DENABLE_LEVELDB"],
-        "//chain/storage/setting:enable_duckdb_setting": ["-DENABLE_DUCKDB"],
         "//conditions:default": [],
     }),
-    linkopts = ["-ldl"],
     deps = [
         "//platform/config:resdb_config_utils",
         "//executor/kv:kv_executor",
@@ -37,12 +35,10 @@ cc_binary(
         "//common:comm",
         "//proto/kv:kv_cc_proto",
         "//chain/storage:memory_db",
-    ] + select({
+        "//chain/storage:duckdb_storage",
+        "//chain/storage/proto:duckdb_config_cc_proto",
+	] + select({
         "//chain/storage/setting:enable_leveldb_setting": ["//chain/storage:leveldb"],
-        "//chain/storage/setting:enable_duckdb_setting": [
-            "//chain/storage:duckdb_storage",
-            "//chain/storage/proto:duckdb_config_cc_proto",
-        ],
         "//conditions:default": [],
     }),
 )
